@@ -104,6 +104,7 @@ export default function DashboardSideBar({ userRole }: SidebarProps) {
           {/* log out button  */}
           {/* github check  */}
             {/* git check ddddddd */}
+            {/* dkfhakdjjdkfjdkdkj djfkdjfkdajf */}
       {/* 3. Footer */}
       <SidebarFooter className="p-3 border-t border-border/40">
         <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
