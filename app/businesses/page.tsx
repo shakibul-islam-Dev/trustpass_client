@@ -1,7 +1,5 @@
 import businesses from '@/public/data/businesses.json';
-
 type Business = (typeof businesses)[number];
-
 type BusinessesPageProps = {
   searchParams: Promise<{
     query?: string;
