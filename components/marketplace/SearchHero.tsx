@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface CategoryQuickLink {
   name: string;
@@ -8,21 +8,32 @@ interface CategoryQuickLink {
   icon: string;
 }
 
-const POPULAR_CATEGORIES: CategoryQuickLink[] = [
-  { name: 'Software & SaaS', slug: 'software', icon: '💻' },
-  { name: 'E-Commerce', slug: 'ecommerce', icon: '🛍️' },
-  { name: 'Financial Services', slug: 'fintech', icon: '💳' },
-  { name: 'Healthcare', slug: 'healthcare', icon: '🩺' },
-  { name: 'Consulting', slug: 'consulting', icon: '📊' },
-];
-
 export default function SearchHero() {
   const router = useRouter();
 
   // Search filter states
+  const [categories, setCategories] = useState<CategoryQuickLink[]>([]);
   const [keyword, setKeyword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [minTrustScore, setMinTrustScore] = useState(0);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await fetch('/data/searchHero.json');
+        if (!response.ok) {
+          throw new Error(`Failed to load categories: ${response.status}`);
+        }
+
+        const data: CategoryQuickLink[] = await response.json();
+        setCategories(data);
+      } catch (error) {
+        console.error('Unable to load search hero categories', error);
+      }
+    };
+
+    loadCategories();
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,11 +102,11 @@ export default function SearchHero() {
                   className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none"
                 >
                   <option value="">All Categories</option>
-                  <option value="software">Software & SaaS</option>
-                  <option value="ecommerce">E-Commerce</option>
-                  <option value="fintech">Financial Services</option>
-                  <option value="healthcare">Healthcare</option>
-                  <option value="consulting">Consulting</option>
+                  {categories.map((category) => (
+                    <option key={category.slug} value={category.slug}>
+                      {category.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -147,14 +158,14 @@ export default function SearchHero() {
             Popular Categories
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2">
-            {POPULAR_CATEGORIES.map((cat) => (
+            {categories.map((category) => (
               <button
-                key={cat.slug}
-                onClick={() => router.push(`/businesses?category=${cat.slug}`)}
+                key={category.slug}
+                onClick={() => router.push(`/businesses?category=${category.slug}`)}
                 className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-medium text-foreground shadow-sm transition hover:border-primary/50 hover:text-primary"
               >
-                <span>{cat.icon}</span>
-                <span>{cat.name}</span>
+                <span>{category.icon}</span>
+                <span>{category.name}</span>
               </button>
             ))}
           </div>
