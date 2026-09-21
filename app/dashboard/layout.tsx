@@ -1,3 +1,6 @@
+import GETFULLDATA from "@/lib/data";
+
 export default function DashbaordRootLayout({ children }: LayoutProps<"/">) {
-  return <h1>hfoeifihoef</h1>;
+   console.log(GETFULLDATA)
+  return <h1>`hfoeifihoef{user.name}`</h1>;
 }
