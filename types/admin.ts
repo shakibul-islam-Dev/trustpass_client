@@ -45,7 +45,6 @@ export interface CustomerReport {
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
 }
 
-
 //-------------------- verification Queue page -----------
 
 export type VerificationStatus = "PENDING" | "VERIFIED" | "REJECTED";
