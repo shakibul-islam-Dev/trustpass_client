@@ -1,10 +1,11 @@
-export type UserRole = 'CUSTOMER' | 'BUSINESS' | 'ADMIN';
-
+export type UserRole = 'Customer' | 'Business Owner' | 'Admin';
+export type UserStatus = "Active" | "Banned" | "Pending";
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  status: UserStatus;
   createdAt: string;
   avatar?: string;
 }
