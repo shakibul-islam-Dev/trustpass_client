@@ -24,10 +24,7 @@ interface SidebarProps {
 
 export default function DashboardSideBar({ userRole }: SidebarProps) {
   const pathname = usePathname();
-<<<<<<< HEAD
   const { setOpenMobile, isMobile } = useSidebar();
-=======
->>>>>>> ab474f7 (Save local changes)
 
   const currentSidebar = roleSidebars[userRole] || roleSidebars.user;
 
@@ -52,7 +49,9 @@ export default function DashboardSideBar({ userRole }: SidebarProps) {
                 {userRole}
               </span>
             </span>
-            <span className="text-[11px] text-muted-foreground">Digital Trust Platform</span>
+            <span className="text-[11px] text-muted-foreground">
+              Digital Trust Platform
+            </span>
           </div>
         </div>
       </SidebarHeader>
@@ -73,7 +72,6 @@ export default function DashboardSideBar({ userRole }: SidebarProps) {
 
                 return (
                   <SidebarMenuItem key={item.href}>
-                    {/* asChild soriye dewa hoyeche jate Radix button element DOM error na dey */}
                     <SidebarMenuButton
                       isActive={isActive}
                       onClick={handleLinkClick}
@@ -83,10 +81,15 @@ export default function DashboardSideBar({ userRole }: SidebarProps) {
                           : "text-muted-foreground hover:bg-muted hover:text-foreground"
                       }`}
                     >
-                      <Link href={item.href} className="flex items-center gap-3 w-full">
+                      <Link
+                        href={item.href}
+                        className="flex items-center gap-3 w-full"
+                      >
                         <Icon
                           className={`h-4 w-4 shrink-0 transition-colors ${
-                            isActive ? "text-indigo-600 dark:text-indigo-400" : "text-muted-foreground"
+                            isActive
+                              ? "text-indigo-600 dark:text-indigo-400"
+                              : "text-muted-foreground"
                           }`}
                         />
                         <span className="flex-1 text-left">{item.name}</span>
@@ -104,10 +107,6 @@ export default function DashboardSideBar({ userRole }: SidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-          {/* log out button  */}
-          {/* github check  */}
-            {/* git check ddddddd */}
-            {/* dkfhakdjjdkfjdkdkj djfkdjfkdajf */}
       {/* 3. Footer */}
       <SidebarFooter className="p-3 border-t border-border/40">
         <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
@@ -116,8 +115,12 @@ export default function DashboardSideBar({ userRole }: SidebarProps) {
               A
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-semibold text-foreground truncate">Aritro M.</span>
-              <span className="text-[10px] text-muted-foreground truncate capitalize">{userRole} Account</span>
+              <span className="text-xs font-semibold text-foreground truncate">
+                Aritro M.
+              </span>
+              <span className="text-[10px] text-muted-foreground truncate capitalize">
+                {userRole} Account
+              </span>
             </div>
           </div>
           <button
