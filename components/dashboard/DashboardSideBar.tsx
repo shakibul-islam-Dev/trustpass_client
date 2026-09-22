@@ -9,6 +9,7 @@ interface SidebarProps {
 
 export default function DashboardSideBar({ userRole }: SidebarProps) {
   const pathname = usePathname();
+
   const currentSidebar = roleSidebars[userRole] || roleSidebars.user;
 
   return <aside> create your sidebar </aside>;
