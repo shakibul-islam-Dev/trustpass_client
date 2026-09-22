@@ -1,3 +1,3 @@
 export default function Registration() {
-  return <h1>Registrations </h1>;
+  return <h1>Hello</h1>;
 }
