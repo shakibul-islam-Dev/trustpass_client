@@ -7,7 +7,8 @@ import {
   ShoppingBag,
   User,
   Shield,
-  Flag
+  Flag,
+  Scale
 } from 'lucide-react';
 
 export const roleSidebars = {
@@ -18,6 +19,7 @@ export const roleSidebars = {
       { name: 'User Management', href: '/dashboard/admin/user-management', icon: Users },
       { name: 'Verification Queue', href: '/dashboard/admin/verification-queue', icon: Shield   },
       { name: 'Reports Review', href: '/dashboard/admin/reports', icon: Flag   },
+       { name: 'Trust Rules', href: '/dashboard/admin/trust-rules', icon: Scale   },
     ],
   },
   manager: {
