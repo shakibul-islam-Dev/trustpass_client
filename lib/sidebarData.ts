@@ -1,21 +1,25 @@
-import { 
-  LayoutDashboard, 
-  Users, 
-  Settings, 
-  BarChart3, 
-  FileText, 
-  UserCheck, 
-  ShoppingBag, 
-  User 
+import {
+  LayoutDashboard,
+  Users,
+  BarChart3,
+  FileText,
+  UserCheck,
+  ShoppingBag,
+  User,
+  Shield,
+  Flag,
+  Scale
 } from 'lucide-react';
 
 export const roleSidebars = {
   admin: {
     title: 'Admin',
     items: [
-      { name: 'Admin Dashboard', href: '/admin', icon: LayoutDashboard },
-      { name: 'User Control', href: '/admin/users', icon: Users },
-      { name: 'System Settings', href: '/admin/settings', icon: Settings },
+      { name: 'Admin Overview', href: '/dashboard/admin', icon: LayoutDashboard },
+      { name: 'User Management', href: '/dashboard/admin/user-management', icon: Users },
+      { name: 'Verification Queue', href: '/dashboard/admin/verification-queue', icon: Shield   },
+      { name: 'Reports Review', href: '/dashboard/admin/reports', icon: Flag   },
+       { name: 'Trust Rules', href: '/dashboard/admin/trust-rules', icon: Scale   },
     ],
   },
   manager: {
