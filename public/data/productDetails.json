@@ -1,0 +1,67 @@
+[
+  {
+    "id": 1001,
+    "business_id": "a3b8e4f1-92c7-46e3-b6dc-401d84b26710",
+    "category_id": "c1f7a2d3-8841-4ea2-95df-3158c679b32e",
+    "name": "Wireless Noise-Canceling Headphones",
+    "slug": "wireless-noise-canceling-headphones",
+    "description": "Premium over-ear wireless headphones featuring active noise cancellation, 30-hour battery life, and crystal-clear microphone audio.",
+    "price": 199.99,
+    "currency": "USD",
+    "stock": 45,
+    "images": [
+      {
+        "id": "img_01",
+        "url": "https://example.com/images/products/headphones-main.jpg",
+        "alt": "Front view of black noise-canceling headphones",
+        "is_primary": true
+      },
+      {
+        "id": "img_02",
+        "url": "https://example.com/images/products/headphones-side.jpg",
+        "alt": "Side profile of folded headphones",
+        "is_primary": false
+      }
+    ],
+    "status": "active",
+    "created_at": "2026-09-22T08:30:00Z",
+    "updated_at": "2026-09-22T14:15:00Z"
+  },
+  {
+    "id": 1002,
+    "business_id": "a3b8e4f1-92c7-46e3-b6dc-401d84b26710",
+    "category_id": "e45b19c2-0aa4-47d1-a489-7cfdb6d1829f",
+    "name": "Ergonomic Mechanical Keyboard",
+    "slug": "ergonomic-mechanical-keyboard",
+    "description": "Hot-swappable mechanical keyboard with custom quiet switches, RGB backlighting, and cushioned wrist rest.",
+    "price": 129.5,
+    "currency": "USD",
+    "stock": 20,
+    "images": [
+      {
+        "id": "img_03",
+        "url": "https://example.com/images/products/keyboard-top.jpg",
+        "alt": "Top layout view of mechanical keyboard",
+        "is_primary": true
+      }
+    ],
+    "status": "active",
+    "created_at": "2026-09-20T11:00:00Z",
+    "updated_at": "2026-09-21T09:45:00Z"
+  },
+  {
+    "id": 1003,
+    "business_id": "b72e903a-6743-41bb-8302-5c8e22f281e4",
+    "category_id": "c1f7a2d3-8841-4ea2-95df-3158c679b32e",
+    "name": "USB-C Dual 4K Docking Station",
+    "slug": "usb-c-dual-4k-docking-station",
+    "description": "Universal 12-in-1 docking station with dual HDMI outputs, 100W Power Delivery, Ethernet, and SD card reader.",
+    "price": 89.0,
+    "currency": "USD",
+    "stock": null,
+    "images": [],
+    "status": "draft",
+    "created_at": "2026-09-22T15:00:00Z",
+    "updated_at": "2026-09-22T15:00:00Z"
+  }
+]
