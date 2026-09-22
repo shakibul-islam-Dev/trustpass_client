@@ -62,5 +62,37 @@
     "icon": "🏢",
     "description": "Commercial spaces, virtual offices, and managed workspaces.",
     "count": 14
+  },
+  {
+    "id": "biz-1",
+    "name": "TechNova Solutions",
+    "slug": "technova-solutions",
+    "icon": "🚀",
+    "description": "TechNova Solutions",
+    "count": 1
+  },
+  {
+    "id": "biz-2",
+    "name": "Green Leaf Restaurant",
+    "slug": "green-leaf-restaurant",
+    "icon": "🍽️",
+    "description": "Green Leaf Restaurant",
+    "count": 1
+  },
+  {
+    "id": "biz-3",
+    "name": "MediCare Pharmacy",
+    "slug": "medicare-pharmacy",
+    "icon": "💊",
+    "description": "MediCare Pharmacy",
+    "count": 1
+  },
+  {
+    "id": "biz-4",
+    "name": "Digital Growth Agency",
+    "slug": "digital-growth-agency",
+    "icon": "📈",
+    "description": "Digital Growth Agency",
+    "count": 1
   }
 ]
