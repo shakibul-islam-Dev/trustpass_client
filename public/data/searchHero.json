@@ -1,0 +1,7 @@
+[
+  { "name": "Software & SaaS", "slug": "software", "icon": "💻" },
+  { "name": "E-Commerce", "slug": "ecommerce", "icon": "🛍️" },
+  { "name": "Financial Services", "slug": "fintech", "icon": "💳" },
+  { "name": "Healthcare", "slug": "healthcare", "icon": "🩺" },
+  { "name": "Consulting", "slug": "consulting", "icon": "📊" }
+]
