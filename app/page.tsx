@@ -1,3 +1,10 @@
+import SearchHero from "@/components/marketplace/SearchHero";
+import Categories from "@/components/marketplace/Categories";
 export default function Home() {
-  return <p className="shimmer text-sm text-muted-foreground">Home</p>;
+  return (
+    <div>
+      <SearchHero />
+      <Categories />
+    </div>
+  );
 }

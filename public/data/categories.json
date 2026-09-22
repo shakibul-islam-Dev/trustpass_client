@@ -1,0 +1,66 @@
+[
+  {
+    "id": "cat-1",
+    "name": "Software & SaaS",
+    "slug": "software-saas",
+    "icon": "💻",
+    "description": "Cloud software, developer tools, and enterprise IT platforms.",
+    "count": 48
+  },
+  {
+    "id": "cat-2",
+    "name": "E-Commerce & Retail",
+    "slug": "ecommerce-retail",
+    "icon": "🛍️",
+    "description": "Online storefronts, wholesale distributors, and digital retail brands.",
+    "count": 64
+  },
+  {
+    "id": "cat-3",
+    "name": "Financial Services",
+    "slug": "financial-services",
+    "icon": "💳",
+    "description": "Payment gateways, accounting firms, and fintech providers.",
+    "count": 31
+  },
+  {
+    "id": "cat-4",
+    "name": "Legal & Compliance",
+    "slug": "legal-compliance",
+    "icon": "⚖️",
+    "description": "Corporate lawyers, IP specialists, and compliance auditors.",
+    "count": 19
+  },
+  {
+    "id": "cat-5",
+    "name": "Healthcare & Wellness",
+    "slug": "healthcare-wellness",
+    "icon": "🩺",
+    "description": "Clinics, wellness platforms, and medical supply partners.",
+    "count": 27
+  },
+  {
+    "id": "cat-6",
+    "name": "Logistics & Supply",
+    "slug": "logistics-supply",
+    "icon": "🚚",
+    "description": "Freight forwarding, fulfillment warehouses, and courier networks.",
+    "count": 22
+  },
+  {
+    "id": "cat-7",
+    "name": "Marketing & Creative",
+    "slug": "marketing-creative",
+    "icon": "🎨",
+    "description": "SEO agencies, digital marketing consultancies, and design studios.",
+    "count": 35
+  },
+  {
+    "id": "cat-8",
+    "name": "Real Estate & Co-working",
+    "slug": "real-estate",
+    "icon": "🏢",
+    "description": "Commercial spaces, virtual offices, and managed workspaces.",
+    "count": 14
+  }
+]
