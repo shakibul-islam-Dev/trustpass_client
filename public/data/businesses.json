@@ -1,0 +1,42 @@
+[
+  {
+    "id": "biz-1",
+    "name": "Cloud Pay",
+    "category": "financial-services",
+    "aliases": ["fintech"],
+    "description": "Secure payment infrastructure for growing businesses.",
+    "trustScore": 94
+  },
+  {
+    "id": "biz-2",
+    "name": "Apex Logistics",
+    "category": "logistics-supply",
+    "aliases": [],
+    "description": "Reliable freight and fulfillment services.",
+    "trustScore": 91
+  },
+  {
+    "id": "biz-3",
+    "name": "Northstar Software",
+    "category": "software-saas",
+    "aliases": ["software"],
+    "description": "Cloud tools for modern operations teams.",
+    "trustScore": 88
+  },
+  {
+    "id": "biz-4",
+    "name": "Wellness Path",
+    "category": "healthcare-wellness",
+    "aliases": ["healthcare"],
+    "description": "Accessible wellness and care coordination services.",
+    "trustScore": 86
+  },
+  {
+    "id": "biz-5",
+    "name": "Market Lane",
+    "category": "ecommerce-retail",
+    "aliases": ["ecommerce"],
+    "description": "Curated products from verified independent brands.",
+    "trustScore": 85
+  }
+]
