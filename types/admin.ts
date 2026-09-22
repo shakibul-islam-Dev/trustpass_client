@@ -44,3 +44,33 @@ export interface CustomerReport {
   createdAt: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
 }
+
+
+//-------------------- verification Queue page -----------
+
+export type VerificationStatus = "PENDING" | "VERIFIED" | "REJECTED";
+
+export interface VerificationDocument {
+  id: string;
+  documentType: "TRADE_LICENSE" | "NID" | "TIN" | "OTHER";
+  fileUrl: string;
+  uploadedAt: string;
+}
+
+export interface VerificationRequest {
+  id: string;
+  businessId: string;
+  businessName: string;
+  ownerName: string;
+  ownerEmail: string;
+  category: string;
+  phone: string;
+  location: string;
+  tradeLicenseNo: string;
+  trustScore: number;
+  status: VerificationStatus;
+  submittedAt: string;
+  documents: VerificationDocument[];
+}
+
+//-------------------------------------------------------------------------

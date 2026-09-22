@@ -1,12 +1,12 @@
 import {
   LayoutDashboard,
   Users,
-  Settings,
   BarChart3,
   FileText,
   UserCheck,
   ShoppingBag,
-  User
+  User,
+  Shield
 } from 'lucide-react';
 
 export const roleSidebars = {
@@ -15,7 +15,7 @@ export const roleSidebars = {
     items: [
       { name: 'Admin Overview', href: '/dashboard/admin', icon: LayoutDashboard },
       { name: 'User Management', href: '/dashboard/admin/user-management', icon: Users },
-      { name: 'System Settings', href: '/admin/settings', icon: Settings },
+      { name: 'Verification Queue', href: '/dashboard/admin/verification-queue', icon: Shield   },
     ],
   },
   manager: {
