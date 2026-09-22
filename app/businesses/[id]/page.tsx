@@ -72,10 +72,10 @@ async function BusinessProfilePageContent({
                 <img
                   src={business.logo_url}
                   alt={business.business_name}
-                  className="h-[78px] w-[78px] rounded-full border-4 border-white bg-white object-cover shadow-lg"
+                  className="h-[78px] w-[78px] rounded-full border-4 border-card bg-card object-cover shadow-lg"
                 />
               ) : (
-                <div className="flex h-[78px] w-[78px] items-center justify-center rounded-full border-4 border-white bg-primary/10 text-2xl font-bold text-primary shadow-lg">
+                <div className="flex h-[78px] w-[78px] items-center justify-center rounded-full border-4 border-card bg-primary/10 text-2xl font-bold text-primary shadow-lg">
                   {business.business_name.charAt(0)}
                 </div>
               )}
