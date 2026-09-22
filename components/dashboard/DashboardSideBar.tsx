@@ -24,7 +24,10 @@ interface SidebarProps {
 
 export default function DashboardSideBar({ userRole }: SidebarProps) {
   const pathname = usePathname();
+<<<<<<< HEAD
   const { setOpenMobile, isMobile } = useSidebar();
+=======
+>>>>>>> ab474f7 (Save local changes)
 
   const currentSidebar = roleSidebars[userRole] || roleSidebars.user;
 
