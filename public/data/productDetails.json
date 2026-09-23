@@ -12,14 +12,14 @@
     "images": [
       {
         "id": "img_01",
-        "url": "https://example.com/images/products/headphones-main.jpg",
-        "alt": "Front view of black noise-canceling headphones",
+        "url": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e",
+        "alt": "Wireless over-ear headphones",
         "is_primary": true
       },
       {
         "id": "img_02",
-        "url": "https://example.com/images/products/headphones-side.jpg",
-        "alt": "Side profile of folded headphones",
+        "url": "https://images.unsplash.com/photo-1484704849700-f032a568e944",
+        "alt": "Wireless headphones side view",
         "is_primary": false
       }
     ],
@@ -40,8 +40,8 @@
     "images": [
       {
         "id": "img_03",
-        "url": "https://example.com/images/products/keyboard-top.jpg",
-        "alt": "Top layout view of mechanical keyboard",
+        "url": "https://images.unsplash.com/photo-1587829741301-dc798b83add3",
+        "alt": "Mechanical computer keyboard",
         "is_primary": true
       }
     ],
@@ -58,10 +58,101 @@
     "description": "Universal 12-in-1 docking station with dual HDMI outputs, 100W Power Delivery, Ethernet, and SD card reader.",
     "price": 89.0,
     "currency": "USD",
-    "stock": null,
-    "images": [],
-    "status": "draft",
+    "stock": 35,
+    "images": [
+      {
+        "id": "img_04",
+        "url": "https://images.unsplash.com/photo-1625842268584-8f3296236761",
+        "alt": "USB-C docking station and computer accessories",
+        "is_primary": true
+      }
+    ],
+    "status": "active",
     "created_at": "2026-09-22T15:00:00Z",
     "updated_at": "2026-09-22T15:00:00Z"
+  },
+  {
+    "id": 1004,
+    "business_id": "f51c28a9-73d2-4f86-bc91-14e8d5a62430",
+    "category_id": "7b42c8e1-3f90-4d7a-a5c2-829e6f1b2045",
+    "name": "Smart Fitness Watch",
+    "slug": "smart-fitness-watch",
+    "description": "Modern fitness smartwatch with heart-rate monitoring, sleep tracking, GPS, workout modes, and seven-day battery life.",
+    "price": 149.99,
+    "currency": "USD",
+    "stock": 32,
+    "images": [
+      {
+        "id": "img_05",
+        "url": "https://images.unsplash.com/photo-1523275335684-37898b6baf30",
+        "alt": "Smart fitness watch",
+        "is_primary": true
+      },
+      {
+        "id": "img_06",
+        "url": "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1",
+        "alt": "Smartwatch on wrist",
+        "is_primary": false
+      }
+    ],
+    "status": "active",
+    "created_at": "2026-09-19T10:20:00Z",
+    "updated_at": "2026-09-22T12:30:00Z"
+  },
+  {
+    "id": 1005,
+    "business_id": "8d94a3f7-21c5-48be-9f63-52e7a1c80649",
+    "category_id": "d92f61b4-5e83-4c27-a019-63f8b2d74510",
+    "name": "Premium Laptop Backpack",
+    "slug": "premium-laptop-backpack",
+    "description": "Water-resistant laptop backpack with padded compartments, USB charging port, multiple storage pockets, and comfortable shoulder straps.",
+    "price": 79.99,
+    "currency": "USD",
+    "stock": 58,
+    "images": [
+      {
+        "id": "img_07",
+        "url": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62",
+        "alt": "Premium laptop backpack",
+        "is_primary": true
+      },
+      {
+        "id": "img_08",
+        "url": "https://images.unsplash.com/photo-1622560480605-d83c853bc5c3",
+        "alt": "Black travel backpack",
+        "is_primary": false
+      }
+    ],
+    "status": "active",
+    "created_at": "2026-09-18T13:45:00Z",
+    "updated_at": "2026-09-21T16:10:00Z"
+  },
+  {
+    "id": 1006,
+    "business_id": "c63e8b21-49d7-4a52-bf86-930e15c27461",
+    "category_id": "a84c29f6-72b1-4e65-9d38-51f7c203846a",
+    "name": "Portable Bluetooth Speaker",
+    "slug": "portable-bluetooth-speaker",
+    "description": "Compact waterproof Bluetooth speaker with powerful stereo sound, 20-hour battery life, and wireless pairing.",
+    "price": 59.99,
+    "currency": "USD",
+    "stock": 75,
+    "images": [
+      {
+        "id": "img_09",
+        "url": "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1",
+        "alt": "Portable Bluetooth speaker",
+        "is_primary": true
+      },
+      {
+        "id": "img_10",
+        "url": "https://images.unsplash.com/photo-1589003077984-894e133dabab",
+        "alt": "Wireless portable speaker",
+        "is_primary": false
+      }
+    ],
+    "status": "active",
+    "created_at": "2026-09-17T09:15:00Z",
+    "updated_at": "2026-09-22T11:25:00Z"
   }
 ]

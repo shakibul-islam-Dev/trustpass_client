@@ -40,6 +40,13 @@ export default function Navbar() {
             </Link>
 
             <Link
+              href="/products"
+              className="transition-colors hover:text-primary"
+            >
+              Products
+            </Link>
+
+            <Link
               href="/businesses?verified=true"
               className="transition-colors hover:text-primary"
             >
