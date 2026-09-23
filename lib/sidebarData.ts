@@ -10,6 +10,7 @@ import {
   Shield,
   Flag,
   Scale,
+  Factory,
 } from "lucide-react";
 
 export const roleSidebars = {
@@ -25,6 +26,11 @@ export const roleSidebars = {
         name: "User Management",
         href: "/dashboard/admin/user-management",
         icon: Users,
+      },
+        {
+        name: "Bussiness",
+        href: "/dashboard/admin/businesses",
+        icon: Factory,
       },
       {
         name: "Verification Queue",
