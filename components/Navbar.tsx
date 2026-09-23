@@ -54,7 +54,7 @@ export default function Navbar() {
             </Link>
 
             <Link
-              href="/moderator/verifications"
+              href="/dashboard/moderator/verification-queue"
               className="transition-colors hover:text-primary"
             >
               Moderator Queue

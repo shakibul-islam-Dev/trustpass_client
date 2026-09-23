@@ -71,12 +71,12 @@ if (
                 </Link>
               </li>
               <li>
-                <Link href="/moderator/verifications" className="text-neutral-300 transition hover:text-white">
+                <Link href="/dashboard/moderator/verification-queue" className="text-neutral-300 transition hover:text-white">
                   Moderator Queue (Staff)
                 </Link>
               </li>
               <li>
-                <Link href="/moderator/reports" className="text-neutral-300 transition hover:text-white">
+                <Link href="/dashboard/moderator/reports" className="text-neutral-300 transition hover:text-white">
                   Report Review Center
                 </Link>
               </li>
