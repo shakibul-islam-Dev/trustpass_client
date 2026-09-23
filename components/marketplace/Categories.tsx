@@ -14,24 +14,24 @@ export default function Categories() {
   const categories: Category[] = categoriesData;
 
   return (
-    <section className="py-12 bg-white">
+    <section className="bg-background py-12 text-foreground">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-600">
+            <span className="text-xs font-bold uppercase tracking-wider text-primary">
               Directory Exploration
             </span>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
               Browse by Industry
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               Select a category to view vetted vendors and certified businesses.
             </p>
           </div>
           <Link
             href="/businesses"
-            className="mt-4 sm:mt-0 text-sm font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1 transition"
+            className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary transition hover:text-primary/80 sm:mt-0"
           >
             View all categories &rarr;
           </Link>
@@ -43,26 +43,26 @@ export default function Categories() {
             <Link
               key={cat.id}
               href={`/businesses?category=${cat.slug}`}
-              className="group relative flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 hover:border-blue-400 hover:shadow-md transition-all"
+              className="group relative flex flex-col justify-between rounded-xl border border-border bg-card p-5 transition-all hover:border-primary hover:shadow-md"
             >
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl p-2 rounded-lg bg-slate-50 group-hover:bg-blue-50 transition">
+                  <span className="rounded-lg bg-muted p-2 text-3xl transition group-hover:bg-primary/10">
                     {cat.icon}
                   </span>
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 group-hover:bg-blue-100 group-hover:text-blue-700 transition">
+                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground transition group-hover:bg-primary/10 group-hover:text-primary">
                     {cat.count} listings
                   </span>
                 </div>
-                <h3 className="mt-4 text-base font-semibold text-slate-900 group-hover:text-blue-600 transition">
+                <h3 className="mt-4 text-base font-semibold text-card-foreground transition group-hover:text-primary">
                   {cat.name}
                 </h3>
-                <p className="mt-1.5 text-xs text-slate-500 line-clamp-2">
+                <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">
                   {cat.description}
                 </p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center text-xs font-medium text-slate-400 group-hover:text-blue-600 transition">
+              <div className="mt-4 flex items-center border-t border-border pt-3 text-xs font-medium text-muted-foreground transition group-hover:text-primary">
                 <span>Explore category</span>
                 <svg className="h-3.5 w-3.5 ml-1 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />

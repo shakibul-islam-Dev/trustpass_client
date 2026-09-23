@@ -10,21 +10,21 @@ if (
   return null;
 }
   return (
-    <footer className="border-t border-border bg-foreground font-sans text-background">
+    <footer className="border-t border-neutral-800 bg-neutral-950 font-sans text-white">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           
           {/* Brand info & Trust Statement */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary font-bold text-primary-foreground">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white font-bold text-neutral-950">
                 TP
               </span>
-              <span className="text-lg font-bold tracking-tight text-background">
-                Trust<span className="text-primary">Pass</span>
+              <span className="text-lg font-bold tracking-tight text-white">
+                Trust<span className="text-sky-400">Pass</span>
               </span>
             </div>
-            <p className="text-xs leading-relaxed text-background/70">
+            <p className="text-xs leading-relaxed text-neutral-400">
               The verified business directory. We validate legitimacy, monitor reviews, 
               and calculate genuine Trust Scores so buyers and vendors transact with confidence.
             </p>
@@ -32,27 +32,27 @@ if (
 
           {/* Directory & Marketplace Links (Saheen's Area) */}
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-background">
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-white">
               Marketplace
             </h4>
             <ul className="mt-4 space-y-2 text-xs">
               <li>
-                <Link href="/businesses" className="transition hover:text-background">
+                <Link href="/businesses" className="text-neutral-300 transition hover:text-white">
                   Browse All Businesses
                 </Link>
               </li>
               <li>
-                <Link href="/businesses?sort=trustScore" className="transition hover:text-background">
+                <Link href="/businesses?sort=trustScore" className="text-neutral-300 transition hover:text-white">
                   Top Trust Score Rankings
                 </Link>
               </li>
               <li>
-                <Link href="/businesses?category=ecommerce" className="transition hover:text-background">
+                <Link href="/businesses?category=ecommerce" className="text-neutral-300 transition hover:text-white">
                   E-Commerce & Retail
                 </Link>
               </li>
               <li>
-                <Link href="/businesses?category=services" className="transition hover:text-background">
+                <Link href="/businesses?category=services" className="text-neutral-300 transition hover:text-white">
                   Professional Services
                 </Link>
               </li>
@@ -61,27 +61,27 @@ if (
 
           {/* Verification & Trust System */}
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-background">
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-white">
               Trust & Governance
             </h4>
             <ul className="mt-4 space-y-2 text-xs">
               <li>
-                <Link href="/trust-scoring-methodology" className="transition hover:text-background">
+                <Link href="/trust-scoring-methodology" className="text-neutral-300 transition hover:text-white">
                   How Trust Score Works
                 </Link>
               </li>
               <li>
-                <Link href="/moderator/verifications" className="transition hover:text-background">
+                <Link href="/dashboard/moderator/verification-queue" className="text-neutral-300 transition hover:text-white">
                   Moderator Queue (Staff)
                 </Link>
               </li>
               <li>
-                <Link href="/moderator/reports" className="transition hover:text-background">
+                <Link href="/dashboard/moderator/reports" className="text-neutral-300 transition hover:text-white">
                   Report Review Center
                 </Link>
               </li>
               <li>
-                <Link href="/customer/report" className="transition hover:text-background">
+                <Link href="/customer/report" className="text-neutral-300 transition hover:text-white">
                   File a Business Complaint
                 </Link>
               </li>
@@ -90,22 +90,22 @@ if (
 
           {/* Portals (Connecting Shakibul & Aritro's Modules) */}
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-background">
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-white">
               Portals
             </h4>
             <ul className="mt-4 space-y-2 text-xs">
               <li>
-                <Link href="/dashboard/business" className="transition hover:text-background">
+                <Link href="/dashboard/business" className="text-neutral-300 transition hover:text-white">
                   Business Owner Dashboard
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard/buyer" className="transition hover:text-background">
+                <Link href="/dashboard/buyer" className="text-neutral-300 transition hover:text-white">
                   Buyer Account
                 </Link>
               </li>
               <li>
-                <Link href="/admin/analytics" className="transition hover:text-background">
+                <Link href="/admin/analytics" className="text-neutral-300 transition hover:text-white">
                   System Admin
                 </Link>
               </li>
@@ -114,11 +114,11 @@ if (
 
         </div>
 
-        <div className="mt-10 flex flex-col items-center justify-between border-t border-background/20 pt-6 text-xs text-background/60 sm:flex-row">
+        <div className="mt-10 flex flex-col items-center justify-between border-t border-neutral-800 pt-6 text-xs text-neutral-400 sm:flex-row">
           <p>© {new Date().getFullYear()} TrustPass. All rights reserved.</p>
           <div className="flex gap-4 mt-4 sm:mt-0">
-            <Link href="/privacy" className="hover:text-background/80">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-background/80">Terms of Service</Link>
+            <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-white">Terms of Service</Link>
           </div>
         </div>
       </div>

@@ -40,6 +40,13 @@ export default function Navbar() {
             </Link>
 
             <Link
+              href="/products"
+              className="transition-colors hover:text-primary"
+            >
+              Products
+            </Link>
+
+            <Link
               href="/businesses?verified=true"
               className="transition-colors hover:text-primary"
             >
@@ -47,7 +54,7 @@ export default function Navbar() {
             </Link>
 
             <Link
-              href="/moderator/verifications"
+              href="/dashboard/moderator/verification-queue"
               className="transition-colors hover:text-primary"
             >
               Moderator Queue
