@@ -34,6 +34,29 @@ const categoryOptions = Array.from(
   new Set(businesses.map((business) => business.business_type)),
 ).sort();
 
+export const slugify = (text: string): string =>
+  text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+export const isCategoryActive = (catName: string, currentCategory: string): boolean => {
+  if (!currentCategory) return false;
+  const normalizedCurrent = currentCategory.toLowerCase();
+  const normalizedCat = normalizeText(catName);
+  const catSlug = slugify(catName);
+
+  if (normalizedCurrent === normalizedCat || normalizedCurrent === catSlug) return true;
+
+  const aliases = categoryAliases[normalizedCurrent];
+  if (aliases && aliases.some((alias) => normalizedCat.includes(alias) || alias.includes(normalizedCat))) {
+    return true;
+  }
+  return false;
+};
+
 function filterBusinesses(
   records: Business[],
   query: string,
@@ -41,16 +64,26 @@ function filterBusinesses(
   minScore: number,
 ) {
   const normalizedQuery = query.toLowerCase();
-  const categoryValues = categoryAliases[category] ?? [normalizeText(category)];
+  const categorySlug = slugify(category);
+  const normalizedCategory = normalizeText(category);
+  const categoryValues =
+    categoryAliases[category] ??
+    categoryAliases[categorySlug] ??
+    categoryAliases[normalizedCategory] ?? [normalizedCategory, categorySlug];
 
   return records.filter((business) => {
     const queryText = `${business.business_name} ${business.description} ${business.business_type}`.toLowerCase();
     const normalizedBusinessType = normalizeText(business.business_type);
+    const businessSlug = slugify(business.business_type);
     const matchesQuery = normalizedQuery ? queryText.includes(normalizedQuery) : true;
     const matchesCategory = category
-      ? categoryValues.some(
+      ? isCategoryActive(business.business_type, category) ||
+        categoryValues.some(
           (value) =>
-            normalizedBusinessType.includes(value) || value.includes(normalizedBusinessType),
+            normalizedBusinessType.includes(value) ||
+            value.includes(normalizedBusinessType) ||
+            businessSlug.includes(value) ||
+            value.includes(businessSlug),
         )
       : true;
 
@@ -65,6 +98,19 @@ export default async function BusinessesPage({ searchParams }: BusinessesPagePro
   const minScore = Number(params.minScore) || 0;
   const results = filterBusinesses(businesses, query, category, minScore);
 
+  const getTabHref = (catSlug?: string) => {
+    const p = new URLSearchParams();
+    if (query) p.set('query', query);
+    if (catSlug) p.set('category', catSlug);
+    if (minScore > 0) p.set('minScore', String(minScore));
+    const qs = p.toString();
+    return qs ? `/businesses?${qs}` : '/businesses';
+  };
+
+  const selectedCategoryValue = categoryOptions.find((item) => isCategoryActive(item, category))
+    ? slugify(categoryOptions.find((item) => isCategoryActive(item, category))!)
+    : '';
+
   return (
     <main className="min-h-screen bg-background font-sans text-foreground">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -78,6 +124,7 @@ export default async function BusinessesPage({ searchParams }: BusinessesPagePro
           </p>
         </div>
 
+        {/* Filter Card */}
         <div className="mb-8 rounded-2xl border border-border bg-card p-4 shadow-sm">
           <form className="grid gap-4 md:grid-cols-4">
             <div className="md:col-span-1">
@@ -97,13 +144,14 @@ export default async function BusinessesPage({ searchParams }: BusinessesPagePro
                 Category
               </label>
               <select
-                defaultValue={category}
+                defaultValue={selectedCategoryValue}
+                key={selectedCategoryValue}
                 name="category"
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
               >
                 <option value="">All categories</option>
                 {categoryOptions.map((item) => (
-                  <option key={item} value={normalizeText(item)}>
+                  <option key={item} value={slugify(item)}>
                     {item}
                   </option>
                 ))}
@@ -137,6 +185,79 @@ export default async function BusinessesPage({ searchParams }: BusinessesPagePro
           </form>
         </div>
 
+        {/* Category Tabs Bar */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Browse by Category
+            </h3>
+            {category && (
+              <Link
+                href={getTabHref()}
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                Clear category filter
+              </Link>
+            )}
+          </div>
+          <div
+            role="tablist"
+            aria-label="Category tabs"
+            className="flex items-center gap-2 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            <Link
+              role="tab"
+              aria-selected={!category}
+              href={getTabHref()}
+              className={`inline-flex items-center gap-2 shrink-0 rounded-full px-4 py-2 text-xs font-medium transition-all ${
+                !category
+                  ? 'bg-primary text-primary-foreground shadow-sm font-semibold'
+                  : 'bg-card border border-border text-muted-foreground hover:border-primary/50 hover:text-foreground'
+              }`}
+            >
+              <span>All</span>
+              <span
+                className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                  !category
+                    ? 'bg-primary-foreground/20 text-primary-foreground'
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                {businesses.length}
+              </span>
+            </Link>
+            {categoryOptions.map((catName) => {
+              const catCount = businesses.filter((b) => b.business_type === catName).length;
+              const catSlug = slugify(catName);
+              const isActive = isCategoryActive(catName, category);
+              return (
+                <Link
+                  key={catName}
+                  role="tab"
+                  aria-selected={isActive}
+                  href={getTabHref(catSlug)}
+                  className={`inline-flex items-center gap-2 shrink-0 rounded-full px-4 py-2 text-xs font-medium transition-all ${
+                    isActive
+                      ? 'bg-primary text-primary-foreground shadow-sm font-semibold'
+                      : 'bg-card border border-border text-muted-foreground hover:border-primary/50 hover:text-foreground'
+                  }`}
+                >
+                  <span>{catName}</span>
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                      isActive
+                        ? 'bg-primary-foreground/20 text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {catCount}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
         {results.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center">
             <h2 className="text-lg font-semibold">No businesses found</h2>
@@ -149,7 +270,7 @@ export default async function BusinessesPage({ searchParams }: BusinessesPagePro
             {results.map((business) => (
               <Link
                 key={business.id}
-                href={`/businesses/${business.id}`}
+                href={`/businesses/${slugify(business.business_name)}`}
                 className="block rounded-xl border border-border bg-card p-5 shadow-sm transition-colors hover:border-primary/40 no-underline text-inherit visited:text-inherit"
               >
                 <div className="flex items-start justify-between gap-4">

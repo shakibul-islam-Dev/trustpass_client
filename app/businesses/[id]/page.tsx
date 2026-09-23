@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import businesses from '@/public/data/businessCard.json';
+import { slugify } from '@/app/businessesExplore/page';
 
 type Business = (typeof businesses)[number];
 
@@ -20,11 +21,17 @@ const getBusinessHighlights = (business: Business) => [
 export default function BusinessProfilePage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id?: string; slug?: string }>;
 }) {
   const getBusiness = async () => {
     const resolvedParams = await params;
-    return businesses.find((business) => String(business.id) === resolvedParams.id);
+    const identifier = (resolvedParams.slug || resolvedParams.id || '').toLowerCase().trim();
+    return businesses.find(
+      (business) =>
+        slugify(business.business_name) === identifier ||
+        String(business.id) === identifier ||
+        (business as { slug?: string }).slug === identifier,
+    );
   };
 
   return <BusinessProfilePageContent getBusiness={getBusiness} />;
