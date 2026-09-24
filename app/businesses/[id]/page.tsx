@@ -56,6 +56,12 @@ async function BusinessProfilePageContent({
   }
 
   const highlights = getBusinessHighlights(business);
+  const statusOptions = [
+    { label: 'Pending', value: 'pending' },
+    { label: 'Verified', value: 'verified' },
+    { label: 'Rejected', value: 'rejected' },
+  ];
+  const activeStatus = String(business.verification_status ?? 'pending').toLowerCase();
 
   return (
     <main className="min-h-screen bg-background px-4 py-12 text-foreground">
@@ -105,9 +111,28 @@ async function BusinessProfilePageContent({
                     </span>
                   </div>
                 </div>
-                <span className="inline-flex rounded-full bg-emerald-500/10 px-3 py-1.5 text-sm font-semibold capitalize text-emerald-600">
-                  {business.verification_status}
-                </span>
+
+                <div className="flex flex-wrap gap-2">
+                  {statusOptions.map((status) => {
+                    const isActive = activeStatus === status.value;
+                    const style = isActive
+                      ? status.value === 'verified'
+                        ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600'
+                        : status.value === 'pending'
+                          ? 'border-amber-500 bg-amber-500/10 text-amber-600'
+                          : 'border-red-500 bg-red-500/10 text-red-600'
+                      : 'border-border bg-muted text-muted-foreground';
+
+                    return (
+                      <span
+                        key={status.value}
+                        className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${style}`}
+                      >
+                        {status.label}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="rounded-2xl border border-border bg-background/40 p-5">
