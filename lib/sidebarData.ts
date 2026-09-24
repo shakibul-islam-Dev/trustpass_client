@@ -10,6 +10,8 @@ import {
   Shield,
   Flag,
   Scale,
+  Factory,
+  BellIcon,
 } from "lucide-react";
 
 export const roleSidebars = {
@@ -25,6 +27,11 @@ export const roleSidebars = {
         name: "User Management",
         href: "/dashboard/admin/user-management",
         icon: Users,
+      },
+      {
+        name: "Bussiness",
+        href: "/dashboard/admin/businesses",
+        icon: Factory,
       },
       {
         name: "Verification Queue",
@@ -100,8 +107,21 @@ export const roleSidebars = {
   user: {
     title: "User Area",
     items: [
-      { name: "My Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { name: "My Orders", href: "/dashboard/orders", icon: ShoppingBag },
+      {
+        name: "My Dashboard",
+        href: "/dashboard/customer",
+        icon: LayoutDashboard
+      },
+      {
+        name: "My Reports",
+        href: "/dashboard/customer/reports",
+        icon: Flag
+      },
+      {
+        name:"Notifications",
+        href: "/dashboard/customer/notifications",
+        icon: BellIcon
+      },
       { name: "Profile Settings", href: "/dashboard/profile", icon: User },
     ],
   },

@@ -1,5 +1,8 @@
 export type UserRole = 'Customer' | 'Business Owner' | 'Admin';
 export type UserStatus = "Active" | "Banned" | "Pending";
+export type VerificationStatus = "PENDING" | "VERIFIED" | "REJECTED";
+
+
 export interface User {
   id: string;
   name: string;
@@ -10,17 +13,21 @@ export interface User {
   avatar?: string;
 }
 
+//------------------ business page -----------
 export interface Business {
   id: string;
   name: string;
   slug: string;
+  ownerName: string;
+  ownerEmail: string;
   category: string;
   phone: string;
   location: string;
-  verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  verificationStatus: VerificationStatus;
   trustScore: number;
   productsCount: number;
   tradeLicenseNo: string;
+  isFeatured: boolean;
   createdAt: string;
 }
 
@@ -47,7 +54,7 @@ export interface CustomerReport {
 
 //-------------------- verification Queue page -----------
 
-export type VerificationStatus = "PENDING" | "VERIFIED" | "REJECTED";
+
 
 export interface VerificationDocument {
   id: string;
