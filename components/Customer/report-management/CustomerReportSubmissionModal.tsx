@@ -22,7 +22,7 @@ const CATEGORIES: { value: ReportCategory; label: string }[] = [
   { value: "OTHER", label: "Other" },
 ];
 
-export const ReportSubmissionModal = ({
+export const CustomerReportSubmissionModal = ({
   isOpen,
   onClose,
   onSubmit,

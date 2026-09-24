@@ -1,16 +1,16 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ReportTable } from "@/components/customer/report-management/ReportTable";
-import { ReportSubmissionModal } from "@/components/customer/report-management/ReportSubmissionModal";
-
 import type { CustomerReport, ReportSubmissionData } from "@/types/customer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Search, Clock, CheckCircle, FileText } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CustomerReportTable } from "@/components/customer/report-management/CustomerReportTable";
+import { CustomerReportSubmissionModal } from "@/components/customer/report-management/CustomerReportSubmissionModal";
 import { CustomerReportDetailsModal } from "@/components/customer/report-management/CustomerReportDetailsModal";
+
 
 
 // Dummy Data (6 reports)
@@ -247,13 +247,13 @@ const MyReportsPage = () => {
       </div>
 
       {/* Table */}
-      <ReportTable
+      <CustomerReportTable
         reports={filteredReports}
         onViewDetails={openDetailsModal}
       />
 
       {/* Submit Report Modal */}
-      <ReportSubmissionModal
+      <CustomerReportSubmissionModal
         isOpen={isSubmitModalOpen}
         onClose={() => setIsSubmitModalOpen(false)}
         onSubmit={handleSubmitReport}

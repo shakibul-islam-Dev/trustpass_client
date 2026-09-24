@@ -22,7 +22,7 @@ interface ReportTableProps {
   onViewDetails: (report: CustomerReport) => void;
 }
 
-export const ReportTable = ({ reports, onViewDetails }: ReportTableProps) => {
+export const CustomerReportTable = ({ reports, onViewDetails }: ReportTableProps) => {
   return (
     <div className="rounded-md border border-border bg-card">
       <Table>
