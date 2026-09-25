@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import businesses from '@/public/data/businessCard.json';
 import { slugify } from '@/app/businessesExplore/page';
+import { Globe, Mail, Phone } from 'lucide-react';
 
 type Business = (typeof businesses)[number];
 
@@ -70,7 +71,7 @@ async function BusinessProfilePageContent({
           ← Back to directory
         </Link>
 
-        <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+        <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm mt-5">
           <div className="relative h-64 w-full bg-gradient-to-r from-primary/20 via-secondary/20 to-background">
             {business.cover_url ? (
               <img
@@ -161,12 +162,103 @@ async function BusinessProfilePageContent({
                 <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                   Contact information
                 </h3>
-                <ul className="mt-4 space-y-3 text-sm">
-                  {business.contact_phone ? <li>📞 {business.contact_phone}</li> : null}
-                  {business.contact_email ? <li>✉️ {business.contact_email}</li> : null}
-                  {business.website_url ? <li>🌐 {business.website_url}</li> : null}
-                  {business.insta_url ? <li>📷 {business.insta_url}</li> : null}
-                  {business.tiktok_url ? <li>🎵 {business.tiktok_url}</li> : null}
+                <ul className="mt-4 flex flex-wrap items-center gap-3">
+                  {business.contact_phone ? (
+                    <li>
+                      <Link
+                        href={`tel:${business.contact_phone}`}
+                        aria-label="Call business"
+                        title="Call business"
+                        className="text-xl text-emerald-600 transition-opacity hover:opacity-70"
+                      >
+                        <Phone aria-hidden="true" size={20} strokeWidth={2} />
+                      </Link>
+                    </li>
+                  ) : null}
+                  {business.contact_email ? (
+                    <li>
+                      <Link
+                        href={`mailto:${business.contact_email}`}
+                        aria-label="Email business"
+                        title="Email business"
+                        className="text-xl text-rose-500 transition-opacity hover:opacity-70"
+                      >
+                        <Mail aria-hidden="true" size={20} strokeWidth={2} />
+                      </Link>
+                    </li>
+                  ) : null}
+                  {business.website_url ? (
+                    <li>
+                      <Link
+                        href={business.website_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label="Visit business website"
+                        title="Visit business website"
+                        className="text-xl text-sky-600 transition-opacity hover:opacity-70"
+                      >
+                        <Globe aria-hidden="true" size={20} strokeWidth={2} />
+                      </Link>
+                    </li>
+                  ) : null}
+                  {business.insta_url ? (
+                    <li>
+                      <Link
+                        href={business.insta_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label="Visit Instagram profile"
+                        title="Visit Instagram profile"
+                        className="text-xl transition-opacity hover:opacity-70"
+                      >
+                        <svg
+                          aria-hidden="true"
+                          className="h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <defs>
+                            <linearGradient id="instagram-gradient" x1="2" y1="22" x2="22" y2="2">
+                              <stop offset="0%" stopColor="#feda75" />
+                              <stop offset="35%" stopColor="#d62976" />
+                              <stop offset="70%" stopColor="#962fbf" />
+                              <stop offset="100%" stopColor="#4f5bd5" />
+                            </linearGradient>
+                          </defs>
+                          <rect width="20" height="20" x="2" y="2" rx="5" stroke="url(#instagram-gradient)" />
+                          <circle cx="12" cy="12" r="4" stroke="url(#instagram-gradient)" />
+                          <circle cx="17.5" cy="6.5" r=".5" fill="#d62976" stroke="#d62976" />
+                        </svg>
+                      </Link>
+                    </li>
+                  ) : null}
+                  {business.tiktok_url ? (
+                    <li>
+                      <Link
+                        href={business.tiktok_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label="Visit TikTok profile"
+                        title="Visit TikTok profile"
+                        className="text-xl text-black transition-opacity hover:opacity-70 dark:text-white"
+                      >
+                        <svg
+                          aria-hidden="true"
+                          className="h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path fill="#25f4ee" transform="translate(-0.7 0)" d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.68-1.66.16-.29.28-.61.29-.95.07-1.68.04-3.36.05-5.04.01-3.79-.01-7.56.02-11.33z" />
+                          <path fill="#fe2c55" transform="translate(0.7 0)" d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.68-1.66.16-.29.28-.61.29-.95.07-1.68.04-3.36.05-5.04.01-3.79-.01-7.56.02-11.33z" />
+                          <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.68-1.66.16-.29.28-.61.29-.95.07-1.68.04-3.36.05-5.04.01-3.79-.01-7.56.02-11.33z" />
+                        </svg>
+                      </Link>
+                    </li>
+                  ) : null}
                 </ul>
               </div>
 
