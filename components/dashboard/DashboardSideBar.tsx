@@ -26,7 +26,11 @@ export default function DashboardSideBar({ userRole }: SidebarProps) {
   const pathname = usePathname();
   const { setOpenMobile, isMobile } = useSidebar();
 
-  const currentSidebar = roleSidebars[userRole] || roleSidebars.user;
+  const effectiveRole: UserRole = pathname.startsWith("/dashboard/moderator")
+    ? "moderator"
+    : userRole;
+
+  const currentSidebar = roleSidebars[effectiveRole] || roleSidebars.user;
 
   const handleLinkClick = () => {
     if (isMobile) {
@@ -46,7 +50,7 @@ export default function DashboardSideBar({ userRole }: SidebarProps) {
             <span className="font-bold text-base tracking-tight text-foreground flex items-center gap-2">
               TrustPass
               <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 rounded-md">
-                {userRole}
+                {effectiveRole}
               </span>
             </span>
             <span className="text-[11px] text-muted-foreground">
@@ -119,7 +123,7 @@ export default function DashboardSideBar({ userRole }: SidebarProps) {
                 Aritro M.
               </span>
               <span className="text-[10px] text-muted-foreground truncate capitalize">
-                {userRole} Account
+                {effectiveRole} Account
               </span>
             </div>
           </div>
