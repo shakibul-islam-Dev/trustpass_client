@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import productDetails from '@/public/data/productDetails.json';
 import businesses from '@/public/data/businessCard.json';
+import Image from 'next/image';
 
 type Product = (typeof productDetails)[number];
 type Business = (typeof businesses)[number];
@@ -153,9 +154,11 @@ export default async function ProductsCatalogPage({ searchParams }: ProductsPage
                   <div>
                     {/* Product Image */}
                     <div className="relative h-48 w-full overflow-hidden bg-muted">
-                      <img
+                      <Image
                         src={primaryImage}
                         alt={product.name}
+                        width={400} 
+                        height={400}
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <div className="absolute top-3 right-3 flex items-center gap-1.5">
