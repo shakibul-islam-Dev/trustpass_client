@@ -85,18 +85,20 @@ export const VerificationDetailsModal = ({
           </div>
         </div>
 
-        <DialogFooter className="gap-3 sm:gap-0">
-          <Button variant="outline" onClick={onClose}>Close</Button>
+        <DialogFooter className="gap-2 sm:gap-3">
+          <Button variant="outline" onClick={onClose} className="min-w-24 px-4">Close</Button>
           <Button
             variant="destructive"
             onClick={() => { onReject(request.id); onClose(); }}
             disabled={request.status === 'REJECTED'}
+            className="min-w-24 px-4"
           >
             Reject
           </Button>
           <Button
             onClick={() => { onApprove(request.id); onClose(); }}
             disabled={request.status === 'VERIFIED'}
+            className="min-w-24 px-4"
           >
             Approve
           </Button>

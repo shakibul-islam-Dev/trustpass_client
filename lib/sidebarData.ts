@@ -65,38 +65,10 @@ export const roleSidebars = {
         href: "/dashboard/moderator/reports",
         icon: Flag,
       },
-      {
-        name: "Trust Rules & Score",
-        href: "/dashboard/moderator/trust-rules",
-        icon: Scale,
-      },
+     
     ],
   },
-  manager: {
-    title: "Moderator",
-    items: [
-      {
-        name: "Moderator Overview",
-        href: "/dashboard/moderator",
-        icon: LayoutDashboard,
-      },
-      {
-        name: "Verification Queue",
-        href: "/dashboard/moderator/verification-queue",
-        icon: Shield,
-      },
-      {
-        name: "Reports Review",
-        href: "/dashboard/moderator/reports",
-        icon: Flag,
-      },
-      {
-        name: "Trust Rules & Score",
-        href: "/dashboard/moderator/trust-rules",
-        icon: Scale,
-      },
-    ],
-  },
+  
   seller: {
     title: "Seller Workspace",
     items: [

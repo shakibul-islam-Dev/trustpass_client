@@ -48,7 +48,7 @@ export default function DashboardSideBar({ userRole }: SidebarProps) {
           </div>
           <div className="flex flex-col">
             <span className="font-bold text-base tracking-tight text-foreground flex items-center gap-2">
-              TrustPass
+              <Link href="/">TrustPass</Link>
               <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 rounded-md">
                 {effectiveRole}
               </span>
