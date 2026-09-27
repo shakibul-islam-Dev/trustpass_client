@@ -56,7 +56,7 @@ export default function Navbar() {
           <nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground md:flex">
             <NavLink href="/" exact>Home</NavLink>
             <NavLink href="/businessesExplore">Explore Businesses</NavLink>
-              <NavLink href="/products">Products</NavLink>
+            <NavLink href="/products">Products</NavLink>
             <NavLink href="/moderator/verifications">Moderator Queue</NavLink>
           </nav>
         </div>

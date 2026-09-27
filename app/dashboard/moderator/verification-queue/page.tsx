@@ -182,9 +182,9 @@ export default function ModeratorVerificationQueue() {
             const sample = requests[0];
             if (sample) openScoreModal(sample);
           }}
-          className="gap-2 shrink-0 border-primary/40 hover:bg-primary/10"
+          className="gap-2 shrink-0 border-primary/40 hover:bg-primary/10 hover:text-primary"
         >
-          <RefreshCw className="h-4 w-4 text-primary" />
+          <RefreshCw className="h-4 w-4 text-primary-foreground group-hover/button:text-primary" />
           Score Breakdown & Recalculate
         </Button>
       </div>
