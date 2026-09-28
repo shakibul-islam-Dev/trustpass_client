@@ -65,10 +65,10 @@ export const roleSidebars = {
         href: "/dashboard/moderator/reports",
         icon: Flag,
       },
-     
+
     ],
   },
-  
+
   seller: {
     title: "Seller Workspace",
     items: [
@@ -77,7 +77,7 @@ export const roleSidebars = {
     ],
   },
   user: {
-    title: "User Area",
+    title: "user",
     items: [
       {
         name: "My Dashboard",

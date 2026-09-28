@@ -26,9 +26,11 @@ export default function DashboardSideBar({ userRole }: SidebarProps) {
   const pathname = usePathname();
   const { setOpenMobile, isMobile } = useSidebar();
 
-  const effectiveRole: UserRole = pathname.startsWith("/dashboard/moderator")
-    ? "moderator"
-    : userRole;
+ const effectiveRole: UserRole = pathname.startsWith("/dashboard/moderator")
+  ? "moderator"
+  : pathname.startsWith("/dashboard/customer")
+  ? "user"
+  : userRole;
 
   const currentSidebar = roleSidebars[effectiveRole] || roleSidebars.user;
 
