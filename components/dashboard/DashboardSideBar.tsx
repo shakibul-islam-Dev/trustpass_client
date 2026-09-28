@@ -16,7 +16,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Shield, LogOut } from "lucide-react";
+import { Shield, LogOut, Home } from "lucide-react";
+import ToggleBar from "../ToggleBar/ToggleBar";
+
 
 interface SidebarProps {
   userRole: UserRole;
@@ -26,11 +28,11 @@ export default function DashboardSideBar({ userRole }: SidebarProps) {
   const pathname = usePathname();
   const { setOpenMobile, isMobile } = useSidebar();
 
- const effectiveRole: UserRole = pathname.startsWith("/dashboard/moderator")
-  ? "moderator"
-  : pathname.startsWith("/dashboard/customer")
-  ? "user"
-  : userRole;
+  const effectiveRole: UserRole = pathname.startsWith("/dashboard/moderator")
+    ? "moderator"
+    : pathname.startsWith("/dashboard/customer")
+    ? "user"
+    : userRole;
 
   const currentSidebar = roleSidebars[effectiveRole] || roleSidebars.user;
 
@@ -42,13 +44,13 @@ export default function DashboardSideBar({ userRole }: SidebarProps) {
 
   return (
     <Sidebar className="border-r border-border/60 bg-card text-card-foreground">
-      {/* 1. Header */}
+      {/* 1. Header - Only Brand */}
       <SidebarHeader className="p-4 border-b border-border/40">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold shadow-sm shadow-indigo-500/20 shrink-0">
             <Shield className="h-5 w-5 fill-current" />
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col min-w-0">
             <span className="font-bold text-base tracking-tight text-foreground flex items-center gap-2">
               <Link href="/">TrustPass</Link>
               <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 rounded-md">
@@ -62,7 +64,7 @@ export default function DashboardSideBar({ userRole }: SidebarProps) {
         </div>
       </SidebarHeader>
 
-      {/* 2. Content */}
+      {/* 2. Content - Navigation */}
       <SidebarContent className="p-2">
         <SidebarGroup>
           {currentSidebar.title && (
@@ -113,8 +115,32 @@ export default function DashboardSideBar({ userRole }: SidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* 3. Footer */}
-      <SidebarFooter className="p-3 border-t border-border/40">
+      {/* 3. Footer - Home + Theme, then User + Logout */}
+      <SidebarFooter className="p-3 border-t border-border/40 space-y-2">
+
+        {/* 3a. Quick Actions Row (Home + Theme Toggle) */}
+        <div className="flex items-center justify-between p-2 rounded-xl bg-muted/40">
+          {/* Home Button */}
+          <Link
+            href="/"
+            onClick={handleLinkClick}
+            className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors flex-1"
+            title="Go to Homepage"
+          >
+            <Home className="h-4 w-4 shrink-0" />
+            <span>Home</span>
+          </Link>
+
+          {/* Divider */}
+          <div className="w-px h-5 bg-border/60 mx-1" />
+
+          {/* Theme Toggle */}
+          <div className="flex items-center justify-center px-2">
+            <ToggleBar />
+          </div>
+        </div>
+
+        {/* 3b. User Info Row */}
         <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
