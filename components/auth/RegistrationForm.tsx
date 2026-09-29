@@ -9,6 +9,7 @@ interface InputForm {
   phoneNumber: string;
   email: string;
   password: string;
+  role: string;
 }
 
 export default function RegistrationForm() {
@@ -162,6 +163,13 @@ export default function RegistrationForm() {
                 {errors.password.message}
               </p>
             )}
+          </div>
+          <div>
+            <label htmlFor="Role"></label>
+            <select name="role" id="role">
+              <option value="user">User</option>
+              <option value="mercent">Mercent</option>
+            </select>
           </div>
 
           {/* Submit Button */}

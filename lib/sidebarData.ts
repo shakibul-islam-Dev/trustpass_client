@@ -97,11 +97,21 @@ export const roleSidebars = {
       },
     ],
   },
-  seller: {
-    title: "Seller Workspace",
+  merchant: {
+    title: "Merchant Workspace",
     items: [
-      { name: "Content Dashboard", href: "/editor", icon: LayoutDashboard },
-      { name: "All Articles", href: "/editor/articles", icon: FileText },
+      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Analytics", href: "/dashboard/analytics", icon: FileText },
+      { name: "Invoice", href: "/dashboard/invoice", icon: FileText },
+      { name: "Products", href: "/dashboard/products", icon: FileText },
+      { name: "Reports", href: "/dashboard/reports", icon: FileText },
+      { name: "Messages", href: "/dashboard/messages", icon: FileText },
+      {
+        name: "Notifications",
+        href: "/dashboard/notifications",
+        icon: FileText,
+      },
+      { name: "Settings", href: "/dashboard/settings", icon: FileText },
     ],
   },
   user: {
@@ -110,17 +120,17 @@ export const roleSidebars = {
       {
         name: "My Dashboard",
         href: "/dashboard/customer",
-        icon: LayoutDashboard
+        icon: LayoutDashboard,
       },
       {
         name: "My Reports",
         href: "/dashboard/customer/reports",
-        icon: Flag
+        icon: Flag,
       },
       {
-        name:"Notifications",
+        name: "Notifications",
         href: "/dashboard/customer/notifications",
-        icon: BellIcon
+        icon: BellIcon,
       },
       { name: "Profile Settings", href: "/dashboard/profile", icon: User },
     ],
