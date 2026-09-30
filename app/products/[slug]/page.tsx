@@ -2,6 +2,7 @@ import Link from 'next/link';
 import productDetails from '@/public/data/productDetails.json';
 import businesses from '@/public/data/businessCard.json';
 import { slugify } from '@/app/businessesExplore/page';
+import Image from 'next/image';
 
 type Product = (typeof productDetails)[number];
 type Business = (typeof businesses)[number];
@@ -83,9 +84,11 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             {/* Gallery Column */}
             <div className="space-y-4">
               <div className="overflow-hidden rounded-2xl border border-border bg-muted/30">
-                <img
+                <Image
                   src={primaryImage}
                   alt={product.name}
+                  width={400}
+                  height={400}
                   className="h-80 sm:h-96 w-full object-cover"
                 />
               </div>
@@ -97,9 +100,11 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                       key={`${imageUrl}-${index}`}
                       className="overflow-hidden rounded-xl border border-border bg-muted/20"
                     >
-                      <img
+                      <Image
                         src={imageUrl}
                         alt={`${product.name} thumbnail ${index + 1}`}
+                        width={400}
+                        height={400}
                         className="h-20 w-full object-cover"
                       />
                     </div>
@@ -163,9 +168,11 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {business.logo_url ? (
-                        <img
+                        <Image
                           src={business.logo_url}
                           alt={business.business_name}
+                          width={40}
+                          height={40}
                           className="h-10 w-10 rounded-full object-cover border border-border"
                         />
                       ) : (

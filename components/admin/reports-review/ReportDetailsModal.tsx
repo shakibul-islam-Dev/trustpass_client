@@ -98,18 +98,20 @@ export const ReportDetailsModal = ({
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={onClose}>Close</Button>
+        <DialogFooter className="gap-2 sm:gap-3">
+          <Button variant="outline" onClick={onClose} className="min-w-28 px-4">Close</Button>
           <Button
             variant="destructive"
             onClick={() => { onReject(report.id); onClose(); }}
             disabled={report.status === 'REJECTED'}
+            className="min-w-28 px-4"
           >
             Reject
           </Button>
           <Button
             onClick={() => { onResolve(report.id); onClose(); }}
             disabled={report.status === 'RESOLVED'}
+            className="min-w-28 px-4"
           >
             Mark Resolved
           </Button>

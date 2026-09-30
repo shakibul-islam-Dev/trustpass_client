@@ -3,8 +3,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
+import Navbar from "@/components/shared/navbar/Navbar";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
