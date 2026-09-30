@@ -1,5 +1,7 @@
 import Link from 'next/link';
-import type { Category } from './types';
+import categoriesData from '@/public/data/categories.json';
+
+type Category = (typeof categoriesData)[number];
 
 type CategoryCardProps = {
   category: Category;

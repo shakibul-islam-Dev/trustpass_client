@@ -1,5 +1,7 @@
 import CategoryCard from './CategoryCard';
-import type { Category } from './types';
+import categoriesData from '@/public/data/categories.json';
+
+type Category = (typeof categoriesData)[number];
 
 type CategoryGridProps = {
   categories: Category[];

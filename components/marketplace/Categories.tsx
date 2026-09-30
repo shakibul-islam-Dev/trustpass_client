@@ -2,9 +2,8 @@
 import categoriesData from '@/public/data/categories.json';
 import CategoryGrid from './categories/CategoryGrid';
 import CategorySectionHeader from './categories/CategorySectionHeader';
-import type { Category } from './categories/types';
 
-export type { Category } from './categories/types';
+export type Category = (typeof categoriesData)[number];
 
 export default function Categories() {
   const categories: Category[] = categoriesData;
