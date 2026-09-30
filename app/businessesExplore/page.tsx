@@ -1,5 +1,6 @@
 import Link from "next/link";
 import businesses from "@/public/data/businessCard.json";
+import categoriesData from "@/public/data/categories.json";
 import Image from "next/image";
 
 type Business = (typeof businesses)[number];
@@ -21,22 +22,31 @@ const normalizeText = (value: string) =>
 
 const categoryAliases: Record<string, string[]> = {
   software: ["software", "software & saas"],
+  "software-saas": ["software", "software & saas"],
   ecommerce: ["ecommerce", "ecommerce & retail", "retail"],
+  "ecommerce-retail": ["ecommerce", "ecommerce & retail", "retail"],
   fintech: ["fintech", "financial services", "finance"],
+  "financial-services": ["fintech", "financial services", "finance"],
   healthcare: ["healthcare", "healthcare & wellness", "pharmacy"],
+  "healthcare-wellness": ["healthcare", "healthcare & wellness", "pharmacy"],
   restaurant: ["restaurant", "food & beverage"],
   education: ["education", "academic"],
   marketing: ["digital marketing", "marketing"],
+  "marketing-creative": ["digital marketing", "marketing", "creative"],
   fashion: ["fashion & clothing", "fashion"],
   construction: ["construction", "engineering"],
   hotel: ["hotel & accommodation", "hotel"],
   electronics: ["electronics & repair", "electronics"],
   grocery: ["grocery"],
+  "legal-compliance": ["legal", "compliance"],
+  "logistics-supply": ["logistics", "supply"],
+  "real-estate": ["real estate", "co-working", "coworking"],
 };
 
-const categoryOptions = Array.from(
-  new Set(businesses.map((business) => business.business_type)),
-).sort();
+const categoryOptions = categoriesData.map((category) => category.name).sort();
+const categoryCounts = new Map(
+  categoriesData.map((category) => [category.name, category.count]),
+);
 
 export const slugify = (text: string): string =>
   text
@@ -251,9 +261,7 @@ export default async function BusinessesPage({
               </span>
             </Link>
             {categoryOptions.map((catName) => {
-              const catCount = businesses.filter(
-                (b) => b.business_type === catName,
-              ).length;
+              const catCount = categoryCounts.get(catName) ?? 0;
               const catSlug = slugify(catName);
               const isActive = isCategoryActive(catName, category);
               return (

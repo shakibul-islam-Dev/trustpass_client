@@ -1,7 +1,12 @@
+'use client';
+
+import { use, useState } from 'react';
 import Link from 'next/link';
 import businesses from '@/public/data/businessCard.json';
+import productDetails from '@/public/data/productDetails.json';
 import { slugify } from '@/app/businessesExplore/page';
-import { Globe, Mail, Phone } from 'lucide-react';
+import { Globe, Mail, Phone, Package, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import Image from 'next/image';
 
 type Business = (typeof businesses)[number];
 
@@ -24,26 +29,27 @@ export default function BusinessProfilePage({
 }: {
   params: Promise<{ id?: string; slug?: string }>;
 }) {
-  const getBusiness = async () => {
-    const resolvedParams = await params;
-    const identifier = (resolvedParams.slug || resolvedParams.id || '').toLowerCase().trim();
-    return businesses.find(
-      (business) =>
-        slugify(business.business_name) === identifier ||
-        String(business.id) === identifier ||
-        (business as { slug?: string }).slug === identifier,
-    );
-  };
+  const resolvedParams = use(params);
+  const identifier = (resolvedParams.slug || resolvedParams.id || '').toLowerCase().trim();
+  const business = businesses.find(
+    (b) =>
+      slugify(b.business_name) === identifier ||
+      String(b.id) === identifier ||
+      (b as { slug?: string }).slug === identifier,
+  );
 
-  return <BusinessProfilePageContent getBusiness={getBusiness} />;
+  return <BusinessProfilePageContent business={business} />;
 }
 
-async function BusinessProfilePageContent({
-  getBusiness,
+function BusinessProfilePageContent({
+  business,
 }: {
-  getBusiness: () => Promise<(typeof businesses)[number] | undefined>;
+  business: Business | undefined;
 }) {
-  const business = await getBusiness();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [logoError, setLogoError] = useState(false);
+  const [coverError, setCoverError] = useState(false);
+  const INITIAL_ITEMS = 4;
 
   if (!business) {
     return (
@@ -64,6 +70,15 @@ async function BusinessProfilePageContent({
   ];
   const activeStatus = String(business.verification_status ?? 'pending').toLowerCase();
 
+  const matchingProducts = productDetails.filter(
+    (product) =>
+      product.business_id === business.owner_id ||
+      String(product.business_id) === String(business.id) ||
+      product.category_id === business.category_id,
+  );
+  const products = matchingProducts.length > 0 ? matchingProducts : productDetails;
+  const displayedProducts = isExpanded ? products : products.slice(0, INITIAL_ITEMS);
+
   return (
     <main className="min-h-screen bg-background px-4 py-12 text-foreground">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -73,19 +88,26 @@ async function BusinessProfilePageContent({
 
         <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm mt-5">
           <div className="relative h-64 w-full bg-gradient-to-r from-primary/20 via-secondary/20 to-background">
-            {business.cover_url ? (
-              <img
+            {business.cover_url && !coverError ? (
+              <Image
                 src={business.cover_url}
                 alt={business.business_name}
-                className="absolute inset-0 h-full w-full object-cover"
+                fill
+                priority
+                onError={() => setCoverError(true)}
+                className="object-cover"
               />
             ) : null}
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/15 to-transparent" />
             <div className="absolute bottom-6 left-6 flex items-center gap-4">
-              {business.logo_url ? (
-                <img
+              {business.logo_url && !logoError ? (
+                <Image
                   src={business.logo_url}
                   alt={business.business_name}
+                  width={78}
+                  height={78}
+                  unoptimized
+                  onError={() => setLogoError(true)}
                   className="h-[78px] w-[78px] rounded-full border-4 border-card bg-card object-cover shadow-lg"
                 />
               ) : (
@@ -153,6 +175,116 @@ async function BusinessProfilePageContent({
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Products & Services Section */}
+              <div className="rounded-2xl border border-border bg-background/40 p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <Package className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold">Products & Services</h2>
+                      <p className="text-xs text-muted-foreground">
+                        Verified offerings from {business.business_name}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                    {products.length} {products.length === 1 ? 'Product' : 'Products'}
+                  </span>
+                </div>
+
+                <div className="mt-4 grid gap-3.5 sm:grid-cols-2">
+                  {displayedProducts.map((product) => {
+                    const primaryImage =
+                      product.images?.find((img) => img.is_primary)?.url ??
+                      product.images?.[0]?.url ??
+                      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80';
+                    const inStock = typeof product.stock === 'number' && product.stock > 0;
+
+                    return (
+                      <div
+                        key={product.id}
+                        className="group flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-3 transition-all duration-200 hover:border-primary/50 hover:shadow-sm"
+                      >
+                        <div className="relative h-32 w-full overflow-hidden rounded-lg bg-muted">
+                          <Image
+                            src={primaryImage}
+                            alt={product.name}
+                            fill
+                            sizes="(max-width: 640px) 100vw, 50vw"
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                          <span
+                            className={`absolute top-2 right-2 rounded-full px-2 py-0.5 text-[10px] font-semibold backdrop-blur-xs ${
+                              inStock
+                                ? 'bg-emerald-500/90 text-white'
+                                : 'bg-muted/90 text-muted-foreground'
+                            }`}
+                          >
+                            {inStock ? 'In Stock' : 'Out of Stock'}
+                          </span>
+                        </div>
+
+                        <div className="mt-2.5 flex flex-1 flex-col justify-between">
+                          <div>
+                            <h3
+                              title={product.name}
+                              className="text-sm font-semibold text-foreground line-clamp-1 transition-colors group-hover:text-primary"
+                            >
+                              {product.name}
+                            </h3>
+                            <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
+                              {product.description}
+                            </p>
+                          </div>
+
+                          <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-2">
+                            <div>
+                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Price</span>
+                              <p className="text-sm font-bold text-primary">
+                                {product.currency === 'USD' ? '$' : ''}
+                                {Number(product.price).toFixed(2)}
+                              </p>
+                            </div>
+
+                            <Link
+                              href={`/products/${product.slug || product.id}`}
+                              className="inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary"
+                            >
+                              <span>View</span>
+                              <ExternalLink className="h-3 w-3" />
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {products.length > INITIAL_ITEMS && (
+                  <div className="mt-4 flex justify-center border-t border-border/40 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsExpanded(!isExpanded)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-xs font-medium text-foreground shadow-xs transition-colors hover:border-primary/50 hover:bg-muted focus:outline-none"
+                    >
+                      {isExpanded ? (
+                        <>
+                          <span>Show Less</span>
+                          <ChevronUp className="h-3.5 w-3.5" />
+                        </>
+                      ) : (
+                        <>
+                          <span>See More ({products.length - INITIAL_ITEMS} remaining)</span>
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
 
             </div>
