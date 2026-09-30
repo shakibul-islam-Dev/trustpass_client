@@ -57,7 +57,7 @@ export default function Navbar() {
             <NavLink href="/" exact>Home</NavLink>
             <NavLink href="/businessesExplore">Explore Businesses</NavLink>
             <NavLink href="/products">Products</NavLink>
-            <NavLink href="/moderator/verifications">Moderator Queue</NavLink>
+            <NavLink href="/dashboard/moderator/verification-queue">Moderator Queue</NavLink>
           </nav>
         </div>
 
