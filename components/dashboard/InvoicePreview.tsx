@@ -68,9 +68,9 @@ export default function InvoicePreview() {
       <div className="w-full max-w-[850px] bg-white rounded-2xl shadow-xl p-8 sm:p-12 print-shadow-none">
         {/* Top Header Bar */}
         <div className="flex items-center justify-between pb-8 border-b border-gray-100 no-print mb-8">
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+          {/* <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
             Preview
-          </h1>
+          </h1> */}
           <div className="flex items-center gap-3">
             <button
               onClick={handlePrint}

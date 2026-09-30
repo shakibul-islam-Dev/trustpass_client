@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { authClient } from "@/lib/auth-client";
 
 type Inputs = {
   email: string;
@@ -12,6 +13,7 @@ type Inputs = {
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -19,8 +21,21 @@ export default function LoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<Inputs>();
 
-  const onSubmit: SubmitHandler<Inputs> = (data) => {
-    console.log("Form Submitted:", data);
+  const onSubmit: SubmitHandler<Inputs> = async (formData) => {
+    setErrorMessage(null);
+    
+    const { data, error } = await authClient.signIn.email({
+      email: formData.email,
+      password: formData.password,
+    });
+
+    if (error) {
+      setErrorMessage(error.message || "Failed to log in");
+      console.error("Login Error:", error);
+      return;
+    }
+
+    console.log("Form Submitted Successfully:", data);
   };
 
   return (
@@ -34,6 +49,12 @@ export default function LoginForm() {
             Enter your email and password to access your account
           </p>
         </div>
+
+        {errorMessage && (
+          <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 rounded-md text-center">
+            {errorMessage}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Email Field */}
