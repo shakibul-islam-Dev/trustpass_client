@@ -1,14 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus, X } from "lucide-react";
-import type { ICreateReportPayload, TReportReason } from "@/lib/customer_action/reports";
+import type {
+  ICreateReportPayload,
+  TReportReason,
+} from "@/lib/customer_action/reports";
+import { FileUpload } from "@/components/shared/upload/FileUpload";
+
 
 interface ReportFormProps {
   businessId: string;
@@ -17,12 +28,24 @@ interface ReportFormProps {
   isSubmitting?: boolean;
 }
 
-const REPORT_REASONS: { value: TReportReason; label: string; description: string }[] = [
-  { value: "FRAUD", label: "Fraud", description: "Fake business, scam, or fraud" },
+const REPORT_REASONS: {
+  value: TReportReason;
+  label: string;
+  description: string;
+}[] = [
+  { value: "FRAUD", label: "Fraud", description: "Fake business or scam" },
   { value: "SPAM", label: "Spam", description: "Spam or irrelevant content" },
-  { value: "INAPPROPRIATE_CONTENT", label: "Inappropriate", description: "Offensive or inappropriate material" },
-  { value: "HARASSMENT", label: "Harassment", description: "Harassment or abusive behavior" },
-  { value: "OTHER", label: "Other", description: "Other issues not listed above" },
+  {
+    value: "INAPPROPRIATE_CONTENT",
+    label: "Inappropriate",
+    description: "Offensive content",
+  },
+  {
+    value: "HARASSMENT",
+    label: "Harassment",
+    description: "Abusive behavior",
+  },
+  { value: "OTHER", label: "Other", description: "Other issues" },
 ];
 
 export const ReportForm = ({
@@ -49,8 +72,9 @@ export const ReportForm = ({
       new URL(currentUrl); // Validate URL format
       setEvidenceUrls((prev) => [...prev, currentUrl.trim()]);
       setCurrentUrl("");
+      toast.success("Evidence URL added");
     } catch {
-      alert("Please enter a valid URL");
+      toast.error("Please enter a valid URL");
     }
   };
 
@@ -59,6 +83,15 @@ export const ReportForm = ({
    */
   const handleRemoveEvidence = (index: number) => {
     setEvidenceUrls((prev) => prev.filter((_, i) => i !== index));
+    toast.info("Evidence removed");
+  };
+
+  /**
+   * Handles Cloudinary image upload success.
+   */
+  const handleImageUpload = (url: string) => {
+    setEvidenceUrls((prev) => [...prev, url]);
+    toast.success("Image uploaded successfully");
   };
 
   /**
@@ -69,7 +102,7 @@ export const ReportForm = ({
 
     // Validation
     if (description.trim().length < 20) {
-      alert("Description must be at least 20 characters long.");
+      toast.error("Description must be at least 20 characters long.");
       return;
     }
 
@@ -106,6 +139,9 @@ export const ReportForm = ({
             ))}
           </SelectContent>
         </Select>
+        <p className="text-xs text-muted-foreground">
+          {REPORT_REASONS.find((r) => r.value === reason)?.description}
+        </p>
       </div>
 
       {/* Title (Optional) */}
@@ -143,71 +179,122 @@ export const ReportForm = ({
         </p>
       </div>
 
-      {/* Evidence URLs */}
+      {/* Evidence */}
       <div className="space-y-2">
         <Label>
-          Evidence URLs{" "}
+          Evidence{" "}
           <span className="text-muted-foreground text-xs">(Optional)</span>
         </Label>
 
-        {/* URL Input + Add Button */}
-        <div className="flex gap-2">
-          <Input
-            type="url"
-            placeholder="https://example.com/screenshot.jpg"
-            value={currentUrl}
-            onChange={(e) => setCurrentUrl(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleAddEvidence();
-              }
-            }}
+        {/* Upload Button + URL Input Row */}
+        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+          <FileUpload
+            onUploadSuccess={handleImageUpload}
+            disabled={isSubmitting}
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={handleAddEvidence}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
+
+          <div className="hidden sm:flex items-center text-xs text-muted-foreground shrink-0">
+            or
+          </div>
+
+          <div className="flex gap-2 flex-1 min-w-0">
+            <Input
+              type="url"
+              placeholder="Paste image URL..."
+              value={currentUrl}
+              onChange={(e) => setCurrentUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleAddEvidence();
+                }
+              }}
+              className="min-w-0"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={handleAddEvidence}
+              className="shrink-0"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
-        {/* Evidence List */}
-        {evidenceUrls.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {evidenceUrls.map((url, index) => (
-              <Badge
-                key={index}
-                variant="secondary"
-                className="flex items-center gap-1 py-1.5 pl-3 pr-2"
-              >
-                <span className="truncate max-w-[200px] text-xs">{url}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveEvidence(index)}
-                  className="ml-1 hover:text-destructive"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
+      {/* Evidence List with Thumbnails */}
+{evidenceUrls.length > 0 && (
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+    {evidenceUrls.map((url, index) => {
+      const isImage =
+        /\.(jpg|jpeg|png|webp|gif)$/i.test(url) ||
+        url.includes("cloudinary.com");
+
+      return (
+        <div
+          key={index}
+          className="flex items-center gap-2 p-2 border rounded-md bg-muted/30 min-w-0"
+        >
+          {isImage ? (
+            <img
+              src={url}
+              alt={`Evidence ${index + 1}`}
+              className="h-12 w-12 rounded object-cover border shrink-0"
+              loading="lazy"
+            />
+          ) : (
+            <div className="h-12 w-12 rounded bg-muted flex items-center justify-center shrink-0">
+              <Plus className="h-4 w-4 text-muted-foreground" />
+            </div>
+          )}
+
+          <div className="flex flex-col flex-1 min-w-0">
+            <span className="text-xs font-medium">Evidence #{index + 1}</span>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-primary hover:underline truncate"
+            >
+              {url}
+            </a>
           </div>
-        )}
+
+          <button
+            type="button"
+            onClick={() => handleRemoveEvidence(index)}
+            className="text-muted-foreground hover:text-destructive p-1 rounded shrink-0"
+            title="Remove"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      );
+    })}
+  </div>
+)}
+        <p className="text-xs text-muted-foreground">
+          Upload images (max 5MB) or paste image URLs as evidence.
+        </p>
       </div>
 
       {/* Actions */}
-      <div className="flex justify-end gap-2 pt-2">
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
         <Button
           type="button"
           variant="outline"
           onClick={onCancel}
           disabled={isSubmitting}
+          className="w-full sm:w-auto"
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full sm:w-auto"
+        >
           {isSubmitting ? "Submitting..." : "Submit Report"}
         </Button>
       </div>
