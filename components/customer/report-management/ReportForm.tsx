@@ -20,7 +20,7 @@ interface ReportFormProps {
 const REPORT_REASONS: { value: TReportReason; label: string; description: string }[] = [
   { value: "FRAUD", label: "Fraud", description: "Fake business, scam, or fraud" },
   { value: "SPAM", label: "Spam", description: "Spam or irrelevant content" },
-  { value: "INAPPROPRIATE_CONTENT", label: "Inappropriate Content", description: "Offensive or inappropriate material" },
+  { value: "INAPPROPRIATE_CONTENT", label: "Inappropriate", description: "Offensive or inappropriate material" },
   { value: "HARASSMENT", label: "Harassment", description: "Harassment or abusive behavior" },
   { value: "OTHER", label: "Other", description: "Other issues not listed above" },
 ];
@@ -101,10 +101,7 @@ export const ReportForm = ({
           <SelectContent>
             {REPORT_REASONS.map((r) => (
               <SelectItem key={r.value} value={r.value}>
-                <div className="flex flex-col">
-                  <span className="font-medium">{r.label}</span>
-                  <span className="text-xs text-muted-foreground">{r.description}</span>
-                </div>
+                {r.label}
               </SelectItem>
             ))}
           </SelectContent>
