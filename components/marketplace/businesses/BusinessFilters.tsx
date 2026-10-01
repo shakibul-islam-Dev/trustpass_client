@@ -1,21 +1,19 @@
+import type { TBusinessType, TVerificationStatus } from '@/types/business';
+
 type BusinessFiltersProps = {
   query: string;
-  categoryOptions: string[];
-  selectedCategoryValue: string;
-  minScore: number;
-  slugify: (text: string) => string;
+  businessType?: TBusinessType;
+  verificationStatus?: TVerificationStatus;
 };
 
 export default function BusinessFilters({
   query,
-  categoryOptions,
-  selectedCategoryValue,
-  minScore,
-  slugify,
+  businessType,
+  verificationStatus,
 }: BusinessFiltersProps) {
   return (
     <div className="mb-8 rounded-2xl border border-border bg-card p-4 shadow-sm">
-      <form className="grid gap-4 md:grid-cols-4">
+      <form action="/businesses" className="grid gap-4 md:grid-cols-4">
         <div className="md:col-span-1">
           <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Search
@@ -30,36 +28,37 @@ export default function BusinessFilters({
 
         <div className="md:col-span-1">
           <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Category
+            Business type
           </label>
           <select
-            defaultValue={selectedCategoryValue}
-            key={selectedCategoryValue}
-            name="category"
+            defaultValue={businessType ?? 'all'}
+            name="businessType"
             className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
           >
-            <option value="">All categories</option>
-            {categoryOptions.map((item) => (
-              <option key={item} value={slugify(item)}>
-                {item}
-              </option>
-            ))}
+            <option value="all">All types</option>
+            <option value="INDIVIDUAL">Individual</option>
+            <option value="COMPANY">Company</option>
+            <option value="NGO">NGO</option>
+            <option value="GOVERNMENT">Government</option>
+            <option value="OTHER">Other</option>
           </select>
         </div>
 
         <div className="md:col-span-1">
           <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Min Trust
+            Verification
           </label>
           <select
-            defaultValue={String(minScore)}
-            name="minScore"
+            defaultValue={verificationStatus ?? 'all'}
+            name="verificationStatus"
             className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
           >
-            <option value="0">Any</option>
-            <option value="60">60+</option>
-            <option value="75">75+</option>
-            <option value="90">90+</option>
+            <option value="all">All statuses</option>
+            <option value="UNVERIFIED">Unverified</option>
+            <option value="PENDING">Pending</option>
+            <option value="VERIFIED">Verified</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="SUSPENDED">Suspended</option>
           </select>
         </div>
 

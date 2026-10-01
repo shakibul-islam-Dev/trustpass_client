@@ -5,7 +5,7 @@
 // ============================================================
 
 const getBaseUrl = (): string => {
-  return process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000";
+  return process.env.NEXT_PUBLIC_BASE_URL || "https://trust-pass-server.vercel.app";
 };
 
 // ============================================================
@@ -123,9 +123,11 @@ export const getData = async (url: string) => {
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      throw new Error(
-        errorData.message || `HTTP error! status: ${res.status}`
-      );
+      return {
+        success: false,
+        statusCode: res.status,
+        error: errorData.message || `HTTP error! status: ${res.status}`,
+      };
     }
 
     return await res.json();
