@@ -1,7 +1,7 @@
 import DashboardSideBar from "@/components/dashboard/DashboardSideBar";
+import DashboardRoleLabel from "@/components/dashboard/DashboardRoleLabel";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { UserRole } from "@/lib/sidebarData";
-import { Shield } from "lucide-react";
 
 export default function DashboardRootlayout({
   children,
@@ -25,7 +25,7 @@ export default function DashboardRootlayout({
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-muted-foreground">Dashboard</span>
                 <span className="text-muted-foreground">/</span>
-                <span className="text-sm font-semibold capitalize text-foreground">{userRole}</span>
+                <DashboardRoleLabel fallbackRole={userRole} />
               </div>
             </div>
           </header>
