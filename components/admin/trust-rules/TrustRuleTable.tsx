@@ -1,3 +1,5 @@
+"use client";
+
 import { MoreHorizontal, Pencil, Trash2, Power, PowerOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,9 +22,10 @@ import type { TrustRule } from "@/types/admin";
 
 interface TrustRuleTableProps {
   rules: TrustRule[];
-  onEdit: (rule: TrustRule) => void;
-  onDelete: (ruleId: string) => void;
-  onToggleActive: (ruleId: string, isActive: boolean) => void;
+  onEdit?: (rule: TrustRule) => void;
+  onDelete?: (ruleId: string) => void;
+  onToggleActive?: (ruleId: string, isActive: boolean) => void;
+  readOnly?: boolean;
 }
 
 export const TrustRuleTable = ({
@@ -30,6 +33,7 @@ export const TrustRuleTable = ({
   onEdit,
   onDelete,
   onToggleActive,
+  readOnly = false,
 }: TrustRuleTableProps) => {
   return (
     <div className="rounded-md border border-border bg-card">
@@ -41,13 +45,13 @@ export const TrustRuleTable = ({
             <TableHead>Points</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Description</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            {!readOnly && <TableHead className="text-right">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {rules.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={readOnly ? 5 : 6} className="text-center py-8 text-muted-foreground">
                 No trust rules found. Create one to get started.
               </TableCell>
             </TableRow>
@@ -73,7 +77,7 @@ export const TrustRuleTable = ({
                 <TableCell className="text-muted-foreground text-sm max-w-[250px] truncate">
                   {rule.description}
                 </TableCell>
-                <TableCell className="text-right">
+                {!readOnly && <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger render={
                       <Button variant="ghost" size="icon" className="size-8">
@@ -83,13 +87,13 @@ export const TrustRuleTable = ({
                     } />
                     <DropdownMenuContent align="end" className="w-[180px]">
                       {/* Action: Edit Rule */}
-                      <DropdownMenuItem onClick={() => onEdit(rule)}>
+                      <DropdownMenuItem onClick={() => onEdit?.(rule)}>
                         <Pencil className="mr-2 h-4 w-4" />
                         Edit Rule
                       </DropdownMenuItem>
 
                       {/* Action: Toggle Active Status */}
-                      <DropdownMenuItem onClick={() => onToggleActive(rule.id, rule.isActive)}>
+                      <DropdownMenuItem onClick={() => onToggleActive?.(rule.id, rule.isActive)}>
                         {rule.isActive ? (
                           <>
                             <PowerOff className="mr-2 h-4 w-4" />
@@ -108,14 +112,14 @@ export const TrustRuleTable = ({
                       {/* Action: Delete Rule */}
                       <DropdownMenuItem
                         variant="destructive"
-                        onClick={() => onDelete(rule.id)}
+                        onClick={() => onDelete?.(rule.id)}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete Rule
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                </TableCell>
+                </TableCell>}
               </TableRow>
             ))
           )}
