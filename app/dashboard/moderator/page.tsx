@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Flag, Scale, CheckCircle2, Clock, ArrowRight, AlertTriangle } from "lucide-react";
+import { Shield, Flag, CheckCircle2, Clock, ArrowRight, AlertTriangle } from "lucide-react";
 
 export default function ModeratorOverview() {
   return (
@@ -39,7 +39,7 @@ export default function ModeratorOverview() {
       </div>
 
       {/* KPI Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Pending Verifications</CardTitle>
@@ -80,25 +80,6 @@ export default function ModeratorOverview() {
 
         <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Active Trust Rules</CardTitle>
-            <Scale className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">6 Rules</div>
-            <p className="text-xs text-muted-foreground mt-1">Algorithm v2.4 active</p>
-            <div className="mt-3">
-              <Link
-                href="/dashboard/moderator/trust-rules"
-                className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
-              >
-                Inspect rules <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Avg Directory Trust</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           </CardHeader>
@@ -115,7 +96,7 @@ export default function ModeratorOverview() {
       </div>
 
       {/* Main Workspaces */}
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2">
         <Card className="hover:border-primary/50 transition-colors">
           <CardHeader>
             <div className="h-10 w-10 rounded-lg bg-indigo-500/10 text-indigo-600 flex items-center justify-center mb-2">
@@ -156,25 +137,6 @@ export default function ModeratorOverview() {
           </CardContent>
         </Card>
 
-        <Card className="hover:border-primary/50 transition-colors">
-          <CardHeader>
-            <div className="h-10 w-10 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-2">
-              <Scale className="h-5 w-5" />
-            </div>
-            <CardTitle className="text-lg">Trust Rules & Scoring</CardTitle>
-            <CardDescription>
-              View the trust scoring weighting formula, inspect score breakdowns, and trigger recalculations.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link
-              href="/dashboard/moderator/trust-rules"
-              className={buttonVariants({ variant: "outline", className: "w-full" })}
-            >
-              View Rules & Recalculate
-            </Link>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
