@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import productDetails from '@/public/data/productDetails.json';
 import businesses from '@/public/data/businessCard.json';
-import { slugify } from '@/app/businessesExplore/page';
 import Image from 'next/image';
 
 type Product = (typeof productDetails)[number];
@@ -60,10 +59,6 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       : [primaryImage];
 
   const isInStock = typeof product.stock === 'number' && product.stock > 0;
-  const businessProfileUrl = business
-    ? `/businesses/${slugify(business.business_name)}`
-    : '/businesses';
-
   return (
     <main className="min-h-screen bg-background font-sans text-foreground">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
@@ -118,7 +113,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               <div>
                 {business && (
                   <Link
-                    href={businessProfileUrl}
+                    href="/businesses"
                     className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary hover:underline"
                   >
                     <span>Sold by {business.business_name}</span>
@@ -208,10 +203,10 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                 </button>
                 {business && (
                   <Link
-                    href={businessProfileUrl}
+                    href="/businesses"
                     className="flex-1 rounded-xl border border-border bg-card px-6 py-3 text-center text-sm font-semibold text-foreground transition hover:bg-muted"
                   >
-                    View Business Profile
+                    Browse Business Directory
                   </Link>
                 )}
               </div>

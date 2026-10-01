@@ -1,17 +1,26 @@
-import businesses from '@/public/data/businessCard.json';
+import type { IBusiness } from '@/types/business';
 import BusinessCard from './BusinessCard';
 
-type Business = (typeof businesses)[number];
-
 type BusinessResultsProps = {
-  businesses: Business[];
-  getBusinessHref: (business: Business) => string;
+  businesses: IBusiness[];
+  getBusinessHref: (business: IBusiness) => string;
+  error?: string;
 };
 
 export default function BusinessResults({
   businesses: results,
   getBusinessHref,
+  error,
 }: BusinessResultsProps) {
+  if (error) {
+    return (
+      <div role="alert" className="rounded-xl border border-destructive/30 bg-card p-8 text-center">
+        <h2 className="text-lg font-semibold">Businesses could not be loaded</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{error}</p>
+      </div>
+    );
+  }
+
   if (results.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card p-8 text-center">
