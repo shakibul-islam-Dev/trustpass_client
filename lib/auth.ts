@@ -1,9 +1,13 @@
 import { betterAuth } from "better-auth";
 import { emailOTP } from "better-auth/plugins";
 export const auth = betterAuth({
+
   emailAndPassword: {
     enabled: true,
   },
+emailVerification: {
+        sendOnSignUp: true
+    },
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,

@@ -1,7 +1,7 @@
 import DashboardSideBar from "@/components/dashboard/DashboardSideBar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { UserRole } from "@/lib/sidebarData";
-import { Shield } from "lucide-react";
+
 
 export default function DashboardRootlayout({
   children,
