@@ -1,39 +1,18 @@
 'use client';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import type { ICategory } from '@/types/categories';
 
-interface CategoryQuickLink {
-  name: string;
-  slug: string;
-  icon: string;
-}
+type SearchHeroProps = {
+  categories: ICategory[];
+};
 
-export default function SearchHero() {
+export default function SearchHero({ categories }: SearchHeroProps) {
   const router = useRouter();
-
-  // Search filter states
-  const [categories, setCategories] = useState<CategoryQuickLink[]>([]);
   const [keyword, setKeyword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [minTrustScore, setMinTrustScore] = useState(0);
-
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const response = await fetch('/data/searchHero.json');
-        if (!response.ok) {
-          throw new Error(`Failed to load categories: ${response.status}`);
-        }
-
-        const data: CategoryQuickLink[] = await response.json();
-        setCategories(data);
-      } catch (error) {
-        console.error('Unable to load search hero categories', error);
-      }
-    };
-
-    loadCategories();
-  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +20,7 @@ export default function SearchHero() {
     // Construct URL search query params
     const params = new URLSearchParams();
     if (keyword.trim()) params.append('query', keyword.trim());
-    if (selectedCategory) params.append('category', selectedCategory);
+    if (selectedCategory) params.append('categoryId', selectedCategory);
     if (minTrustScore > 0) params.append('minScore', minTrustScore.toString());
 
     router.push(`/businesses?${params.toString()}`);
@@ -103,7 +82,7 @@ export default function SearchHero() {
                 >
                   <option value="">All Categories</option>
                   {categories.map((category) => (
-                    <option key={category.slug} value={category.slug}>
+                    <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
                   ))}
@@ -160,11 +139,21 @@ export default function SearchHero() {
           <div className="flex flex-wrap items-center justify-center gap-2">
             {categories.map((category) => (
               <button
-                key={category.slug}
-                onClick={() => router.push(`/businesses?category=${category.slug}`)}
+                key={category.id}
+                onClick={() => router.push(`/businesses?categoryId=${encodeURIComponent(category.id)}`)}
                 className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-medium text-foreground shadow-sm transition hover:border-primary/50 hover:text-primary"
               >
-                <span>{category.icon}</span>
+                {category.iconUrl ? (
+                  <Image
+                    src={category.iconUrl}
+                    alt=""
+                    width={20}
+                    height={20}
+                    className="h-5 w-5 rounded-sm object-cover"
+                  />
+                ) : (
+                  <span>{category.icon || '🏷️'}</span>
+                )}
                 <span>{category.name}</span>
               </button>
             ))}

@@ -1,32 +1,41 @@
 import Link from 'next/link';
-import categoriesData from '@/public/data/categories.json';
-
-type Category = (typeof categoriesData)[number];
+import Image from 'next/image';
+import type { ICategory } from '@/types/categories';
 
 type CategoryCardProps = {
-  category: Category;
+  category: ICategory;
 };
 
 export default function CategoryCard({ category }: CategoryCardProps) {
   return (
     <Link
-      href={`/businesses?category=${category.slug}`}
+      href={`/businesses?categoryId=${encodeURIComponent(category.id)}`}
       className="group relative flex flex-col justify-between rounded-xl border border-border bg-card p-5 transition-all hover:border-primary hover:shadow-md"
     >
       <div>
         <div className="flex items-center justify-between">
-          <span className="rounded-lg bg-muted p-2 text-3xl transition group-hover:bg-primary/10">
-            {category.icon}
+          <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-lg bg-muted text-3xl transition group-hover:bg-primary/10">
+            {category.iconUrl ? (
+              <Image
+                src={category.iconUrl}
+                alt=""
+                width={56}
+                height={56}
+                className="h-full w-full object-cover"
+              />
+            ) : category.icon || '🏷️'}
           </span>
-          <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground transition group-hover:bg-primary/10 group-hover:text-primary">
-            {category.count} listings
-          </span>
+          {(category.businessCount ?? category.count) !== undefined && (
+            <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground transition group-hover:bg-primary/10 group-hover:text-primary">
+              {category.businessCount ?? category.count} listings
+            </span>
+          )}
         </div>
         <h3 className="mt-4 text-base font-semibold text-card-foreground transition group-hover:text-primary">
           {category.name}
         </h3>
         <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">
-          {category.description}
+          {category.description || 'Explore businesses in this category.'}
         </p>
       </div>
 

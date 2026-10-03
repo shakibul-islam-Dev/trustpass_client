@@ -2,18 +2,21 @@ import type { TBusinessType, TVerificationStatus } from '@/types/business';
 
 type BusinessFiltersProps = {
   query: string;
+  categoryId?: string;
   businessType?: TBusinessType;
   verificationStatus?: TVerificationStatus;
 };
 
 export default function BusinessFilters({
   query,
+  categoryId,
   businessType,
   verificationStatus,
 }: BusinessFiltersProps) {
   return (
     <div className="mb-8 rounded-2xl border border-border bg-card p-4 shadow-sm">
       <form action="/businesses" className="grid gap-4 md:grid-cols-4">
+        {categoryId && <input type="hidden" name="categoryId" value={categoryId} />}
         <div className="md:col-span-1">
           <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Search
