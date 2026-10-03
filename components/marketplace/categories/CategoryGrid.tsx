@@ -1,10 +1,8 @@
 import CategoryCard from './CategoryCard';
-import categoriesData from '@/public/data/categories.json';
-
-type Category = (typeof categoriesData)[number];
+import type { ICategory } from '@/types/categories';
 
 type CategoryGridProps = {
-  categories: Category[];
+  categories: ICategory[];
 };
 
 export default function CategoryGrid({ categories }: CategoryGridProps) {

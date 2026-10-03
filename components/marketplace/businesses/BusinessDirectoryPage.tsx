@@ -23,6 +23,7 @@ const verificationStatuses: TVerificationStatus[] = [
 type BusinessDirectoryProps = {
   searchParams: Promise<{
     query?: string;
+    categoryId?: string;
     businessType?: string;
     verificationStatus?: string;
     page?: string;
@@ -32,11 +33,13 @@ type BusinessDirectoryProps = {
 const getPageHref = (
   page: number,
   query: string,
+  categoryId?: string,
   businessType?: TBusinessType,
   verificationStatus?: TVerificationStatus,
 ) => {
   const params = new URLSearchParams();
   if (query) params.set('query', query);
+  if (categoryId) params.set('categoryId', categoryId);
   if (businessType) params.set('businessType', businessType);
   if (verificationStatus) params.set('verificationStatus', verificationStatus);
   params.set('page', String(page));
@@ -48,6 +51,7 @@ export default async function BusinessDirectoryPage({
 }: BusinessDirectoryProps) {
   const params = await searchParams;
   const query = params.query?.trim() ?? '';
+  const categoryId = params.categoryId?.trim() || undefined;
   const businessType = businessTypes.find((type) => type === params.businessType);
   const verificationStatus = verificationStatuses.find(
     (status) => status === params.verificationStatus,
@@ -58,6 +62,7 @@ export default async function BusinessDirectoryPage({
     page,
     limit: 10,
     search: query || undefined,
+    categoryId,
     businessType,
     verificationStatus,
   });
@@ -84,6 +89,7 @@ export default async function BusinessDirectoryPage({
 
         <BusinessFilters
           query={query}
+          categoryId={categoryId}
           businessType={businessType}
           verificationStatus={verificationStatus}
         />
@@ -98,7 +104,7 @@ export default async function BusinessDirectoryPage({
           <nav aria-label="Business pages" className="mt-8 flex items-center justify-between">
             {page > 1 ? (
               <Link
-                href={getPageHref(page - 1, query, businessType, verificationStatus)}
+                href={getPageHref(page - 1, query, categoryId, businessType, verificationStatus)}
                 className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted"
               >
                 Previous
@@ -107,7 +113,7 @@ export default async function BusinessDirectoryPage({
             <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
             {page < totalPages ? (
               <Link
-                href={getPageHref(page + 1, query, businessType, verificationStatus)}
+                href={getPageHref(page + 1, query, categoryId, businessType, verificationStatus)}
                 className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted"
               >
                 Next

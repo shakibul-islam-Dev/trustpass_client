@@ -1,18 +1,25 @@
-'use client';
-import categoriesData from '@/public/data/categories.json';
+import type { ICategory } from '@/types/categories';
 import CategoryGrid from './categories/CategoryGrid';
 import CategorySectionHeader from './categories/CategorySectionHeader';
 
-export type Category = (typeof categoriesData)[number];
+type CategoriesProps = {
+  categories: ICategory[];
+  error?: string;
+};
 
-export default function Categories() {
-  const categories: Category[] = categoriesData;
+export default function Categories({ categories, error }: CategoriesProps) {
 
   return (
     <section className="bg-background py-12 text-foreground">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <CategorySectionHeader />
-        <CategoryGrid categories={categories} />
+        {categories.length > 0 ? (
+          <CategoryGrid categories={categories} />
+        ) : (
+          <p className="rounded-md border border-border px-4 py-6 text-sm text-muted-foreground">
+            {error || 'No categories are available yet.'}
+          </p>
+        )}
       </div>
     </section>
   );
