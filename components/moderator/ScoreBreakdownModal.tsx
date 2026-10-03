@@ -96,6 +96,7 @@ export const ScoreBreakdownModal = ({
     setRecalcSuccess(false);
 
     // Simulate recalculation algorithm execution
+    
     setTimeout(() => {
       const newScore = Math.min(100, Math.max(70, currentScore + (Math.random() > 0.5 ? 2 : -1)));
       setCurrentScore(newScore);
