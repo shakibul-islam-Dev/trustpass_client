@@ -64,7 +64,7 @@ export default function RegistrationForm() {
         provider: "facebook",
         callbackURL: "/",
       });
-    } catch (err: any) {
+    } catch (err:any) {
       setErrorMessage(err.message || "Facebook লগইন করতে সমস্যা হয়েছে।");
       console.error("Facebook sign-in error:", err);
     }
