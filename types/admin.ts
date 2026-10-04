@@ -31,13 +31,19 @@ export interface Business {
   createdAt: string;
 }
 
+// src/types/admin.ts
+// Trustrules
+export type TTrustRuleStatus = "VERIFICATION" | "ACTIVITY" | "REPORT";
+
 export interface TrustRule {
   id: string;
-  ruleName: string;
-  category: string;
-  weightPoints: number;
+  ruleKey: string;
+  label: string;
+  points: number;
   isActive: boolean;
-  description: string;
+  status: TTrustRuleStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CustomerReport {

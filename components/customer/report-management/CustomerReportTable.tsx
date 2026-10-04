@@ -48,13 +48,13 @@ export const CustomerReportTable = ({ reports, onViewDetails }: ReportTableProps
               <TableRow key={report.id}>
                 <TableCell className="font-medium">{report.businessName}</TableCell>
                 <TableCell>
-                  <Badge variant="outline">{report.category.replace("_", " ")}</Badge>
+                  <Badge variant="outline">{report.reason.replace(/_/g, " ")}</Badge>
                 </TableCell>
                 <TableCell>
                   <Badge variant={
                     report.priority === 'HIGH' ? "destructive" :
-                    report.priority === 'MEDIUM' ? "secondary" :
-                    "outline"
+                      report.priority === 'MEDIUM' ? "secondary" :
+                        "outline"
                   }>
                     {report.priority}
                   </Badge>
@@ -62,8 +62,8 @@ export const CustomerReportTable = ({ reports, onViewDetails }: ReportTableProps
                 <TableCell>
                   <Badge variant={
                     report.status === 'RESOLVED' ? "default" :
-                    report.status === 'REJECTED' ? "destructive" :
-                    "secondary"
+                      report.status === 'REJECTED' ? "destructive" :
+                        "secondary"
                   }>
                     {report.status}
                   </Badge>

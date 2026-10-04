@@ -9,6 +9,7 @@ import {
   Scale,
   Factory,
   BellIcon,
+  FolderTree,
 } from "lucide-react";
 
 export const roleSidebars = {
@@ -41,6 +42,7 @@ export const roleSidebars = {
         href: "/dashboard/admin/trust-rules",
         icon: Scale,
       },
+      { name: "Categories", href: "/dashboard/admin/categories", icon: FolderTree },
       { name: "System Settings", href: "/admin/settings", icon: Settings },
     ],
   },
