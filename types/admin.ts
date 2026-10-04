@@ -33,7 +33,9 @@ export interface Business {
 
 // src/types/admin.ts
 // Trustrules
-export type TTrustRuleStatus = "VERIFICATION" | "ACTIVITY" | "REPORT";
+// src/types/admin.ts
+
+export type TTrustRuleStatus = "ACTIVE" | "INACTIVE";
 
 export interface TrustRule {
   id: string;
