@@ -1,233 +1,547 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import { Button } from "../ui/button";
 import { authClient } from "@/lib/auth-client";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import OtpForm from "@/components/otp/OtpForm";
 
 interface InputForm {
-  Name: string;
+  name: string;
   email: string;
   password: string;
-  role: string;
+  phone: string;
+  gender: "MALE" | "FEMALE" | "OTHER";
+  role: "CUSTOMER" | "SELLER";
 }
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
 export default function RegistrationForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showOtpScreen, setShowOtpScreen] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const router = useRouter();
 
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<InputForm>({
     defaultValues: {
-      role: "user",
+      name: "",
+      email: "",
+      password: "",
+      phone: "",
+      gender: "MALE",
+      role: "CUSTOMER",
     },
+    shouldUnregister: false,
   });
+
+  // ============================================================
+  // Registration
+  // ============================================================
 
   const onSubmit: SubmitHandler<InputForm> = async (formData) => {
     setErrorMessage(null);
 
-    const { data, error } = await authClient.signUp.email({
-      email: formData.email,
-      password: formData.password,
-      name: formData.Name,
-      role: formData.role,
-    } as any);
-
-    if (error) {
-      setErrorMessage(error.message || "নিবন্ধন করতে সমস্যা হয়েছে।");
-      console.error("Sign-up error:", error);
+    if (!API_BASE_URL) {
+      setErrorMessage("API URL is not configured.");
       return;
     }
 
-    console.log("Account created successfully:", data);
+    const name = formData.name.trim();
+    const email = formData.email.trim().toLowerCase();
+    const password = formData.password;
+    const phone = formData.phone.trim();
+
+    try {
+      const { error: authError } = await authClient.signUp.email({
+        email,
+        password,
+        name,
+      });
+
+      if (authError) {
+        setErrorMessage(
+          authError.message || "Better Auth registration failed.",
+        );
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/auth/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            name,
+            email,
+            password,
+            phone: phone || undefined,
+            gender: formData.gender,
+            role: formData.role,
+          }),
+        },
+      );
+
+      let resData: {
+        success?: boolean;
+        message?: string;
+        data?: {
+          email?: string;
+        };
+      };
+
+      try {
+        resData = await response.json();
+      } catch {
+        setErrorMessage("Invalid response received from the server.");
+        return;
+      }
+
+      if (!response.ok || !resData.success) {
+        setErrorMessage(
+          resData.message || "Registration could not be completed.",
+        );
+        return;
+      }
+
+      const registeredEmail = resData.data?.email || email;
+
+      setUserEmail(registeredEmail);
+      setOtpCode("");
+      setShowOtpScreen(true);
+    } catch (error: unknown) {
+      console.error("Registration error:", error);
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while registering.";
+
+      setErrorMessage(message);
+    }
   };
+
+  // ============================================================
+  // OTP Verification
+  // ============================================================
+
+  const handleVerifyOtp = async (
+    e: FormEvent<HTMLFormElement>,
+    providedOtp?: string
+  ) => {
+    e.preventDefault();
+
+    setErrorMessage(null);
+
+    const cleanOtp = (providedOtp ?? otpCode).trim();
+
+    if (!cleanOtp) {
+      setErrorMessage("Please enter the OTP code.");
+      return;
+    }
+
+    if (cleanOtp.length !== 6) {
+      setErrorMessage("OTP must be exactly 6 digits.");
+      return;
+    }
+
+    if (!/^\d{6}$/.test(cleanOtp)) {
+      setErrorMessage("OTP must contain only numbers.");
+      return;
+    }
+
+    if (!userEmail) {
+      setErrorMessage("User email is missing. Please register again.");
+      return;
+    }
+
+    if (!API_BASE_URL) {
+      setErrorMessage("API URL is not configured.");
+      return;
+    }
+
+    setIsVerifying(true);
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/auth/verify-otp`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            email: userEmail,
+            otp: cleanOtp,
+          }),
+        },
+      );
+
+      let resData: {
+        success?: boolean;
+        message?: string;
+        data?: unknown;
+      };
+
+      try {
+        resData = await response.json();
+      } catch {
+        setErrorMessage("Invalid response received from the server.");
+        return;
+      }
+
+      if (!response.ok || !resData.success) {
+        setErrorMessage(
+          resData.message || "OTP verification failed.",
+        );
+        return;
+      }
+
+      console.log("Verified successfully:", resData.data);
+      router.push("/");
+    } catch (error: unknown) {
+      console.error("Verify OTP error:", error);
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while verifying the OTP.";
+
+      setErrorMessage(message);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // ============================================================
+  // Google Login
+  // ============================================================
 
   const handleGoogleLogin = async () => {
     setErrorMessage(null);
+
     try {
-      await authClient.signIn.social({
+      const { error } = await authClient.signIn.social({
         provider: "google",
         callbackURL: "/",
       });
-    } catch (err: any) {
-      setErrorMessage(err.message || "Google লগইন করতে সমস্যা হয়েছে।");
-      console.error("Google sign-in error:", err);
+
+      if (error) {
+        setErrorMessage(
+          error.message || "Google login failed.",
+        );
+      }
+    } catch (error: unknown) {
+      console.error("Google login error:", error);
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Something went wrong during Google login.";
+
+      setErrorMessage(message);
     }
   };
+
+  // ============================================================
+  // Facebook Login
+  // ============================================================
 
   const handleFacebookLogin = async () => {
     setErrorMessage(null);
+
     try {
-      await authClient.signIn.social({
+      const { error } = await authClient.signIn.social({
         provider: "facebook",
         callbackURL: "/",
       });
-    } catch (err:any) {
-      setErrorMessage(err.message || "Facebook লগইন করতে সমস্যা হয়েছে।");
-      console.error("Facebook sign-in error:", err);
+
+      if (error) {
+        setErrorMessage(
+          error.message || "Facebook login failed.",
+        );
+      }
+    } catch (error: unknown) {
+      console.error("Facebook login error:", error);
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Something went wrong during Facebook login.";
+
+      setErrorMessage(message);
     }
   };
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 dark:bg-gray-900">
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-xl dark:border-gray-800 dark:bg-gray-950">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-            Trust Pass
-          </h1>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            Create your account to get started
-          </p>
-        </div>
+  // ============================================================
+  // Back to registration
+  // ============================================================
 
-        {/* Server Error Message Display */}
+  const handleBackToRegistration = () => {
+    setErrorMessage(null);
+    setOtpCode("");
+    setShowOtpScreen(false);
+  };
+
+  // ============================================================
+  // UI
+  // ============================================================
+
+ return (
+  <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 dark:bg-gray-900">
+    <Card className="w-full max-w-md shadow-xl">
+      <CardHeader className="text-center">
+        <CardTitle className="text-3xl font-extrabold tracking-tight">
+          Trust Pass
+        </CardTitle>
+        <CardDescription>
+          {showOtpScreen
+            ? `We have sent a 6-digit OTP to ${userEmail}`
+            : "Create your account to get started"}
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent>
+        {/* Error Message */}
         {errorMessage && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-center text-sm font-medium text-red-600 dark:border-red-900 dark:bg-red-950/50 dark:text-red-400">
-            {errorMessage}
-          </div>
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
         )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Full Name Input */}
-          <div>
-            <label
-              htmlFor="Name"
-              className="mb-1 block text-xs font-semibold text-gray-700 dark:text-gray-300"
+        {/* ======================================================
+            OTP SCREEN
+        ====================================================== */}
+        {showOtpScreen ? (
+          <OtpForm
+            email={userEmail}
+            isVerifying={isVerifying}
+            onVerify={async (otp) => {
+              setOtpCode(otp);
+              const fakeEvent = {
+                preventDefault: () => {},
+              } as FormEvent<HTMLFormElement>;
+              await handleVerifyOtp(fakeEvent, otp);
+            }}
+            onBack={handleBackToRegistration}
+            backButtonText="Back to Sign Up"
+            submitButtonText="Verify OTP"
+            verifyingText="Verifying OTP..."
+          />
+        ) : (
+          /* ====================================================
+             REGISTRATION FORM
+          ==================================================== */
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Full Name */}
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                type="text"
+                autoComplete="name"
+                placeholder="John Doe"
+                {...register("name", {
+                  required: "Full name is required",
+                  minLength: {
+                    value: 2,
+                    message: "Name must be at least 2 characters",
+                  },
+                  maxLength: {
+                    value: 100,
+                    message: "Name cannot exceed 100 characters",
+                  },
+                })}
+              />
+              {errors.name && (
+                <p className="text-xs font-medium text-destructive">
+                  {errors.name.message}
+                </p>
+              )}
+            </div>
+
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="john@example.com"
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^\S+@\S+$/i,
+                    message: "Invalid email address",
+                  },
+                })}
+              />
+              {errors.email && (
+                <p className="text-xs font-medium text-destructive">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••"
+                {...register("password", {
+                  required: "Password is required",
+                  minLength: {
+                    value: 8,
+                    message: "Password must be at least 8 characters",
+                  },
+                  maxLength: {
+                    value: 128,
+                    message: "Password cannot exceed 128 characters",
+                  },
+                })}
+              />
+              {errors.password && (
+                <p className="text-xs font-medium text-destructive">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+
+            {/* Phone */}
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number (Optional)</Label>
+              <Input
+                id="phone"
+                type="text"
+                autoComplete="tel"
+                placeholder="+8801712345678"
+                {...register("phone", {
+                  pattern: {
+                    value: /^[+0-9\s\-()]{7,20}$/,
+                    message: "Invalid phone number format",
+                  },
+                })}
+              />
+              {errors.phone && (
+                <p className="text-xs font-medium text-destructive">
+                  {errors.phone.message}
+                </p>
+              )}
+            </div>
+
+            {/* Gender */}
+            <div className="space-y-2">
+              <Label htmlFor="gender">Gender</Label>
+              <Controller
+                control={control}
+                name="gender"
+                render={({ field }) => (
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <SelectTrigger id="gender">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MALE">Male</SelectItem>
+                      <SelectItem value="FEMALE">Female</SelectItem>
+                      <SelectItem value="OTHER">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+
+            {/* Account Type */}
+            <div className="space-y-2">
+              <Label htmlFor="role">Account Type</Label>
+              <Controller
+                control={control}
+                name="role"
+                render={({ field }) => (
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <SelectTrigger id="role">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CUSTOMER">Customer</SelectItem>
+                      <SelectItem value="SELLER">Seller</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+
+            {/* Create Account */}
+            <Button
+              type="submit"
+              className="mt-2 w-full py-2.5 font-medium"
+              disabled={isSubmitting}
             >
-              Full Name
-            </label>
-            <input
-              id="Name"
-              type="text"
-              placeholder="John Doe"
-              className="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm outline-none transition focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 dark:border-gray-700 dark:text-white"
-              {...register("Name", {
-                required: "Full name is required",
-              })}
-            />
-            {errors.Name && (
-              <p className="mt-1 text-xs text-red-500">
-                {errors.Name.message}
-              </p>
-            )}
-          </div>
+              {isSubmitting ? "Creating Account..." : "Create Account"}
+            </Button>
 
-          {/* Email */}
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-1 block text-xs font-semibold text-gray-700 dark:text-gray-300"
+            {/* Google */}
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-2 w-full py-2.5 font-medium"
+              onClick={handleGoogleLogin}
+              disabled={isSubmitting}
             >
-              Email Address
-            </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="john@example.com"
-              className="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm outline-none transition focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 dark:border-gray-700 dark:text-white"
-              {...register("email", {
-                required: "Email is required",
-                pattern: {
-                  value: /^\S+@\S+$/i,
-                  message: "Invalid email address",
-                },
-              })}
-            />
-            {errors.email && (
-              <p className="mt-1 text-xs text-red-500">
-                {errors.email.message}
-              </p>
-            )}
-          </div>
+              Continue with Google
+            </Button>
 
-          {/* Password */}
-          <div>
-            <label
-              htmlFor="password"
-              className="mb-1 block text-xs font-semibold text-gray-700 dark:text-gray-300"
+            {/* Facebook */}
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-2 w-full py-2.5 font-medium"
+              onClick={handleFacebookLogin}
+              disabled={isSubmitting}
             >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              className="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm outline-none transition focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 dark:border-gray-700 dark:text-white"
-              {...register("password", {
-                required: "Password is required",
-                minLength: {
-                  value: 6,
-                  message: "Password must be at least 6 characters",
-                },
-              })}
-            />
-            {errors.password && (
-              <p className="mt-1 text-xs text-red-500">
-                {errors.password.message}
-              </p>
-            )}
-          </div>
-
-          {/* Role Selection */}
-          <div>
-            <label
-              htmlFor="role"
-              className="mb-1 block text-xs font-semibold text-gray-700 dark:text-gray-300"
-            >
-              Account Type
-            </label>
-            <select
-              id="role"
-              className="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm outline-none transition focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
-              {...register("role", { required: "Role selection is required" })}
-            >
-              <option value="user" className="dark:bg-gray-900">
-                User
-              </option>
-              <option value="merchant" className="dark:bg-gray-900">
-                Merchant
-              </option>
-            </select>
-            {errors.role && (
-              <p className="mt-1 text-xs text-red-500">
-                {errors.role.message}
-              </p>
-            )}
-          </div>
-
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            className="mt-2 w-full py-2.5 font-medium"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Creating Account..." : "Create Account"}
-          </Button>
-
-          {/* Social Buttons (type="button" ব্যবহার করা হয়েছে) */}
-          <Button
-            type="button"
-            variant="outline"
-            className="mt-2 w-full py-2.5 font-medium"
-            onClick={handleGoogleLogin}
-          >
-            Continue with Google
-          </Button>
-
-          <Button
-            type="button"
-            variant="outline"
-            className="mt-2 w-full py-2.5 font-medium"
-            onClick={handleFacebookLogin}
-          >
-            Continue with Facebook
-          </Button>
-        </form>
-      </div>
-    </div>
-  );
+              Continue with Facebook
+            </Button>
+          </form>
+        )}
+      </CardContent>
+    </Card>
+  </div>
+);
 }

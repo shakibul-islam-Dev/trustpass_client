@@ -1,57 +1,61 @@
 "use client";
 
-import React from "react"
-import { useState } from "react";
-
+import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import OtpForm from "@/components/otp/OtpForm";
 
 const VerifyOtpPage = () => {
-  const [otp,setOtp] = useState('')
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const [isVerifying, setIsVerifying] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
+  const email = searchParams.get("email") || "";
 
-  const email = searchParams.get('email')
- const handleVerifyOtp = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
+  const handleVerifyOtp = async (otp: string) => {
+    setIsVerifying(true);
 
-  try {
-    const res = await fetch('/api/verify-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, otp }),
-    });
+    try {
+      const res = await fetch("/api/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (res.ok) {
-      console.log('Verification successful');
-      router.push('/dashboard');
-    } else {
-      console.log(data, 'Invalid OTP or Error');
+      if (res.ok) {
+        console.log("Verification successful");
+        router.push("/dashboard");
+      } else {
+        console.log(data, "Invalid OTP or Error");
+      }
+    } catch (error) {
+      console.error("OTP Verification Error:", error);
+    } finally {
+      setIsVerifying(false);
     }
-  } catch (error) {
-    console.error('OTP Verification Error:', error);
-  }
-};
-  return (
-   <div style={{ maxWidth: '400px', margin: '50px auto' }}>
-      <h2>Verify OTP</h2>
-      <p>Sent OTP to: <strong>{email}</strong></p>
+  };
 
-      <form onSubmit={handleVerifyOtp}>
-        <input
-          type="text"
-          placeholder="Enter 6-digit OTP"
-          value={otp}
-          onChange={(e) => setOtp(e.target.value)}
-          maxLength={6}
-          required
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 dark:bg-gray-900">
+      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-xl dark:border-gray-800 dark:bg-gray-950">
+        <div className="mb-8 text-center">
+          <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+            Verify OTP
+          </h2>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Sent OTP to: <strong>{email || "your email"}</strong>
+          </p>
+        </div>
+
+        <OtpForm
+          email={email}
+          isVerifying={isVerifying}
+          onVerify={handleVerifyOtp}
+          submitButtonText="Verify OTP"
+          verifyingText="Verifying OTP..."
         />
-        <button type="submit" style={{ marginTop: '15px', display: 'block' }}>
-          Verify OTP
-        </button>
-      </form>
+      </div>
     </div>
   );
 };
