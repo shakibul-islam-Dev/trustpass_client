@@ -108,3 +108,22 @@ export const roleSidebars = {
 };
 
 export type UserRole = keyof typeof roleSidebars;
+
+// ============================================================
+// Better Auth Role → Sidebar Key mapping
+// ============================================================
+export const mapAuthRoleToSidebarRole = (
+  authRole: string | undefined | null
+): UserRole => {
+  switch (authRole?.toUpperCase()) {
+    case "ADMIN":
+      return "admin";
+    case "MODERATOR":
+      return "moderator";
+    case "BUYER":
+      return "merchant";
+    case "CUSTOMER":
+    default:
+      return "user";
+  }
+};

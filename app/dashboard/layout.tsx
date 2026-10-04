@@ -1,15 +1,18 @@
 import DashboardSideBar from "@/components/dashboard/DashboardSideBar";
 import DashboardRoleLabel from "@/components/dashboard/DashboardRoleLabel";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { UserRole } from "@/lib/sidebarData";
+import { mapAuthRoleToSidebarRole, UserRole } from "@/lib/sidebarData";
+import { getUserServerSession } from "@/lib/user-api/session-server";
 
 
-export default function DashboardRootlayout({
+export default async function DashboardRootlayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const userRole: UserRole = "admin";
+
+  const user = await getUserServerSession();
+  const userRole: UserRole = mapAuthRoleToSidebarRole((user as any)?.role);
 
   return (
     <SidebarProvider>
