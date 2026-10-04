@@ -105,6 +105,37 @@ export const roleSidebars = {
       { name: "Profile Settings", href: "/dashboard/profile", icon: User },
     ],
   },
+  CUSTOMER: {
+    title: "Customer",
+    items: [
+      {
+        name: "My Dashboard",
+        href: "/dashboard/customer",
+        icon: LayoutDashboard,
+      },
+      {
+        name: "My Reports",
+        href: "/dashboard/customer/reports",
+        icon: Flag,
+      },
+      {
+        name: "Notifications",
+        href: "/dashboard/customer/notifications",
+        icon: BellIcon,
+      },
+      { name: "Profile Settings", href: "/dashboard/profile", icon: User },
+    ],
+  },
+  SELLER: {
+    title: "Seller",
+    items: [
+      { name: "Dashboard", href: "/dashboard/merchant", icon: LayoutDashboard },
+      { name: "Analytics", href: "/dashboard/analytics", icon: FileText },
+      { name: "Products", href: "/dashboard/products", icon: FileText },
+      { name: "Reports", href: "/dashboard/reports", icon: FileText },
+      { name: "Settings", href: "/dashboard/settings", icon: FileText },
+    ],
+  },
 };
 
 export type UserRole = keyof typeof roleSidebars;
