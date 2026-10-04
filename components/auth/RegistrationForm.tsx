@@ -106,6 +106,7 @@ export default function RegistrationForm() {
             phone: phone || undefined,
             gender: formData.gender,
             role: formData.role,
+            image: undefined,
           }),
         },
       );

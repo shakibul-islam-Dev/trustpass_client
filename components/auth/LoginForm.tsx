@@ -104,7 +104,7 @@ export default function LoginForm() {
         "Login successful! Redirecting..."
       );
 
-      router.push("/dashboard");
+      router.push("/");
       router.refresh();
     } catch (error) {
       console.error("Verify OTP error:", error);
@@ -158,7 +158,7 @@ export default function LoginForm() {
     try {
       await authClient.signIn.social({
         provider,
-        callbackURL: "/dashboard",
+        callbackURL: "/",
       });
     } catch (error) {
       console.error(
