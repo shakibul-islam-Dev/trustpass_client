@@ -1,10 +1,9 @@
 "use client"
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import { Button } from "../ui/button";
-import { authClient } from "@/lib/auth-client";
 import {
   Card,
   CardContent,
@@ -22,7 +21,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import OtpForm from "@/components/otp/OtpForm";
+import { readApiError, safeApiMessage, safeThrownError } from "@/lib/core/api-error";
+import {
+  isApiConfigured,
+  normalizeEmail,
+  registerAccount,
+} from "@/lib/core/auth-api";
+import { signInWithSocial } from "@/lib/core/session";
+
+/*
+ * OTP VERIFICATION IS COMMENTED OUT
+ *
+ * This form used to move to a second screen with an `OtpForm`, then call
+ * `verifyOtp` followed by `loginWithPassword` (verify-otp sets no session
+ * cookie of its own). `verifyOtp` and `resendOtp` are commented out in
+ * `lib/core/auth-api.ts`: the server's SMTP config is unset, so it swallows
+ * the send failure and answers 201/200 while producing no mail.
+ *
+ * Registration therefore now ends at the account existing. Note the server runs
+ * better-auth with `requireEmailVerification: true`, so the new account cannot
+ * sign in yet — see the 403 note in `LoginForm.tsx`. Restoring OTP means
+ * uncommenting those two functions and bringing this screen back.
+ */
 
 interface InputForm {
   name: string;
@@ -33,14 +53,8 @@ interface InputForm {
   role: "CUSTOMER" | "SELLER";
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
-
 export default function RegistrationForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showOtpScreen, setShowOtpScreen] = useState(false);
-  const [userEmail, setUserEmail] = useState("");
-  const [otpCode, setOtpCode] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
   const router = useRouter();
 
   const {
@@ -67,251 +81,113 @@ export default function RegistrationForm() {
   const onSubmit: SubmitHandler<InputForm> = async (formData) => {
     setErrorMessage(null);
 
-    if (!API_BASE_URL) {
+    if (!isApiConfigured()) {
       setErrorMessage("API URL is not configured.");
       return;
     }
 
     const name = formData.name.trim();
-    const email = formData.email.trim().toLowerCase();
+    const email = normalizeEmail(formData.email);
     const password = formData.password;
     const phone = formData.phone.trim();
 
     try {
-      const { error: authError } = await authClient.signUp.email({
+      // The external server owns user creation. Do NOT also call
+      // authClient.signUp.email() here — that used to create a second,
+      // locally-owned user record and win the session cookie.
+      const response = await registerAccount({
+        name,
         email,
         password,
-        name,
+        phone: phone || undefined,
+        gender: formData.gender,
+        role: formData.role,
       });
 
-      if (authError) {
+      if (!response.ok) {
+        // 409: the address is already on file. Registration cannot continue and
+        // OTP is disabled, so the only useful move is to send them to sign in.
+        if (response.status === 409) {
+          setErrorMessage(
+            "That email is already registered. Taking you to sign in.",
+          );
+          router.push("/auth/login");
+          return;
+        }
+
         setErrorMessage(
-          authError.message || "Better Auth registration failed.",
+          await readApiError(
+            "register",
+            response,
+            "Registration could not be completed.",
+          ),
         );
         return;
       }
 
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/auth/register`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            name,
-            email,
-            password,
-            phone: phone || undefined,
-            gender: formData.gender,
-            role: formData.role,
-            image: undefined,
+      const body = await response.clone().json().catch(() => null);
+
+      if (!body?.success) {
+        setErrorMessage(
+          safeApiMessage({
+            status: response.status,
+            fallback: "Registration could not be completed.",
           }),
-        },
-      );
-
-      let resData: {
-        success?: boolean;
-        message?: string;
-        data?: {
-          email?: string;
-        };
-      };
-
-      try {
-        resData = await response.json();
-      } catch {
-        setErrorMessage("Invalid response received from the server.");
-        return;
-      }
-
-      if (!response.ok || !resData.success) {
-        setErrorMessage(
-          resData.message || "Registration could not be completed.",
         );
         return;
       }
 
-      const registeredEmail = resData.data?.email || email;
-
-      setUserEmail(registeredEmail);
-      setOtpCode("");
-      setShowOtpScreen(true);
+      // The account exists. OTP is disabled, and the server runs with
+      // `requireEmailVerification: true`, so this new account cannot sign in
+      // yet — do not send the user to the login screen to hit that 403 without
+      // warning. Say what happened and what they can do.
+      setErrorMessage(
+        "Account created. Email verification is currently unavailable, so " +
+          "sign-in is disabled for this account until the server's mail " +
+          "transport is configured.",
+      );
     } catch (error: unknown) {
-      console.error("Registration error:", error);
-
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while registering.";
-
-      setErrorMessage(message);
+      setErrorMessage(
+        safeThrownError(
+          "register",
+          error,
+          "Something went wrong while registering.",
+        ),
+      );
     }
   };
 
   // ============================================================
   // OTP Verification
+  //
+  // COMMENTED OUT. The handler that called `verifyOtp` and then
+  // `loginWithPassword` (verify-otp sets no session cookie of its own) is
+  // restored from git history alongside the two API functions it depends on.
+  // The OTP screen this rendered is described at the top of this file.
   // ============================================================
 
-  const handleVerifyOtp = async (
-    e: FormEvent<HTMLFormElement>,
-    providedOtp?: string
-  ) => {
-    e.preventDefault();
+  // ============================================================
+  // Social Login -> handled entirely by the API server
+  // ============================================================
 
+  const handleSocialLogin = async (provider: "google" | "facebook") => {
     setErrorMessage(null);
 
-    const cleanOtp = (providedOtp ?? otpCode).trim();
+    // On success the browser has already been sent to the provider, so there is
+    // nothing left to render. Only a failure reaches the message below.
+    const redirected = await signInWithSocial(provider, "/");
 
-    if (!cleanOtp) {
-      setErrorMessage("Please enter the OTP code.");
-      return;
-    }
-
-    if (cleanOtp.length !== 6) {
-      setErrorMessage("OTP must be exactly 6 digits.");
-      return;
-    }
-
-    if (!/^\d{6}$/.test(cleanOtp)) {
-      setErrorMessage("OTP must contain only numbers.");
-      return;
-    }
-
-    if (!userEmail) {
-      setErrorMessage("User email is missing. Please register again.");
-      return;
-    }
-
-    if (!API_BASE_URL) {
-      setErrorMessage("API URL is not configured.");
-      return;
-    }
-
-    setIsVerifying(true);
-
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/auth/verify-otp`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            email: userEmail,
-            otp: cleanOtp,
-          }),
-        },
+    if (!redirected) {
+      setErrorMessage(
+        safeApiMessage({
+          fallback: `Could not start ${provider} sign-in. Please try again.`,
+        }),
       );
-
-      let resData: {
-        success?: boolean;
-        message?: string;
-        data?: unknown;
-      };
-
-      try {
-        resData = await response.json();
-      } catch {
-        setErrorMessage("Invalid response received from the server.");
-        return;
-      }
-
-      if (!response.ok || !resData.success) {
-        setErrorMessage(
-          resData.message || "OTP verification failed.",
-        );
-        return;
-      }
-
-      console.log("Verified successfully:", resData.data);
-      router.push("/");
-    } catch (error: unknown) {
-      console.error("Verify OTP error:", error);
-
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while verifying the OTP.";
-
-      setErrorMessage(message);
-    } finally {
-      setIsVerifying(false);
     }
   };
 
-  // ============================================================
-  // Google Login
-  // ============================================================
-
-  const handleGoogleLogin = async () => {
-    setErrorMessage(null);
-
-    try {
-      const { error } = await authClient.signIn.social({
-        provider: "google",
-        callbackURL: "/",
-      });
-
-      if (error) {
-        setErrorMessage(
-          error.message || "Google login failed.",
-        );
-      }
-    } catch (error: unknown) {
-      console.error("Google login error:", error);
-
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Something went wrong during Google login.";
-
-      setErrorMessage(message);
-    }
-  };
-
-  // ============================================================
-  // Facebook Login
-  // ============================================================
-
-  const handleFacebookLogin = async () => {
-    setErrorMessage(null);
-
-    try {
-      const { error } = await authClient.signIn.social({
-        provider: "facebook",
-        callbackURL: "/",
-      });
-
-      if (error) {
-        setErrorMessage(
-          error.message || "Facebook login failed.",
-        );
-      }
-    } catch (error: unknown) {
-      console.error("Facebook login error:", error);
-
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Something went wrong during Facebook login.";
-
-      setErrorMessage(message);
-    }
-  };
-
-  // ============================================================
-  // Back to registration
-  // ============================================================
-
-  const handleBackToRegistration = () => {
-    setErrorMessage(null);
-    setOtpCode("");
-    setShowOtpScreen(false);
-  };
+  const handleGoogleLogin = () => handleSocialLogin("google");
+  const handleFacebookLogin = () => handleSocialLogin("facebook");
 
   // ============================================================
   // UI
@@ -324,11 +200,7 @@ export default function RegistrationForm() {
         <CardTitle className="text-3xl font-extrabold tracking-tight">
           Trust Pass
         </CardTitle>
-        <CardDescription>
-          {showOtpScreen
-            ? `We have sent a 6-digit OTP to ${userEmail}`
-            : "Create your account to get started"}
-        </CardDescription>
+        <CardDescription>Create your account to get started</CardDescription>
       </CardHeader>
 
       <CardContent>
@@ -339,30 +211,16 @@ export default function RegistrationForm() {
           </Alert>
         )}
 
-        {/* ======================================================
-            OTP SCREEN
-        ====================================================== */}
-        {showOtpScreen ? (
-          <OtpForm
-            email={userEmail}
-            isVerifying={isVerifying}
-            onVerify={async (otp) => {
-              setOtpCode(otp);
-              const fakeEvent = {
-                preventDefault: () => {},
-              } as FormEvent<HTMLFormElement>;
-              await handleVerifyOtp(fakeEvent, otp);
-            }}
-            onBack={handleBackToRegistration}
-            backButtonText="Back to Sign Up"
-            submitButtonText="Verify OTP"
-            verifyingText="Verifying OTP..."
-          />
-        ) : (
-          /* ====================================================
+        {/* ====================================================
              REGISTRATION FORM
-          ==================================================== */
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+
+             The OTP screen that used to be rendered here is commented out; see
+             the note at the top of this file. It was this conditional:
+               {showOtpScreen ? <OtpForm ... /> : <form ...>}
+             so restoring it means reintroducing the branch and the
+             `showOtpScreen` state.
+        ==================================================== */}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Full Name */}
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
@@ -539,8 +397,7 @@ export default function RegistrationForm() {
             >
               Continue with Facebook
             </Button>
-          </form>
-        )}
+        </form>
       </CardContent>
     </Card>
   </div>

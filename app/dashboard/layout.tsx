@@ -1,11 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import DashboardSideBar from "@/components/dashboard/DashboardSideBar";
 import DashboardRoleLabel from "@/components/dashboard/DashboardRoleLabel";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { signOut } from "@/lib/auth-client";
+import { signOut } from "@/lib/core/session";
 import { useRouter } from "next/navigation";
 
 export default function DashboardRootlayout({
@@ -16,27 +17,35 @@ export default function DashboardRootlayout({
   const { role, isPending, isAuthenticated } = useAuth();
   const router = useRouter();
 
+  // Redirect in an effect, never during render. Calling router.push() while
+  // rendering makes React warn ("Cannot update a component (Router) while
+  // rendering a different component") and the navigation is not guaranteed to
+  // be committed before the next render.
+  useEffect(() => {
+    if (!isPending && !isAuthenticated) {
+      router.push("/auth/login");
+    }
+  }, [isPending, isAuthenticated, router]);
+
   const handleSignOut = async () => {
-    await signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          router.push("/auth/login");
-        },
-      },
-    });
+    // Navigate back to login even if the revoke call failed — the cookie is
+    // httpOnly on the API's domain, so the local session state is dropped by
+    // the redirect regardless of what the server said.
+    await signOut();
+    router.push("/auth/login");
+    router.refresh();
   };
 
-  if (isPending) {
+  // Covers both "still asking the server" and "server said no session" — the
+  // effect above is what performs the actual redirect, this just holds the UI.
+  if (isPending || !isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-sm text-muted-foreground">Loading...</div>
+        <div className="text-sm text-muted-foreground">
+          {isPending ? "Loading..." : "Redirecting to sign in..."}
+        </div>
       </div>
     );
-  }
-
-  if (!isAuthenticated) {
-    router.push("/auth/login");
-    return null;
   }
 
   return (

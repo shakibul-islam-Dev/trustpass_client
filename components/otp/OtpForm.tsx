@@ -11,6 +11,11 @@ interface OtpFormProps {
   backButtonText?: string
   submitButtonText?: string
   verifyingText?: string
+  /** Optional resend control. Omit it where resending is not offered. */
+  onResend?: () => Promise<void> | void
+  isResending?: boolean
+  resendButtonText?: string
+  resendingText?: string
 }
 
 export default function OtpForm({
@@ -21,6 +26,10 @@ export default function OtpForm({
   backButtonText = "Back",
   submitButtonText = "Verify OTP",
   verifyingText = "Verifying OTP...",
+  onResend,
+  isResending = false,
+  resendButtonText = "Resend code",
+  resendingText = "Sending...",
 }: OtpFormProps) {
   const [otpCode, setOtpCode] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -90,6 +99,17 @@ export default function OtpForm({
       >
         {isVerifying ? verifyingText : submitButtonText}
       </Button>
+
+      {onResend && (
+        <button
+          type="button"
+          onClick={() => void onResend()}
+          disabled={isVerifying || isResending}
+          className="w-full text-center text-sm text-slate-500 hover:underline disabled:cursor-not-allowed disabled:opacity-60 dark:text-slate-400"
+        >
+          {isResending ? resendingText : resendButtonText}
+        </button>
+      )}
 
       {onBack && (
         <Button

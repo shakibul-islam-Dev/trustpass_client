@@ -60,11 +60,13 @@ export const FileUpload = ({
       formData.append("file", file); // ✅ change field name if backend expects "image"
 
       // 🚧 TODO: Replace with actual backend endpoint
-      const baseUrl =
-        process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000";
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+
+      if (!baseUrl) throw new Error("NEXT_PUBLIC_BASE_URL is not set.");
 
       const res = await fetch(`${baseUrl}/api/v1/upload`, {
         method: "POST",
+        credentials: "include",
         body: formData,
         // Note: Do NOT set Content-Type manually;
         // the browser will set it with the correct boundary.
