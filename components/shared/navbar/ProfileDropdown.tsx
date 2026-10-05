@@ -18,7 +18,7 @@ interface ProfileDropdownProps {
   user?: {
     name: string;
     email: string;
-    role: string;
+    role?: string;
     avatar?: string;
   };
   onLogout: () => void;
@@ -36,7 +36,7 @@ export const ProfileDropdown = ({ user, onLogout }: ProfileDropdownProps) => {
       .slice(0, 2);
   };
 
-  const getDashboardPath = (role: string) => {
+  const getDashboardPath = (role?: string) => {
     switch (role) {
       case "ADMIN":
         return "/dashboard/admin";
@@ -79,9 +79,11 @@ export const ProfileDropdown = ({ user, onLogout }: ProfileDropdownProps) => {
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-semibold">{user.name}</p>
               <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-              <span className="text-xs text-primary font-medium mt-1">
-                {user.role}
-              </span>
+              {user.role && (
+                <span className="text-xs text-primary font-medium mt-1">
+                  {user.role}
+                </span>
+              )}
             </div>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
