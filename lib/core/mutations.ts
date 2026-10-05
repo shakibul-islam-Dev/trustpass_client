@@ -5,7 +5,7 @@
 // ============================================================
 
 const getBaseUrl = (): string => {
-  return process.env.NEXT_PUBLIC_BASE_URL || "https://trust-pass-server.vercel.app";
+  return process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000"
 };
 
 // ============================================================

@@ -1,5 +1,5 @@
-export type UserRole = 'Customer' | 'Business Owner' | 'Admin';
-export type UserStatus = "Active" | "Banned" | "Pending";
+export type UserRole = "CUSTOMER" | "SELLER" | "MODERATOR" | "ADMIN"
+// export type UserStatus = "Active" | "Banned" | "Pending";
 export type VerificationStatus = "PENDING" | "VERIFIED" | "REJECTED";
 
 
@@ -8,7 +8,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  status: UserStatus;
+  // status: UserStatus;
   createdAt: string;
   avatar?: string;
 }
