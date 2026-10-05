@@ -5,34 +5,51 @@
 // --- User / Auth (Optional - if separate from admin) ---
 export type CustomerRole = "Customer";
 
-// --- Customer Report ---
-export type ReportCategory = "FRAUD" | "MISLEADING" | "NON_DELIVERY" | "OTHER";
-export type ReportStatus = "PENDING" | "RESOLVED" | "REJECTED";
+// ============================================================
+// CUSTOMER REPORT
+// ============================================================
+
+export type ReportReason =
+  | "SPAM"
+  | "INAPPROPRIATE_CONTENT"
+  | "HARASSMENT"
+  | "FRAUD"
+  | "OTHER";
+
+export type ReportStatus = "PENDING" | "REVIEWED" | "RESOLVED" | "REJECTED";
+
 export type ReportPriority = "LOW" | "MEDIUM" | "HIGH";
 
 export interface CustomerReport {
   id: string;
   businessId: string;
   businessName: string;
-  customerId: string;
-  customerName: string;
-  category: ReportCategory;
+  customerId?: string;
+  customerName?: string;
+  reason: ReportReason;
+  title?: string;
   description: string;
-  evidenceUrl?: string;
+  evidenceUrls?: string[];
   status: ReportStatus;
-  priority: ReportPriority;
   adminNote?: string;
+  actionTaken?: string;
+  penaltyPoints?: number;
+  priority?: ReportPriority;
   createdAt: string;
   updatedAt?: string;
 }
 
-// --- Report Submission Form Data ---
+// ============================================================
+// REPORT SUBMISSION (FORM)
+// ============================================================
+
 export interface ReportSubmissionData {
   businessId: string;
   businessName: string;
-  category: ReportCategory;
+  reason: ReportReason;
+  title?: string;
   description: string;
-  evidenceUrl?: string;
+  evidenceUrls?: string[];
 }
 
 // --- Notification ---

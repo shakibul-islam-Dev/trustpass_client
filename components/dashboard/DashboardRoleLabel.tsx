@@ -15,7 +15,9 @@ export default function DashboardRoleLabel({ fallbackRole }: DashboardRoleLabelP
       ? "user"
       : pathname.startsWith("/dashboard/merchant")
         ? "merchant"
-        : fallbackRole;
+        : pathname.startsWith("/dashboard/admin")
+          ? "admin"
+          : fallbackRole;
 
   return (
     <span className="text-sm font-semibold capitalize text-foreground">
