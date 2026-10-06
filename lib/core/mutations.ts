@@ -15,16 +15,26 @@ const getBaseUrl = (): string => {
 /**
  * Sends a POST request with JSON body.
  */
-export const postMutation = async (url: string, data: unknown) => {
+export const postMutation = async (
+  url: string,
+  data?: unknown,
+  token?: string
+) => {
   const baseUrl = getBaseUrl();
 
   try {
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
     const res = await fetch(`${baseUrl}${url}`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
+      headers,
+      body: data === undefined ? undefined : JSON.stringify(data),
       cache: "no-store",
     });
 
@@ -112,12 +122,19 @@ export const patchMutation = async (url: string, data: unknown) => {
 // GET
 // ============================================================
 
-export const getData = async (url: string) => {
+export const getData = async (url: string, token?: string) => {
   const baseUrl = getBaseUrl();
 
   try {
+    const headers: HeadersInit = {};
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
     const res = await fetch(`${baseUrl}${url}`, {
       method: "GET",
+      headers,
       cache: "no-store",
     });
 

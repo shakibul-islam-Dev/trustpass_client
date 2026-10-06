@@ -19,14 +19,7 @@ export default function Navbar() {
   if (path.startsWith("/dashboard")) {
     return null;
   }
-  const {
-    data: session,
-    isPending, //loading state
-    error, //error object
-    refetch, //refetch the session
-  } = authClient.useSession();
-  const user = session?.user;
-
+  
   /**
    * Handles user logout.
    * TODO: Replace with Better Auth signOut() call
@@ -34,13 +27,6 @@ export default function Navbar() {
   const handleLogout = async () => {
     // TODO: Uncomment when Better Auth is ready
     // await signOut();
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          redirect("/auth/login"); // redirect to login page
-        },
-      },
-    });
     console.log("Logout clicked");
   };
 
