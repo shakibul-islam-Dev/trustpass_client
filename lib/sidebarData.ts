@@ -146,4 +146,4 @@ export type SidebarItem = {
 export type UserRole = ApiRole;
 /** Settings icon kept exported so a future settings page can reuse the import. */
 export { Settings };
-export { Settings };
+// export { Settings };
