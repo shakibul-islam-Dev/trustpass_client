@@ -4,13 +4,11 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { mapAuthRoleToSidebarRole, UserRole } from "@/lib/sidebarData";
 import { getUserServerSession } from "@/lib/user-api/session-server";
 
-
 export default async function DashboardRootlayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-
   const user = await getUserServerSession();
   const userRole: UserRole = mapAuthRoleToSidebarRole((user as any)?.role);
 
@@ -27,7 +25,9 @@ export default async function DashboardRootlayout({
             <div className="flex items-center gap-3">
               <SidebarTrigger />
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-muted-foreground">Dashboard</span>
+                <span className="text-sm font-medium text-muted-foreground">
+                  Dashboard
+                </span>
                 <span className="text-muted-foreground">/</span>
                 <DashboardRoleLabel fallbackRole={userRole} />
               </div>
