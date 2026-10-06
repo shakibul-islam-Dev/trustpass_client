@@ -44,11 +44,10 @@ export const CustomerReportDetailsModal = ({
 
         <div className="py-4 space-y-4">
           {/* Status Banner */}
-          <div className={`p-3 rounded-md border flex items-center gap-2 ${
-            report.status === 'RESOLVED' ? 'bg-green-500/10 border-green-500/20' :
-            report.status === 'REJECTED' ? 'bg-destructive/10 border-destructive/20' :
-            'bg-yellow-500/10 border-yellow-500/20'
-          }`}>
+          <div className={`p-3 rounded-md border flex items-center gap-2 ${report.status === 'RESOLVED' ? 'bg-green-500/10 border-green-500/20' :
+              report.status === 'REJECTED' ? 'bg-destructive/10 border-destructive/20' :
+                'bg-yellow-500/10 border-yellow-500/20'
+            }`}>
             {getStatusIcon()}
             <div>
               <p className="text-sm font-medium">Status: {report.status}</p>
@@ -68,14 +67,14 @@ export const CustomerReportDetailsModal = ({
             </div>
             <div>
               <p className="text-muted-foreground">Category</p>
-              <Badge variant="outline">{report.category.replace("_", " ")}</Badge>
+              <Badge variant="outline">{report.reason.replace(/_/g, " ")}</Badge>
             </div>
             <div>
               <p className="text-muted-foreground">Priority</p>
               <Badge variant={
                 report.priority === 'HIGH' ? "destructive" :
-                report.priority === 'MEDIUM' ? "secondary" :
-                "outline"
+                  report.priority === 'MEDIUM' ? "secondary" :
+                    "outline"
               }>
                 {report.priority}
               </Badge>
@@ -95,23 +94,30 @@ export const CustomerReportDetailsModal = ({
           </div>
 
           {/* Evidence */}
-          {report.evidenceUrl && (
+          {report.evidenceUrls && report.evidenceUrls.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Evidence:</p>
-              <div className="flex items-center justify-between p-3 border rounded-md bg-muted/30">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-primary" />
-                  <span className="text-sm">Attached Evidence</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => window.open(report.evidenceUrl, "_blank")}
+              <p className="text-sm font-medium text-muted-foreground">
+                Evidence ({report.evidenceUrls.length}):
+              </p>
+              {report.evidenceUrls.map((url, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 border rounded-md bg-muted/30"
                 >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  View
-                </Button>
-              </div>
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <span className="text-sm">Evidence #{index + 1}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.open(url, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    View
+                  </Button>
+                </div>
+              ))}
             </div>
           )}
 

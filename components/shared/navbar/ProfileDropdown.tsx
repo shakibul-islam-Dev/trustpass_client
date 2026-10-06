@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { User, LayoutDashboard, LogOut, Settings, ChevronDown } from "lucide-react";
+import { homeForRole, isApiRole } from "@/lib/core/roles";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,31 +32,52 @@ export const ProfileDropdown = ({ user, onLogout }: ProfileDropdownProps) => {
   const getInitials = (name: string) => {
     return name
       .split(" ")
+      .filter(Boolean)
       .map((n) => n[0])
       .join("")
       .toUpperCase()
       .slice(0, 2);
   };
 
+  // Single source of truth for role -> landing page. The old switch in this file
+  // listed a BUYER role and sent it to `/dashboard/buyer/overview`, which does
+  // not exist, and sent every CUSTOMER to `/dashboard/customer/reports` rather
+  // than their own dashboard.
   const getDashboardPath = (role?: string) => {
-    switch (role) {
-      case "ADMIN":
-        return "/dashboard/admin";
-      case "MODERATOR":
-        return "/dashboard/moderator";
-      case "BUYER":
-        return "/dashboard/buyer/overview";
-      case "CUSTOMER":
-      default:
-        return "/dashboard/customer/reports";
-    }
+    if (!role) return homeForRole(undefined);
+    return homeForRole(isApiRole(role) ? role : undefined);
   };
 
+  // Signed out: show both links.
+  //
+  // There used to be only a "Sign In" button here, which left the register page
+  // (/auth/register) with no link pointing at it anywhere in the navbar — the
+  // only way to reach it was to type the URL. Visitors who came to sign up had
+  // to guess the address.
+  //
+  // These are styled with `buttonVariants` instead of being wrapped in
+  // `<Button render={<Link/>}>`. That render trick asks Base UI's Button to
+  // output an <a>, but Base UI assumes it is rendering a real <button> and
+  // warns about the lost button semantics. `buttonVariants` only returns a
+  // className, so the Link stays a real link with correct keyboard, middle
+  // click and "open in new tab" behaviour.
   if (!user) {
     return (
-      <Button variant="outline" size="sm" onClick={() => router.push("/auth/login")}>
-        Sign In
-      </Button>
+      <div className="flex items-center gap-2">
+        <Link
+          href="/auth/login"
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
+          Sign In
+        </Link>
+
+        <Link
+          href="/auth/register"
+          className={buttonVariants({ size: "sm" })}
+        >
+          Sign Up
+        </Link>
+      </div>
     );
   }
 
