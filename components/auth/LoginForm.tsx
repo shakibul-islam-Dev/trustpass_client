@@ -1,173 +1,200 @@
-
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { authClient } from "@/lib/auth-client";
 import OtpForm from "@/components/otp/OtpForm";
+import { readApiError, safeApiMessage, safeThrownError } from "@/lib/core/api-error";
+import {
+  isApiConfigured,
+  loginWithPassword,
+  resendOtp,
+  verifyOtp,
+} from "@/lib/core/auth-api";
+import {
+  isApiConfigured as isSessionApiConfigured,
+  signInWithSocial,
+} from "@/lib/core/session";
+import { homeForRole, type ApiRole } from "@/lib/core/roles";
 
 type Inputs = {
   email: string;
-  otp?: string;
+  password: string;
 };
+
+
 
 export default function LoginForm() {
   const router = useRouter();
 
-  const [step, setStep] = useState<"email" | "otp">("email");
-  const [userEmail, setUserEmail] = useState("");
-
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Non-null while step 2 is showing. Holds the address to verify, so the
+  // field the user typed is the one that gets verified even if they cannot
+  // edit it here.
+  const [pendingVerificationEmail, setPendingVerificationEmail] =
+    useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
+    formState: { isSubmitting },
   } = useForm<Inputs>({
     mode: "onSubmit",
   });
 
-  const clearMessages = () => {
+  // ==========================================
+  // SIGN IN  ->  POST /api/v1/auth/login
+  // The server authenticates with email + password
+  // and sets the session cookie.
+  // ==========================================
+
+  const handleLogin: SubmitHandler<Inputs> = async (formData) => {
     setErrorMessage(null);
     setSuccessMessage(null);
-  };
+    setNotice(null);
 
-  // ==========================================
-  // STEP 1: SEND SIGN-IN OTP
-  // ==========================================
-
-  const handleSendOtp: SubmitHandler<Inputs> = async (formData) => {
-    clearMessages();
+    if (!isApiConfigured()) {
+      setErrorMessage("API URL is not configured.");
+      return;
+    }
 
     try {
-      const { error } =
-        await authClient.emailOtp.sendVerificationOtp({
-          email: formData.email,
-          type: "sign-in",
-        });
+      const result = await loginWithPassword(formData.email, formData.password);
 
-      if (error) {
-        setErrorMessage(
-          error.message || "Failed to send OTP. Please try again."
+      if (result.ok) {
+        setSuccessMessage("Login successful! Redirecting...");
+        // Send each role to its own dashboard straight away. The /dashboard
+        // page would bounce here anyway; doing it here just saves a round trip.
+        router.replace(homeForRole(result.user?.role as ApiRole | undefined));
+        router.refresh();
+        return;
+      }
+
+      // The address exists and the password matched, but it is not verified.
+      // Move to step 2 instead of showing a dead end.
+      if (result.needsVerification) {
+        setPendingVerificationEmail(formData.email.trim().toLowerCase());
+        setNotice(
+          "This email address is not verified yet. Enter the 6-digit code we " +
+            "sent to finish signing in.",
         );
         return;
       }
 
-      setUserEmail(formData.email);
-
-      setSuccessMessage(
-        "OTP has been sent to your email address."
-      );
-
-      setStep("otp");
-
-      reset();
-    } catch (error) {
-      console.error("Send OTP error:", error);
-
       setErrorMessage(
-        "Something went wrong while sending OTP."
+        await readApiError("login", result.response, "Failed to log in."),
+      );
+    } catch (error) {
+      setErrorMessage(
+        safeThrownError("login", error, "Something went wrong while signing in."),
       );
     }
   };
 
   // ==========================================
-  // STEP 2: VERIFY OTP & SIGN IN
+  // VERIFY OTP  ->  POST /api/v1/auth/verify-otp
+  //
+  // The server forwards its own Set-Cookie here, so a successful verification
+  // normally signs the user in. If it did not, fall back to the password
+  // screen rather than pushing them into a dashboard they cannot load.
   // ==========================================
 
-  const handleVerifyOtp: SubmitHandler<Inputs> = async (
-    formData
-  ) => {
-    clearMessages();
+  const handleVerifyOtp = async (otp: string) => {
+    if (!pendingVerificationEmail) return;
+
+    setIsVerifying(true);
+    setErrorMessage(null);
+    setNotice(null);
 
     try {
-      const { data, error } =
-        await authClient.signIn.emailOtp({
-          email: userEmail,
-          otp: formData.otp!,
-        });
+      const result = await verifyOtp(pendingVerificationEmail, otp);
 
-      if (error) {
+      if (!result.ok) {
         setErrorMessage(
-          error.message || "Invalid or expired OTP."
+          result.invalidCode
+            ? "That code is not right or has expired. Request a new one below."
+            : await readApiError(
+                "verify-otp",
+                result.response,
+                "Could not verify that code.",
+              ),
         );
         return;
       }
 
-      console.log("Login successful:", data);
-
-      setSuccessMessage(
-        "Login successful! Redirecting..."
-      );
-
-      router.push("/");
+      // A correct code both verifies the address and signs the user in, so they can
+      // go straight to their dashboard.
+      setSuccessMessage("Email verified. Redirecting...");
+      router.replace(homeForRole(result.user?.role as ApiRole | undefined));
       router.refresh();
     } catch (error) {
-      console.error("Verify OTP error:", error);
-
       setErrorMessage(
-        "Failed to verify OTP. Please try again."
+        safeThrownError("verify-otp", error, "Could not verify that code."),
       );
+    } finally {
+      setIsVerifying(false);
     }
   };
 
-  // ==========================================
-  // RESEND OTP
-  // ==========================================
-
   const handleResendOtp = async () => {
-    clearMessages();
+    if (!pendingVerificationEmail) return;
+
+    setIsResending(true);
+    setErrorMessage(null);
+    setNotice(null);
 
     try {
-      const { error } =
-        await authClient.emailOtp.sendVerificationOtp({
-          email: userEmail,
-          type: "sign-in",
-        });
+      const response = await resendOtp(pendingVerificationEmail);
 
-      if (error) {
+      if (!response.ok) {
         setErrorMessage(
-          error.message || "Failed to resend OTP."
+          await readApiError(
+            "resend-otp",
+            response,
+            "Could not send a new code. Try again in a moment.",
+          ),
         );
         return;
       }
 
-      setSuccessMessage("A new OTP has been sent.");
+      setNotice("If that account is still unverified, a new code is on its way.");
     } catch (error) {
-      console.error("Resend OTP error:", error);
-
       setErrorMessage(
-        "Failed to resend OTP."
+        safeThrownError("resend-otp", error, "Could not send a new code."),
       );
+    } finally {
+      setIsResending(false);
     }
   };
 
   // ==========================================
-  // SOCIAL LOGIN
+  // SOCIAL LOGIN  ->  handled by the server
   // ==========================================
 
-  const handleSocialLogin = async (
-    provider: "google" | "facebook"
-  ) => {
-    clearMessages();
+  const handleSocialLogin = async (provider: "google" | "facebook") => {
+    setErrorMessage(null);
+    setSuccessMessage(null);
 
-    try {
-      await authClient.signIn.social({
-        provider,
-        callbackURL: "/",
-      });
-    } catch (error) {
-      console.error(
-        `${provider} login error:`,
-        error
-      );
+    if (!isSessionApiConfigured()) {
+      setErrorMessage("API URL is not configured.");
+      return;
+    }
 
+    // Navigates away to the provider on success, so there is nothing to render
+    // afterwards. A `false` return means no authorize URL came back.
+    const redirected = await signInWithSocial(provider, "/");
+
+    if (!redirected) {
       setErrorMessage(
-        `Failed to login with ${provider}.`
+        safeApiMessage({
+          fallback: `Could not start ${provider} sign-in. Please try again.`,
+        }),
       );
     }
   };
@@ -179,19 +206,16 @@ export default function LoginForm() {
   return (
     <div className="flex min-h-[80vh] items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-800 dark:bg-slate-900">
-
         {/* Header */}
         <div className="space-y-2 text-center">
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            {step === "email"
-              ? "Sign In"
-              : "Verify Your Email"}
+            {pendingVerificationEmail ? "Verify your email" : "Sign In"}
           </h2>
 
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            {step === "email"
-              ? "Enter your email to receive a verification code."
-              : `Enter the 6-digit OTP sent to ${userEmail}`}
+            {pendingVerificationEmail
+              ? "Enter the code we emailed you to finish signing in."
+              : "Enter your email and password to continue."}
           </p>
         </div>
 
@@ -209,133 +233,127 @@ export default function LoginForm() {
           </div>
         )}
 
-        {/* ===================================== */}
-        {/* STEP 1: EMAIL */}
-        {/* ===================================== */}
-
-        {step === "email" && (
-          <>
-            <form
-              onSubmit={handleSubmit(handleSendOtp)}
-              className="space-y-4"
-            >
-              <div className="space-y-2">
-                <label
-                  htmlFor="email"
-                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                >
-                  Email
-                </label>
-
-                <input
-                  id="email"
-                  type="email"
-                  placeholder="name@example.com"
-                  autoComplete="email"
-                  className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-950 dark:border-slate-700 dark:focus:ring-slate-300"
-                  {...register("email", {
-                    required: "Email is required",
-                    pattern: {
-                      value:
-                        /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: "Invalid email address",
-                    },
-                  })}
-                />
-
-                {errors.email && (
-                  <p className="text-sm font-medium text-red-500">
-                    {errors.email.message}
-                  </p>
-                )}
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isSubmitting}
-              >
-                {isSubmitting
-                  ? "Sending OTP..."
-                  : "Continue"}
-              </Button>
-            </form>
-
-            {/* Divider */}
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-slate-200 dark:border-slate-800" />
-              </div>
-
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-slate-500 dark:bg-slate-900">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            {/* Social Login */}
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  handleSocialLogin("google")
-                }
-                className="w-full"
-              >
-                Google
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  handleSocialLogin("facebook")
-                }
-                className="w-full"
-              >
-                Facebook
-              </Button>
-            </div>
-          </>
+        {/* Neutral notice (e.g. "code sent", "check your inbox") */}
+        {notice && !errorMessage && (
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-center text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-300">
+            {notice}
+          </div>
         )}
 
-        {/* ===================================== */}
-        {/* STEP 2: OTP */}
-        {/* ===================================== */}
+        {pendingVerificationEmail ? (
+          <>
+            <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+              Code sent to{" "}
+              <span className="font-medium text-slate-700 dark:text-slate-200">
+                {pendingVerificationEmail}
+              </span>
+            </p>
 
-        {step === "otp" && (
-          <div className="space-y-4">
             <OtpForm
-              email={userEmail}
-              isVerifying={isSubmitting}
-              onVerify={async (otp) => {
-                clearMessages();
-                const data = { otp } as Inputs;
-                await handleVerifyOtp(data);
-              }}
+              email={pendingVerificationEmail}
+              isVerifying={isVerifying}
+              onVerify={handleVerifyOtp}
+              onResend={handleResendOtp}
+              isResending={isResending}
               onBack={() => {
-                clearMessages();
-                setStep("email");
-                setUserEmail("");
-                reset();
+                setPendingVerificationEmail(null);
+                setErrorMessage(null);
+                setNotice(null);
               }}
-              backButtonText="Use a different email"
-              submitButtonText="Verify & Sign In"
-              verifyingText="Verifying..."
+              backButtonText="Use a different account"
             />
-
-            {/* Resend */}
-            <button
-              type="button"
-              onClick={handleResendOtp}
-              disabled={isSubmitting}
-              className="w-full text-center text-sm text-slate-500 hover:underline"
+          </>
+        ) : (
+          <>
+        <form onSubmit={handleSubmit(handleLogin)} className="space-y-4" noValidate>
+          <div className="space-y-2">
+            <label
+              htmlFor="email"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
             >
-              Resend OTP
-            </button>
+              Email
+            </label>
+
+            <input
+              id="email"
+              type="email"
+              placeholder="name@example.com"
+              autoComplete="email"
+              className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-950 dark:border-slate-700 dark:focus:ring-slate-300"
+              {...register("email")}
+            />
           </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="password"
+              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Password
+            </label>
+
+            <input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              autoComplete="current-password"
+              className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-950 dark:border-slate-700 dark:focus:ring-slate-300"
+              {...register("password")}
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Signing in..." : "Sign In"}
+          </Button>
+        </form>
+
+        {/* Divider */}
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-slate-200 dark:border-slate-800" />
+          </div>
+
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-white px-2 text-slate-500 dark:bg-slate-900">
+              Or continue with
+            </span>
+          </div>
+        </div>
+
+        {/* Social Login */}
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => handleSocialLogin("google")}
+            className="w-full"
+          >
+            Google
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => handleSocialLogin("facebook")}
+            className="w-full"
+          >
+            Facebook
+          </Button>
+        </div>
+
+        {/* Link to the sign-up form, so someone without an account is not
+            stranded here. */}
+        <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+          Don&apos;t have an account?{" "}
+          <button
+            type="button"
+            className="font-medium text-slate-900 underline-offset-4 hover:underline dark:text-white"
+            onClick={() => router.push("/auth/register")}
+          >
+            Sign up
+          </button>
+        </p>
+          </>
         )}
       </div>
     </div>
