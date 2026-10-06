@@ -26,22 +26,28 @@ import {
   isApiConfigured,
   normalizeEmail,
   registerAccount,
+  resendOtp,
+  verifyOtp,
 } from "@/lib/core/auth-api";
 import { signInWithSocial } from "@/lib/core/session";
+import { homeForRole, type ApiRole } from "@/lib/core/roles";
+import OtpForm from "@/components/otp/OtpForm";
 
 /*
- * OTP VERIFICATION IS COMMENTED OUT
+ * TWO-STEP REGISTRATION
  *
- * This form used to move to a second screen with an `OtpForm`, then call
- * `verifyOtp` followed by `loginWithPassword` (verify-otp sets no session
- * cookie of its own). `verifyOtp` and `resendOtp` are commented out in
- * `lib/core/auth-api.ts`: the server's SMTP config is unset, so it swallows
- * the send failure and answers 201/200 while producing no mail.
+ * Step 1 creates the account. The server runs better-auth with
+ * `requireEmailVerification: true`, so the account exists but cannot sign in
+ * until it is verified — which makes step 2 mandatory, not decorative.
  *
- * Registration therefore now ends at the account existing. Note the server runs
- * better-auth with `requireEmailVerification: true`, so the new account cannot
- * sign in yet — see the 403 note in `LoginForm.tsx`. Restoring OTP means
- * uncommenting those two functions and bringing this screen back.
+ * The server answers 201 either way, so a 201 means "the account exists" and
+ * nothing more: whether the mail actually left is not something this client
+ * can observe. The OTP screen offers a resend regardless, which is the only
+ * recovery if the first send was lost.
+ *
+ * `verify-otp` normally signs the user in as well, because the server forwards
+ * better-auth's Set-Cookie. If it does not, the user is sent to the login page
+ * rather than into a dashboard they cannot load.
  */
 
 interface InputForm {
@@ -50,18 +56,30 @@ interface InputForm {
   password: string;
   phone: string;
   gender: "MALE" | "FEMALE" | "OTHER";
+  // Only the two self-service roles. The server's schema also accepts
+  // MODERATOR and ADMIN, which would let anyone make themselves an admin.
   role: "CUSTOMER" | "SELLER";
 }
 
 export default function RegistrationForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const router = useRouter();
+
+  // Non-null once the account exists and the OTP step is showing.
+  const [otpEmail, setOtpEmail] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+
+  // True after the server answers 409, so the form can offer a way to sign in
+  // instead of leaving a dead end.
+  const [emailTaken, setEmailTaken] = useState(false);
 
   const {
     register,
     handleSubmit,
     control,
-    formState: { errors, isSubmitting },
+    formState: { isSubmitting },
   } = useForm<InputForm>({
     defaultValues: {
       name: "",
@@ -75,11 +93,13 @@ export default function RegistrationForm() {
   });
 
   // ============================================================
-  // Registration
+  // Step 1 — Registration
   // ============================================================
 
   const onSubmit: SubmitHandler<InputForm> = async (formData) => {
     setErrorMessage(null);
+    setNotice(null);
+    setEmailTaken(false);
 
     if (!isApiConfigured()) {
       setErrorMessage("API URL is not configured.");
@@ -105,16 +125,22 @@ export default function RegistrationForm() {
       });
 
       if (!response.ok) {
-        // 409: the address is already on file. Registration cannot continue and
-        // OTP is disabled, so the only useful move is to send them to sign in.
+        // 409 means the address is already on file.
+        //
+        // This used to call router.push("/auth/login") straight away, which
+        // threw away the explanation before anyone could read it — the alert
+        // flashed and vanished. It is now shown, with a button to carry on to
+        // sign in.
         if (response.status === 409) {
+          setEmailTaken(true);
           setErrorMessage(
-            "That email is already registered. Taking you to sign in.",
+            "That email already has an account. Try signing in instead, or use " +
+              "a different email address.",
           );
-          router.push("/auth/login");
           return;
         }
 
+        setEmailTaken(false);
         setErrorMessage(
           await readApiError(
             "register",
@@ -137,14 +163,12 @@ export default function RegistrationForm() {
         return;
       }
 
-      // The account exists. OTP is disabled, and the server runs with
-      // `requireEmailVerification: true`, so this new account cannot sign in
-      // yet — do not send the user to the login screen to hit that 403 without
-      // warning. Say what happened and what they can do.
-      setErrorMessage(
-        "Account created. Email verification is currently unavailable, so " +
-          "sign-in is disabled for this account until the server's mail " +
-          "transport is configured.",
+      // The account exists but cannot sign in until it is verified, so go
+      // straight to the OTP step rather than bouncing to login.
+      setOtpEmail(email);
+      setNotice(
+        "Account created. Enter the 6-digit code we sent to your email to " +
+          "finish setting up your account.",
       );
     } catch (error: unknown) {
       setErrorMessage(
@@ -158,13 +182,82 @@ export default function RegistrationForm() {
   };
 
   // ============================================================
-  // OTP Verification
-  //
-  // COMMENTED OUT. The handler that called `verifyOtp` and then
-  // `loginWithPassword` (verify-otp sets no session cookie of its own) is
-  // restored from git history alongside the two API functions it depends on.
-  // The OTP screen this rendered is described at the top of this file.
+  // Step 2 — OTP Verification
   // ============================================================
+
+  const handleVerifyOtp = async (otp: string) => {
+    if (!otpEmail) return;
+
+    setIsVerifying(true);
+    setErrorMessage(null);
+    setNotice(null);
+
+    try {
+      const result = await verifyOtp(otpEmail, otp);
+
+      if (!result.ok) {
+        setErrorMessage(
+          result.invalidCode
+            ? "That code is not right or has expired. Request a new one below."
+            : await readApiError(
+                "verify-otp",
+                result.response,
+                "Could not verify that code.",
+              ),
+        );
+        return;
+      }
+
+      // A correct code verifies the address AND signs the user in, so there is no
+      // need to ask for the password again.
+      setNotice("Email verified. Taking you to your dashboard...");
+      router.replace(homeForRole(result.user?.role as ApiRole | undefined));
+      router.refresh();
+    } catch (error: unknown) {
+      setErrorMessage(
+        safeThrownError(
+          "verify-otp",
+          error,
+          "Could not verify that code.",
+        ),
+      );
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!otpEmail) return;
+
+    setIsResending(true);
+    setErrorMessage(null);
+    setNotice(null);
+
+    try {
+      const response = await resendOtp(otpEmail);
+
+      if (!response.ok) {
+        setErrorMessage(
+          await readApiError(
+            "resend-otp",
+            response,
+            "Could not send a new code. Try again in a moment.",
+          ),
+        );
+        return;
+      }
+
+      setNotice(
+        "If that account is still unverified, a new code is on its way.",
+      );
+    } catch (error: unknown) {
+      setErrorMessage(
+        safeThrownError("resend-otp", error, "Could not send a new code."),
+      );
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   // ============================================================
   // Social Login -> handled entirely by the API server
@@ -200,7 +293,11 @@ export default function RegistrationForm() {
         <CardTitle className="text-3xl font-extrabold tracking-tight">
           Trust Pass
         </CardTitle>
-        <CardDescription>Create your account to get started</CardDescription>
+        <CardDescription>
+          {otpEmail
+            ? "Verify your email to finish"
+            : "Create your account to get started"}
+        </CardDescription>
       </CardHeader>
 
       <CardContent>
@@ -211,16 +308,52 @@ export default function RegistrationForm() {
           </Alert>
         )}
 
-        {/* ====================================================
-             REGISTRATION FORM
+        {/* Shown only after a 409. Puts the one useful next step right under
+            the message instead of silently redirecting away from it. */}
+        {emailTaken && (
+          <Button
+            type="button"
+            variant="outline"
+            className="mb-4 w-full"
+            onClick={() => router.push("/auth/login")}
+          >
+            Go to sign in
+          </Button>
+        )}
 
-             The OTP screen that used to be rendered here is commented out; see
-             the note at the top of this file. It was this conditional:
-               {showOtpScreen ? <OtpForm ... /> : <form ...>}
-             so restoring it means reintroducing the branch and the
-             `showOtpScreen` state.
+        {/* Neutral notice (e.g. "code sent") */}
+        {notice && !errorMessage && (
+          <Alert className="mb-4">
+            <AlertDescription>{notice}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* ====================================================
+             OTP step — replaces the form once the account exists.
         ==================================================== */}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {otpEmail ? (
+          <>
+            <p className="mb-4 text-center text-sm text-muted-foreground">
+              Code sent to{" "}
+              <span className="font-medium text-foreground">{otpEmail}</span>
+            </p>
+
+            <OtpForm
+              email={otpEmail}
+              isVerifying={isVerifying}
+              onVerify={handleVerifyOtp}
+              onResend={handleResendOtp}
+              isResending={isResending}
+              onBack={() => {
+                setOtpEmail(null);
+                setNotice(null);
+                setErrorMessage(null);
+              }}
+              backButtonText="Back to sign up"
+            />
+          </>
+        ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             {/* Full Name */}
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
@@ -229,23 +362,8 @@ export default function RegistrationForm() {
                 type="text"
                 autoComplete="name"
                 placeholder="John Doe"
-                {...register("name", {
-                  required: "Full name is required",
-                  minLength: {
-                    value: 2,
-                    message: "Name must be at least 2 characters",
-                  },
-                  maxLength: {
-                    value: 100,
-                    message: "Name cannot exceed 100 characters",
-                  },
-                })}
+                {...register("name")}
               />
-              {errors.name && (
-                <p className="text-xs font-medium text-destructive">
-                  {errors.name.message}
-                </p>
-              )}
             </div>
 
             {/* Email */}
@@ -256,19 +374,8 @@ export default function RegistrationForm() {
                 type="email"
                 autoComplete="email"
                 placeholder="john@example.com"
-                {...register("email", {
-                  required: "Email is required",
-                  pattern: {
-                    value: /^\S+@\S+$/i,
-                    message: "Invalid email address",
-                  },
-                })}
+                {...register("email")}
               />
-              {errors.email && (
-                <p className="text-xs font-medium text-destructive">
-                  {errors.email.message}
-                </p>
-              )}
             </div>
 
             {/* Password */}
@@ -279,23 +386,8 @@ export default function RegistrationForm() {
                 type="password"
                 autoComplete="new-password"
                 placeholder="••••••••"
-                {...register("password", {
-                  required: "Password is required",
-                  minLength: {
-                    value: 8,
-                    message: "Password must be at least 8 characters",
-                  },
-                  maxLength: {
-                    value: 128,
-                    message: "Password cannot exceed 128 characters",
-                  },
-                })}
+                {...register("password")}
               />
-              {errors.password && (
-                <p className="text-xs font-medium text-destructive">
-                  {errors.password.message}
-                </p>
-              )}
             </div>
 
             {/* Phone */}
@@ -306,18 +398,8 @@ export default function RegistrationForm() {
                 type="text"
                 autoComplete="tel"
                 placeholder="+8801712345678"
-                {...register("phone", {
-                  pattern: {
-                    value: /^[+0-9\s\-()]{7,20}$/,
-                    message: "Invalid phone number format",
-                  },
-                })}
+                {...register("phone")}
               />
-              {errors.phone && (
-                <p className="text-xs font-medium text-destructive">
-                  {errors.phone.message}
-                </p>
-              )}
             </div>
 
             {/* Gender */}
@@ -398,6 +480,20 @@ export default function RegistrationForm() {
               Continue with Facebook
             </Button>
         </form>
+        )}
+
+        {/* Link to the other form. Without this, a visitor who picked "Sign Up"
+            by mistake had no way back except editing the URL. */}
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <button
+            type="button"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+            onClick={() => router.push("/auth/login")}
+          >
+            Sign in
+          </button>
+        </p>
       </CardContent>
     </Card>
   </div>

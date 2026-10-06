@@ -4,34 +4,26 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { safeApiMessage, safeThrownError } from "@/lib/core/api-error";
-import { isApiConfigured, loginWithPassword } from "@/lib/core/auth-api";
+import OtpForm from "@/components/otp/OtpForm";
+import { readApiError, safeApiMessage, safeThrownError } from "@/lib/core/api-error";
+import {
+  isApiConfigured,
+  loginWithPassword,
+  resendOtp,
+  verifyOtp,
+} from "@/lib/core/auth-api";
 import {
   isApiConfigured as isSessionApiConfigured,
   signInWithSocial,
 } from "@/lib/core/session";
+import { homeForRole, type ApiRole } from "@/lib/core/roles";
 
 type Inputs = {
   email: string;
   password: string;
 };
 
-/*
- * OTP SIGN-IN IS COMMENTED OUT
- *
- * This form used to have a second "otp" step: a 403 from login sent the user to
- * an OTP input, and resend-otp / verify-otp were called from here. Both are
- * commented out in `lib/core/auth-api.ts`, so there is no OTP step and this is
- * now a single-screen credentials form.
- *
- * What a 403 means with OTP off:
- *
- * The server checks the account's `emailVerified` flag before signing in, and
- * its mail transport is unconfigured, so an address can never be verified. A
- * 403 here therefore means the account cannot be signed in from this screen —
- * there is no code to enter. The message below says that rather than implying
- * a code was sent.
- */
+
 
 export default function LoginForm() {
   const router = useRouter();
@@ -39,10 +31,19 @@ export default function LoginForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Non-null while step 2 is showing. Holds the address to verify, so the
+  // field the user typed is the one that gets verified even if they cannot
+  // edit it here.
+  const [pendingVerificationEmail, setPendingVerificationEmail] =
+    useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { isSubmitting },
   } = useForm<Inputs>({
     mode: "onSubmit",
   });
@@ -56,6 +57,7 @@ export default function LoginForm() {
   const handleLogin: SubmitHandler<Inputs> = async (formData) => {
     setErrorMessage(null);
     setSuccessMessage(null);
+    setNotice(null);
 
     if (!isApiConfigured()) {
       setErrorMessage("API URL is not configured.");
@@ -67,38 +69,107 @@ export default function LoginForm() {
 
       if (result.ok) {
         setSuccessMessage("Login successful! Redirecting...");
-        router.push("/");
+        // Send each role to its own dashboard straight away. The /dashboard
+        // page would bounce here anyway; doing it here just saves a round trip.
+        router.replace(homeForRole(result.user?.role as ApiRole | undefined));
         router.refresh();
         return;
       }
 
-      // 403 = the server has `requireEmailVerification: true` and this address
-      // is not verified. With OTP disabled there is no way to satisfy that from
-      // here, so say exactly that rather than implying a code is on its way.
+      // The address exists and the password matched, but it is not verified.
+      // Move to step 2 instead of showing a dead end.
       if (result.needsVerification) {
-        setErrorMessage(
-          safeApiMessage({
-            status: result.status,
-            serverMessage: result.serverMessage,
-            fallback:
-              "This email address is not verified. Email verification is " +
-              "currently unavailable, so this account cannot sign in yet.",
-          }),
+        setPendingVerificationEmail(formData.email.trim().toLowerCase());
+        setNotice(
+          "This email address is not verified yet. Enter the 6-digit code we " +
+            "sent to finish signing in.",
         );
         return;
       }
 
       setErrorMessage(
-        safeApiMessage({
-          status: result.status,
-          serverMessage: result.serverMessage,
-          fallback: "Failed to log in.",
-        }),
+        await readApiError("login", result.response, "Failed to log in."),
       );
     } catch (error) {
       setErrorMessage(
         safeThrownError("login", error, "Something went wrong while signing in."),
       );
+    }
+  };
+
+  // ==========================================
+  // VERIFY OTP  ->  POST /api/v1/auth/verify-otp
+  //
+  // The server forwards its own Set-Cookie here, so a successful verification
+  // normally signs the user in. If it did not, fall back to the password
+  // screen rather than pushing them into a dashboard they cannot load.
+  // ==========================================
+
+  const handleVerifyOtp = async (otp: string) => {
+    if (!pendingVerificationEmail) return;
+
+    setIsVerifying(true);
+    setErrorMessage(null);
+    setNotice(null);
+
+    try {
+      const result = await verifyOtp(pendingVerificationEmail, otp);
+
+      if (!result.ok) {
+        setErrorMessage(
+          result.invalidCode
+            ? "That code is not right or has expired. Request a new one below."
+            : await readApiError(
+                "verify-otp",
+                result.response,
+                "Could not verify that code.",
+              ),
+        );
+        return;
+      }
+
+      // A correct code both verifies the address and signs the user in, so they can
+      // go straight to their dashboard.
+      setSuccessMessage("Email verified. Redirecting...");
+      router.replace(homeForRole(result.user?.role as ApiRole | undefined));
+      router.refresh();
+    } catch (error) {
+      setErrorMessage(
+        safeThrownError("verify-otp", error, "Could not verify that code."),
+      );
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!pendingVerificationEmail) return;
+
+    setIsResending(true);
+    setErrorMessage(null);
+    setNotice(null);
+
+    try {
+      const response = await resendOtp(pendingVerificationEmail);
+
+      if (!response.ok) {
+        setErrorMessage(
+          await readApiError(
+            "resend-otp",
+            response,
+            "Could not send a new code. Try again in a moment.",
+          ),
+        );
+        return;
+      }
+
+      setNotice("If that account is still unverified, a new code is on its way.");
+    } catch (error) {
+      setErrorMessage(
+        safeThrownError("resend-otp", error, "Could not send a new code."),
+      );
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -138,11 +209,13 @@ export default function LoginForm() {
         {/* Header */}
         <div className="space-y-2 text-center">
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Sign In
+            {pendingVerificationEmail ? "Verify your email" : "Sign In"}
           </h2>
 
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Enter your email and password to continue.
+            {pendingVerificationEmail
+              ? "Enter the code we emailed you to finish signing in."
+              : "Enter your email and password to continue."}
           </p>
         </div>
 
@@ -160,7 +233,39 @@ export default function LoginForm() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit(handleLogin)} className="space-y-4">
+        {/* Neutral notice (e.g. "code sent", "check your inbox") */}
+        {notice && !errorMessage && (
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-center text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-300">
+            {notice}
+          </div>
+        )}
+
+        {pendingVerificationEmail ? (
+          <>
+            <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+              Code sent to{" "}
+              <span className="font-medium text-slate-700 dark:text-slate-200">
+                {pendingVerificationEmail}
+              </span>
+            </p>
+
+            <OtpForm
+              email={pendingVerificationEmail}
+              isVerifying={isVerifying}
+              onVerify={handleVerifyOtp}
+              onResend={handleResendOtp}
+              isResending={isResending}
+              onBack={() => {
+                setPendingVerificationEmail(null);
+                setErrorMessage(null);
+                setNotice(null);
+              }}
+              backButtonText="Use a different account"
+            />
+          </>
+        ) : (
+          <>
+        <form onSubmit={handleSubmit(handleLogin)} className="space-y-4" noValidate>
           <div className="space-y-2">
             <label
               htmlFor="email"
@@ -175,20 +280,8 @@ export default function LoginForm() {
               placeholder="name@example.com"
               autoComplete="email"
               className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-950 dark:border-slate-700 dark:focus:ring-slate-300"
-              {...register("email", {
-                required: "Email is required",
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: "Invalid email address",
-                },
-              })}
+              {...register("email")}
             />
-
-            {errors.email && (
-              <p className="text-sm font-medium text-red-500">
-                {errors.email.message}
-              </p>
-            )}
           </div>
 
           <div className="space-y-2">
@@ -205,16 +298,8 @@ export default function LoginForm() {
               placeholder="••••••••"
               autoComplete="current-password"
               className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-950 dark:border-slate-700 dark:focus:ring-slate-300"
-              {...register("password", {
-                required: "Password is required",
-              })}
+              {...register("password")}
             />
-
-            {errors.password && (
-              <p className="text-sm font-medium text-red-500">
-                {errors.password.message}
-              </p>
-            )}
           </div>
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
@@ -255,6 +340,21 @@ export default function LoginForm() {
             Facebook
           </Button>
         </div>
+
+        {/* Link to the sign-up form, so someone without an account is not
+            stranded here. */}
+        <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+          Don&apos;t have an account?{" "}
+          <button
+            type="button"
+            className="font-medium text-slate-900 underline-offset-4 hover:underline dark:text-white"
+            onClick={() => router.push("/auth/register")}
+          >
+            Sign up
+          </button>
+        </p>
+          </>
+        )}
       </div>
     </div>
   );

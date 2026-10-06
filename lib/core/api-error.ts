@@ -44,6 +44,95 @@ const BY_STATUS: Record<number, string> = {
   504: "The server took too long to respond. Please try again.",
 };
 
+/** How a field is named when the message has to be rebuilt from scratch. */
+const FIELD_LABEL: Record<string, string> = {
+  name: "Name",
+  email: "Email",
+  password: "Password",
+  phone: "Phone",
+  otp: "Code",
+  role: "Account type",
+  gender: "Gender",
+  image: "Image",
+};
+
+/**
+ * The server validates with zod and, on failure, answers:
+ *
+ *   { message: "Validation Error",
+ *     errorSources: [{ path: "email", message: "Invalid email address" }, ...] }
+ *
+ * `"Validation Error"` on its own tells the user nothing, so this form is where
+ * the real messages live. They still go through the same internal-leak filter as
+ * any other server text.
+ *
+ * Some of zod's default wording is developer-facing ("Too small: expected
+ * string to have >=2 characters"), so it is rewritten into something a person
+ * can act on. Unrecognised wording is passed through unchanged rather than
+ * replaced — the server's own custom messages are better than anything invented
+ * here.
+ */
+function humanizeZodDefault(message: string): string | null {
+  const text = message.trim();
+
+  const tooSmall =
+    /^too small: expected string to have >=(\d+) characters$/i.exec(text);
+  if (tooSmall) return `Must be at least ${tooSmall[1]} characters.`;
+
+  const tooBig = /^too big: expected string to have <=(\d+) characters$/i.exec(
+    text,
+  );
+  if (tooBig) return `Must be ${tooBig[1]} characters or fewer.`;
+
+  if (/^invalid input: expected .+, received /i.test(text)) {
+    return "This field is required.";
+  }
+  if (/^invalid (?:option|enum_value).*$/i.test(text)) {
+    return "That is not one of the available options.";
+  }
+
+  return null;
+}
+
+/**
+ * Builds one readable sentence from the server's per-field errors.
+ *
+ * Up to three are joined, since a fresh form often has more than one thing
+ * wrong and fixing them one round-trip at a time is miserable.
+ */
+function messageFromErrorSources(
+  sources: { path: string; message: string }[],
+): string | null {
+  const parts: string[] = [];
+
+  for (const source of sources) {
+    if (parts.length >= 3) break;
+
+    const humanized = humanizeZodDefault(source.message);
+    const candidate =
+      humanized ??
+      safeApiMessage({
+        serverMessage: source.message,
+        fallback: "",
+        allowFieldMessage: true,
+      });
+
+    if (!candidate) continue;
+
+    // Only prefix the field name when the message does not already name it,
+    // otherwise it reads as "Email Invalid email address".
+    const label = FIELD_LABEL[source.path] ?? source.path;
+    const alreadyNamed = new RegExp(`\\b${label}\\b`, "i").test(candidate);
+    const sentence = alreadyNamed
+      ? candidate
+      : `${label}: ${candidate}`;
+
+    if (!parts.includes(sentence)) parts.push(sentence);
+  }
+
+  return parts.length ? parts.join(" ") : null;
+}
+
 export const DEFAULT_API_ERROR =
   "Something went wrong. Please try again.";
 
@@ -139,6 +228,22 @@ export async function readApiError(
     typeof envelope?.message === "string" ? envelope.message : null;
 
   logInternalError(`${context}: server responded`, body, { status: response.status });
+
+  // Per-field detail beats the generic envelope message. The forms send every
+  // value unvalidated, so this is normally the only specific feedback there is.
+  const sources = Array.isArray(envelope?.errorSources)
+    ? envelope.errorSources.filter(
+        (s): s is { path: string; message: string } =>
+          !!s &&
+          typeof s === "object" &&
+          typeof (s as { message?: unknown }).message === "string",
+      )
+    : [];
+
+  if (sources.length) {
+    const detailed = messageFromErrorSources(sources);
+    if (detailed) return detailed;
+  }
 
   return safeApiMessage({ status: response.status, serverMessage, fallback });
 }

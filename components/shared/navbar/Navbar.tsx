@@ -1,47 +1,41 @@
 "use client";
 
 import Link from "next/link";
-import { redirect, usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { NavLink } from "./NavLink";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { NotificationDropdown } from "@/components/shared/notification-dropdown/NotificationDropdown";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import ToggleBar from "@/components/ToggleBar/ToggleBar";
-import { authClient } from "@/lib/auth-client";
+import { useAuth } from "@/hooks/use-auth";
+import { signOut } from "@/lib/core/session";
+import { cn } from "@/lib/utils";
 
 export default function Navbar() {
   const path = usePathname();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const { user, role, isAuthenticated } = useAuth();
 
   // Don't show navbar inside dashboard
   if (path.startsWith("/dashboard")) {
     return null;
   }
-  const {
-    data: session,
-    isPending, //loading state
-    error, //error object
-    refetch, //refetch the session
-  } = authClient.useSession();
-  const user = session?.user;
 
   /**
-   * Handles user logout.
-   * TODO: Replace with Better Auth signOut() call
+   * Revokes the session on the API, then leaves.
+   *
+   * The cookie is httpOnly on the API's own domain, so there is nothing to
+   * clear locally — the redirect drops this app's view of the session and the
+   * server has already invalidated it.
    */
   const handleLogout = async () => {
-    // TODO: Uncomment when Better Auth is ready
-    // await signOut();
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          redirect("/auth/login"); // redirect to login page
-        },
-      },
-    });
-    console.log("Logout clicked");
+    await signOut();
+    router.replace("/auth/login");
+    router.refresh();
   };
 
   return (
@@ -65,9 +59,11 @@ export default function Navbar() {
             </NavLink>
             <NavLink href="/businessesExplore">Explore Businesses</NavLink>
             <NavLink href="/products">Products</NavLink>
-            <NavLink href="/dashboard/moderator/verification-queue">
-              Moderator Queue
-            </NavLink>
+            {isAuthenticated && (role === "MODERATOR" || role === "ADMIN") && (
+              <NavLink href="/dashboard/moderator/verification-queue">
+                Moderator Queue
+              </NavLink>
+            )}
           </nav>
         </div>
 
@@ -77,10 +73,23 @@ export default function Navbar() {
           <ToggleBar />
 
           {/* Notification Dropdown (only if logged in) */}
-          {user && <NotificationDropdown />}
+          {isAuthenticated && <NotificationDropdown />}
 
-          {/* Profile Dropdown */}
-          <ProfileDropdown user={user} onLogout={handleLogout} />
+          {/* Profile Dropdown. Renders a "Sign In" button when signed out. */}
+          <ProfileDropdown
+            user={
+              user
+                ? {
+                    name: user.name ?? "Signed in",
+                    email: user.email,
+                    role: user.role ?? undefined,
+                    // The API stores the avatar as `image`, not `avatar`.
+                    avatar: user.image ?? undefined,
+                  }
+                : undefined
+            }
+            onLogout={handleLogout}
+          />
 
           {/* Mobile Menu Button */}
           <Button
@@ -108,7 +117,39 @@ export default function Navbar() {
             </NavLink>
             <NavLink href="/businessesExplore">Explore Businesses</NavLink>
             <NavLink href="/businesses?verified=true">Verified Only</NavLink>
-            <NavLink href="/moderator/verifications">Moderator Queue</NavLink>
+            {isAuthenticated && (role === "MODERATOR" || role === "ADMIN") && (
+              <NavLink href="/dashboard/moderator/verification-queue">
+                Moderator Queue
+              </NavLink>
+            )}
+
+            {/* Signed out, the small screens get the same two links the
+                desktop header shows, otherwise Sign Up is unreachable on a
+                phone.
+
+                Styled with `buttonVariants` rather than wrapped in
+                `<Button render={<Link/>}>`, which would ask Base UI's Button
+                to render an <a> and trip its native-button warning. */}
+            {!isAuthenticated && (
+              <div className="mt-2 flex items-center gap-3 border-t border-border pt-3">
+                <Link
+                  href="/auth/login"
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "sm" }),
+                    "flex-1",
+                  )}
+                >
+                  Sign In
+                </Link>
+
+                <Link
+                  href="/auth/register"
+                  className={cn(buttonVariants({ size: "sm" }), "flex-1")}
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </nav>
         </div>
       )}

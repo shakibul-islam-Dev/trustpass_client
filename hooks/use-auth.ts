@@ -5,25 +5,11 @@ import {
   ANONYMOUS_SESSION,
   getSession,
   isApiConfigured,
-  type ApiRole,
   type Session,
 } from "@/lib/core/session";
-import type { UserRole } from "@/lib/sidebarData";
+import { isApiRole, type ApiRole } from "@/lib/core/roles";
 
 export type { ApiRole };
-
-/**
- * The API returns SCREAMING_CASE roles, but the sidebar is keyed by a mix of
- * lower-case and SCREAMING_CASE names. Map them explicitly instead of casting,
- * otherwise `roleSidebars["ADMIN"]` is undefined and every admin silently gets
- * the customer sidebar.
- */
-const ROLE_MAP: Record<ApiRole, UserRole> = {
-  CUSTOMER: "CUSTOMER",
-  SELLER: "SELLER",
-  MODERATOR: "moderator",
-  ADMIN: "admin",
-};
 
 const CONFIG_ERROR = new Error("NEXT_PUBLIC_BASE_URL is not set.");
 
@@ -70,7 +56,7 @@ export function useAuth() {
   }, []);
 
   useEffect(() => {
-    void refresh();
+    refresh();
   }, [refresh]);
 
   // Re-read when the tab regains focus, so a session that expired in another
@@ -84,9 +70,13 @@ export function useAuth() {
     return () => window.removeEventListener("focus", onFocus);
   }, [refresh]);
 
-  const apiRole = session.user?.role;
-  const role: UserRole =
-    apiRole && ROLE_MAP[apiRole] ? ROLE_MAP[apiRole] : "CUSTOMER";
+  // The API stores the role as a free-form string, so an unrecognised or
+  // missing value is possible (a row written before the role column existed, or
+  // a typo). Narrow it once here rather than casting, and fall back to the
+  // least-privileged role so an unknown value cannot accidentally widen access.
+  const role: ApiRole = isApiRole(session.user?.role)
+    ? session.user.role
+    : "CUSTOMER";
 
   return {
     user: session.user,
