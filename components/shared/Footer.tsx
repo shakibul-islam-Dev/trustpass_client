@@ -2,13 +2,18 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
+import { homeForRole } from '@/lib/core/roles';
 
 export default function Footer() {
   const path = usePathname();
+  const { role, isAuthenticated } = useAuth();
 
   if (path.startsWith('/dashboard')) {
     return null;
   }
+
+  const isStaff = role === 'MODERATOR' || role === 'ADMIN';
 
   return (
     <footer className="border-t border-neutral-800 bg-neutral-950 font-sans text-white">
@@ -37,29 +42,37 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-wider text-white">Trust & Governance</h4>
             <ul className="mt-4 space-y-2 text-xs">
-              <li><Link href="/trust-scoring-methodology" className="text-neutral-300 transition hover:text-white">How Trust Score Works</Link></li>
-              <li><Link href="/dashboard/moderator/verification-queue" className="text-neutral-300 transition hover:text-white">Moderator Queue (Staff)</Link></li>
-              <li><Link href="/dashboard/moderator/reports" className="text-neutral-300 transition hover:text-white">Report Review Center</Link></li>
-              <li><Link href="/customer/report" className="text-neutral-300 transition hover:text-white">File a Business Complaint</Link></li>
+              <li><Link href="/dashboard/customer/reports" className="text-neutral-300 transition hover:text-white">File a Business Complaint</Link></li>
+              {/* Staff-only. Previously these were plain links, so every
+                  anonymous visitor saw a "Moderator Queue (Staff)" link that
+                  bounced them to sign-in. */}
+              {isStaff && (
+                <>
+                  <li><Link href="/dashboard/moderator/verification-queue" className="text-neutral-300 transition hover:text-white">Moderator Queue (Staff)</Link></li>
+                  <li><Link href="/dashboard/moderator/reports" className="text-neutral-300 transition hover:text-white">Report Review Center</Link></li>
+                </>
+              )}
             </ul>
           </div>
 
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-wider text-white">Portals</h4>
             <ul className="mt-4 space-y-2 text-xs">
-              <li><Link href="/dashboard/business" className="text-neutral-300 transition hover:text-white">Business Owner Dashboard</Link></li>
-              <li><Link href="/dashboard/buyer" className="text-neutral-300 transition hover:text-white">Buyer Account</Link></li>
-              <li><Link href="/admin/analytics" className="text-neutral-300 transition hover:text-white">System Admin</Link></li>
+              {/* One link, pointing at whichever dashboard this account
+                  actually has. The old list advertised /dashboard/business,
+                  /dashboard/buyer and /admin/analytics — none of which exist,
+                  so all three were 404s. */}
+              <li>
+                <Link href={isAuthenticated ? homeForRole(role) : '/auth/login'} className="text-neutral-300 transition hover:text-white">
+                  {isAuthenticated ? 'My Dashboard' : 'Sign In'}
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
 
         <div className="mt-10 flex flex-col items-center justify-between border-t border-neutral-800 pt-6 text-xs text-neutral-400 sm:flex-row">
           <p>© {new Date().getFullYear()} TrustPass. All rights reserved.</p>
-          <div className="mt-4 flex gap-4 sm:mt-0">
-            <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-white">Terms of Service</Link>
-          </div>
         </div>
       </div>
     </footer>

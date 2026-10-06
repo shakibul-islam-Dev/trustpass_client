@@ -1,10 +1,9 @@
 "use client"
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import { Button } from "../ui/button";
-import { authClient } from "@/lib/auth-client";
 import {
   Card,
   CardContent,
@@ -22,7 +21,34 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { readApiError, safeApiMessage, safeThrownError } from "@/lib/core/api-error";
+import {
+  isApiConfigured,
+  normalizeEmail,
+  registerAccount,
+  resendOtp,
+  verifyOtp,
+} from "@/lib/core/auth-api";
+import { signInWithSocial } from "@/lib/core/session";
+import { homeForRole, type ApiRole } from "@/lib/core/roles";
 import OtpForm from "@/components/otp/OtpForm";
+
+/*
+ * TWO-STEP REGISTRATION
+ *
+ * Step 1 creates the account. The server runs better-auth with
+ * `requireEmailVerification: true`, so the account exists but cannot sign in
+ * until it is verified — which makes step 2 mandatory, not decorative.
+ *
+ * The server answers 201 either way, so a 201 means "the account exists" and
+ * nothing more: whether the mail actually left is not something this client
+ * can observe. The OTP screen offers a resend regardless, which is the only
+ * recovery if the first send was lost.
+ *
+ * `verify-otp` normally signs the user in as well, because the server forwards
+ * better-auth's Set-Cookie. If it does not, the user is sent to the login page
+ * rather than into a dashboard they cannot load.
+ */
 
 interface InputForm {
   name: string;
@@ -30,24 +56,30 @@ interface InputForm {
   password: string;
   phone: string;
   gender: "MALE" | "FEMALE" | "OTHER";
+  // Only the two self-service roles. The server's schema also accepts
+  // MODERATOR and ADMIN, which would let anyone make themselves an admin.
   role: "CUSTOMER" | "SELLER";
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
-
 export default function RegistrationForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showOtpScreen, setShowOtpScreen] = useState(false);
-  const [userEmail, setUserEmail] = useState("");
-  const [otpCode, setOtpCode] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const router = useRouter();
+
+  // Non-null once the account exists and the OTP step is showing.
+  const [otpEmail, setOtpEmail] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+
+  // True after the server answers 409, so the form can offer a way to sign in
+  // instead of leaving a dead end.
+  const [emailTaken, setEmailTaken] = useState(false);
 
   const {
     register,
     handleSubmit,
     control,
-    formState: { errors, isSubmitting },
+    formState: { isSubmitting },
   } = useForm<InputForm>({
     defaultValues: {
       name: "",
@@ -61,257 +93,194 @@ export default function RegistrationForm() {
   });
 
   // ============================================================
-  // Registration
+  // Step 1 — Registration
   // ============================================================
 
   const onSubmit: SubmitHandler<InputForm> = async (formData) => {
     setErrorMessage(null);
+    setNotice(null);
+    setEmailTaken(false);
 
-    if (!API_BASE_URL) {
+    if (!isApiConfigured()) {
       setErrorMessage("API URL is not configured.");
       return;
     }
 
     const name = formData.name.trim();
-    const email = formData.email.trim().toLowerCase();
+    const email = normalizeEmail(formData.email);
     const password = formData.password;
     const phone = formData.phone.trim();
 
     try {
-      const { error: authError } = await authClient.signUp.email({
+      // The external server owns user creation. Do NOT also call
+      // authClient.signUp.email() here — that used to create a second,
+      // locally-owned user record and win the session cookie.
+      const response = await registerAccount({
+        name,
         email,
         password,
-        name,
+        phone: phone || undefined,
+        gender: formData.gender,
+        role: formData.role,
       });
 
-      if (authError) {
+      if (!response.ok) {
+        // 409 means the address is already on file.
+        //
+        // This used to call router.push("/auth/login") straight away, which
+        // threw away the explanation before anyone could read it — the alert
+        // flashed and vanished. It is now shown, with a button to carry on to
+        // sign in.
+        if (response.status === 409) {
+          setEmailTaken(true);
+          setErrorMessage(
+            "That email already has an account. Try signing in instead, or use " +
+              "a different email address.",
+          );
+          return;
+        }
+
+        setEmailTaken(false);
         setErrorMessage(
-          authError.message || "Better Auth registration failed.",
+          await readApiError(
+            "register",
+            response,
+            "Registration could not be completed.",
+          ),
         );
         return;
       }
 
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/auth/register`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            name,
-            email,
-            password,
-            phone: phone || undefined,
-            gender: formData.gender,
-            role: formData.role,
-            image: undefined,
+      const body = await response.clone().json().catch(() => null);
+
+      if (!body?.success) {
+        setErrorMessage(
+          safeApiMessage({
+            status: response.status,
+            fallback: "Registration could not be completed.",
           }),
-        },
-      );
-
-      let resData: {
-        success?: boolean;
-        message?: string;
-        data?: {
-          email?: string;
-        };
-      };
-
-      try {
-        resData = await response.json();
-      } catch {
-        setErrorMessage("Invalid response received from the server.");
-        return;
-      }
-
-      if (!response.ok || !resData.success) {
-        setErrorMessage(
-          resData.message || "Registration could not be completed.",
         );
         return;
       }
 
-      const registeredEmail = resData.data?.email || email;
-
-      setUserEmail(registeredEmail);
-      setOtpCode("");
-      setShowOtpScreen(true);
+      // The account exists but cannot sign in until it is verified, so go
+      // straight to the OTP step rather than bouncing to login.
+      setOtpEmail(email);
+      setNotice(
+        "Account created. Enter the 6-digit code we sent to your email to " +
+          "finish setting up your account.",
+      );
     } catch (error: unknown) {
-      console.error("Registration error:", error);
-
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while registering.";
-
-      setErrorMessage(message);
+      setErrorMessage(
+        safeThrownError(
+          "register",
+          error,
+          "Something went wrong while registering.",
+        ),
+      );
     }
   };
 
   // ============================================================
-  // OTP Verification
+  // Step 2 — OTP Verification
   // ============================================================
 
-  const handleVerifyOtp = async (
-    e: FormEvent<HTMLFormElement>,
-    providedOtp?: string
-  ) => {
-    e.preventDefault();
-
-    setErrorMessage(null);
-
-    const cleanOtp = (providedOtp ?? otpCode).trim();
-
-    if (!cleanOtp) {
-      setErrorMessage("Please enter the OTP code.");
-      return;
-    }
-
-    if (cleanOtp.length !== 6) {
-      setErrorMessage("OTP must be exactly 6 digits.");
-      return;
-    }
-
-    if (!/^\d{6}$/.test(cleanOtp)) {
-      setErrorMessage("OTP must contain only numbers.");
-      return;
-    }
-
-    if (!userEmail) {
-      setErrorMessage("User email is missing. Please register again.");
-      return;
-    }
-
-    if (!API_BASE_URL) {
-      setErrorMessage("API URL is not configured.");
-      return;
-    }
+  const handleVerifyOtp = async (otp: string) => {
+    if (!otpEmail) return;
 
     setIsVerifying(true);
+    setErrorMessage(null);
+    setNotice(null);
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/auth/verify-otp`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            email: userEmail,
-            otp: cleanOtp,
-          }),
-        },
-      );
+      const result = await verifyOtp(otpEmail, otp);
 
-      let resData: {
-        success?: boolean;
-        message?: string;
-        data?: unknown;
-      };
-
-      try {
-        resData = await response.json();
-      } catch {
-        setErrorMessage("Invalid response received from the server.");
-        return;
-      }
-
-      if (!response.ok || !resData.success) {
+      if (!result.ok) {
         setErrorMessage(
-          resData.message || "OTP verification failed.",
+          result.invalidCode
+            ? "That code is not right or has expired. Request a new one below."
+            : await readApiError(
+                "verify-otp",
+                result.response,
+                "Could not verify that code.",
+              ),
         );
         return;
       }
 
-      console.log("Verified successfully:", resData.data);
-      router.push("/");
+      // A correct code verifies the address AND signs the user in, so there is no
+      // need to ask for the password again.
+      setNotice("Email verified. Taking you to your dashboard...");
+      router.replace(homeForRole(result.user?.role as ApiRole | undefined));
+      router.refresh();
     } catch (error: unknown) {
-      console.error("Verify OTP error:", error);
-
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while verifying the OTP.";
-
-      setErrorMessage(message);
+      setErrorMessage(
+        safeThrownError(
+          "verify-otp",
+          error,
+          "Could not verify that code.",
+        ),
+      );
     } finally {
       setIsVerifying(false);
     }
   };
 
-  // ============================================================
-  // Google Login
-  // ============================================================
+  const handleResendOtp = async () => {
+    if (!otpEmail) return;
 
-  const handleGoogleLogin = async () => {
+    setIsResending(true);
     setErrorMessage(null);
+    setNotice(null);
 
     try {
-      const { error } = await authClient.signIn.social({
-        provider: "google",
-        callbackURL: "/",
-      });
+      const response = await resendOtp(otpEmail);
 
-      if (error) {
+      if (!response.ok) {
         setErrorMessage(
-          error.message || "Google login failed.",
+          await readApiError(
+            "resend-otp",
+            response,
+            "Could not send a new code. Try again in a moment.",
+          ),
         );
+        return;
       }
+
+      setNotice(
+        "If that account is still unverified, a new code is on its way.",
+      );
     } catch (error: unknown) {
-      console.error("Google login error:", error);
-
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Something went wrong during Google login.";
-
-      setErrorMessage(message);
+      setErrorMessage(
+        safeThrownError("resend-otp", error, "Could not send a new code."),
+      );
+    } finally {
+      setIsResending(false);
     }
   };
 
   // ============================================================
-  // Facebook Login
+  // Social Login -> handled entirely by the API server
   // ============================================================
 
-  const handleFacebookLogin = async () => {
+  const handleSocialLogin = async (provider: "google" | "facebook") => {
     setErrorMessage(null);
 
-    try {
-      const { error } = await authClient.signIn.social({
-        provider: "facebook",
-        callbackURL: "/",
-      });
+    // On success the browser has already been sent to the provider, so there is
+    // nothing left to render. Only a failure reaches the message below.
+    const redirected = await signInWithSocial(provider, "/");
 
-      if (error) {
-        setErrorMessage(
-          error.message || "Facebook login failed.",
-        );
-      }
-    } catch (error: unknown) {
-      console.error("Facebook login error:", error);
-
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Something went wrong during Facebook login.";
-
-      setErrorMessage(message);
+    if (!redirected) {
+      setErrorMessage(
+        safeApiMessage({
+          fallback: `Could not start ${provider} sign-in. Please try again.`,
+        }),
+      );
     }
   };
 
-  // ============================================================
-  // Back to registration
-  // ============================================================
-
-  const handleBackToRegistration = () => {
-    setErrorMessage(null);
-    setOtpCode("");
-    setShowOtpScreen(false);
-  };
+  const handleGoogleLogin = () => handleSocialLogin("google");
+  const handleFacebookLogin = () => handleSocialLogin("facebook");
 
   // ============================================================
   // UI
@@ -325,8 +294,8 @@ export default function RegistrationForm() {
           Trust Pass
         </CardTitle>
         <CardDescription>
-          {showOtpScreen
-            ? `We have sent a 6-digit OTP to ${userEmail}`
+          {otpEmail
+            ? "Verify your email to finish"
             : "Create your account to get started"}
         </CardDescription>
       </CardHeader>
@@ -339,30 +308,52 @@ export default function RegistrationForm() {
           </Alert>
         )}
 
-        {/* ======================================================
-            OTP SCREEN
-        ====================================================== */}
-        {showOtpScreen ? (
-          <OtpForm
-            email={userEmail}
-            isVerifying={isVerifying}
-            onVerify={async (otp) => {
-              setOtpCode(otp);
-              const fakeEvent = {
-                preventDefault: () => {},
-              } as FormEvent<HTMLFormElement>;
-              await handleVerifyOtp(fakeEvent, otp);
-            }}
-            onBack={handleBackToRegistration}
-            backButtonText="Back to Sign Up"
-            submitButtonText="Verify OTP"
-            verifyingText="Verifying OTP..."
-          />
+        {/* Shown only after a 409. Puts the one useful next step right under
+            the message instead of silently redirecting away from it. */}
+        {emailTaken && (
+          <Button
+            type="button"
+            variant="outline"
+            className="mb-4 w-full"
+            onClick={() => router.push("/auth/login")}
+          >
+            Go to sign in
+          </Button>
+        )}
+
+        {/* Neutral notice (e.g. "code sent") */}
+        {notice && !errorMessage && (
+          <Alert className="mb-4">
+            <AlertDescription>{notice}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* ====================================================
+             OTP step — replaces the form once the account exists.
+        ==================================================== */}
+        {otpEmail ? (
+          <>
+            <p className="mb-4 text-center text-sm text-muted-foreground">
+              Code sent to{" "}
+              <span className="font-medium text-foreground">{otpEmail}</span>
+            </p>
+
+            <OtpForm
+              email={otpEmail}
+              isVerifying={isVerifying}
+              onVerify={handleVerifyOtp}
+              onResend={handleResendOtp}
+              isResending={isResending}
+              onBack={() => {
+                setOtpEmail(null);
+                setNotice(null);
+                setErrorMessage(null);
+              }}
+              backButtonText="Back to sign up"
+            />
+          </>
         ) : (
-          /* ====================================================
-             REGISTRATION FORM
-          ==================================================== */
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             {/* Full Name */}
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
@@ -371,23 +362,8 @@ export default function RegistrationForm() {
                 type="text"
                 autoComplete="name"
                 placeholder="John Doe"
-                {...register("name", {
-                  required: "Full name is required",
-                  minLength: {
-                    value: 2,
-                    message: "Name must be at least 2 characters",
-                  },
-                  maxLength: {
-                    value: 100,
-                    message: "Name cannot exceed 100 characters",
-                  },
-                })}
+                {...register("name")}
               />
-              {errors.name && (
-                <p className="text-xs font-medium text-destructive">
-                  {errors.name.message}
-                </p>
-              )}
             </div>
 
             {/* Email */}
@@ -398,19 +374,8 @@ export default function RegistrationForm() {
                 type="email"
                 autoComplete="email"
                 placeholder="john@example.com"
-                {...register("email", {
-                  required: "Email is required",
-                  pattern: {
-                    value: /^\S+@\S+$/i,
-                    message: "Invalid email address",
-                  },
-                })}
+                {...register("email")}
               />
-              {errors.email && (
-                <p className="text-xs font-medium text-destructive">
-                  {errors.email.message}
-                </p>
-              )}
             </div>
 
             {/* Password */}
@@ -421,23 +386,8 @@ export default function RegistrationForm() {
                 type="password"
                 autoComplete="new-password"
                 placeholder="••••••••"
-                {...register("password", {
-                  required: "Password is required",
-                  minLength: {
-                    value: 8,
-                    message: "Password must be at least 8 characters",
-                  },
-                  maxLength: {
-                    value: 128,
-                    message: "Password cannot exceed 128 characters",
-                  },
-                })}
+                {...register("password")}
               />
-              {errors.password && (
-                <p className="text-xs font-medium text-destructive">
-                  {errors.password.message}
-                </p>
-              )}
             </div>
 
             {/* Phone */}
@@ -448,18 +398,8 @@ export default function RegistrationForm() {
                 type="text"
                 autoComplete="tel"
                 placeholder="+8801712345678"
-                {...register("phone", {
-                  pattern: {
-                    value: /^[+0-9\s\-()]{7,20}$/,
-                    message: "Invalid phone number format",
-                  },
-                })}
+                {...register("phone")}
               />
-              {errors.phone && (
-                <p className="text-xs font-medium text-destructive">
-                  {errors.phone.message}
-                </p>
-              )}
             </div>
 
             {/* Gender */}
@@ -539,8 +479,21 @@ export default function RegistrationForm() {
             >
               Continue with Facebook
             </Button>
-          </form>
+        </form>
         )}
+
+        {/* Link to the other form. Without this, a visitor who picked "Sign Up"
+            by mistake had no way back except editing the URL. */}
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <button
+            type="button"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+            onClick={() => router.push("/auth/login")}
+          >
+            Sign in
+          </button>
+        </p>
       </CardContent>
     </Card>
   </div>

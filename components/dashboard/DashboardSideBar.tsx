@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { roleSidebars, UserRole } from "@/lib/sidebarData";
+import { usePathname, useRouter } from "next/navigation";
+import { roleSidebars } from "@/lib/sidebarData";
+import { roleLabel, type ApiRole } from "@/lib/core/roles";
+import { signOut } from "@/lib/core/session";
 import {
   Sidebar,
   SidebarContent,
@@ -21,22 +23,38 @@ import ToggleBar from "../ToggleBar/ToggleBar";
 
 
 interface SidebarProps {
-  userRole: UserRole;
+  /** From the session, never inferred from the URL. */
+  role: ApiRole;
+  name: string | null;
 }
 
-export default function DashboardSideBar({ userRole }: SidebarProps) {
+export default function DashboardSideBar({ role, name }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { setOpenMobile, isMobile } = useSidebar();
 
-  const effectiveRole: UserRole = userRole;
-
-  const currentSidebar = roleSidebars[effectiveRole] || roleSidebars.user;
+  // `roleSidebars` covers every ApiRole, so this is a total lookup. The fallback
+  // is defensive only — an unknown role was already narrowed to CUSTOMER by
+  // `useAuth` before reaching here.
+  const currentSidebar = roleSidebars[role] ?? roleSidebars.CUSTOMER;
+  const label = roleLabel(role);
 
   const handleLinkClick = () => {
     if (isMobile) {
       setOpenMobile(false);
     }
   };
+
+  const handleLogout = async () => {
+    await signOut();
+    router.replace("/auth/login");
+    router.refresh();
+  };
+
+  const initials = (name ?? "").trim().split(/\s+/).filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("") || "?";
 
   return (
     <Sidebar className="border-r border-border/60 bg-card text-card-foreground">
@@ -50,7 +68,7 @@ export default function DashboardSideBar({ userRole }: SidebarProps) {
             <span className="font-bold text-base tracking-tight text-foreground flex items-center gap-2">
               <Link href="/">TrustPass</Link>
               <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 rounded-md">
-                {effectiveRole}
+                {label}
               </span>
             </span>
             <span className="text-[11px] text-muted-foreground">
@@ -140,19 +158,22 @@ export default function DashboardSideBar({ userRole }: SidebarProps) {
         <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-              A
+              {initials}
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-semibold text-foreground truncate">
-                Aritro M.
+                {name ?? "Signed in"}
               </span>
               <span className="text-[10px] text-muted-foreground truncate capitalize">
-                {effectiveRole} Account
+                {label} Account
               </span>
             </div>
           </div>
           <button
-            title="Logout"
+            type="button"
+            title="Log out"
+            aria-label="Log out"
+            onClick={handleLogout}
             className="text-muted-foreground hover:text-destructive p-1.5 rounded-lg transition-colors"
           >
             <LogOut className="h-4 w-4" />

@@ -2,18 +2,32 @@ import {
   LayoutDashboard,
   Users,
   Settings,
-  FileText,
+  Flag,
   User,
   Shield,
-  Flag,
   Scale,
   Factory,
   BellIcon,
   FolderTree,
 } from "lucide-react";
+import type { ApiRole } from "@/lib/core/roles";
 
-export const roleSidebars = {
-  admin: {
+/**
+ * Sidebar contents per role.
+ *
+ * Keyed by the API role directly. The previous version was keyed by a mix of
+ * `admin`/`moderator`/`merchant`/`user`/`CUSTOMER`/`SELLER` and needed a
+ * separate mapping table in `use-auth.ts` to bridge the two, which is where
+ * mismatches crept in.
+ *
+ * Every `href` here is a route that exists under `app/dashboard`. The old
+ * table pointed at `/dashboard/merchant`, `/dashboard/analytics`,
+ * `/dashboard/products`, `/dashboard/settings`, `/admin/settings` and
+ * `/dashboard/profile` — none of which were ever built, so those links all
+ * landed on a 404.
+ */
+export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[] }> = {
+  ADMIN: {
     title: "Admin",
     items: [
       {
@@ -27,7 +41,7 @@ export const roleSidebars = {
         icon: Users,
       },
       {
-        name: "Bussiness",
+        name: "Businesses",
         href: "/dashboard/admin/businesses",
         icon: Factory,
       },
@@ -42,11 +56,15 @@ export const roleSidebars = {
         href: "/dashboard/admin/trust-rules",
         icon: Scale,
       },
-      { name: "Categories", href: "/dashboard/admin/categories", icon: FolderTree },
-      { name: "System Settings", href: "/admin/settings", icon: Settings },
+      {
+        name: "Categories",
+        href: "/dashboard/admin/categories",
+        icon: FolderTree,
+      },
     ],
   },
-  moderator: {
+
+  MODERATOR: {
     title: "Moderator",
     items: [
       {
@@ -64,32 +82,15 @@ export const roleSidebars = {
         href: "/dashboard/moderator/reports",
         icon: Flag,
       },
+    ],
+  },
 
-    ],
-  },
-  merchant: {
-    title: "Merchant Workspace",
-    items: [
-      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { name: "Analytics", href: "/dashboard/analytics", icon: FileText },
-      { name: "Invoice", href: "/dashboard/invoice", icon: FileText },
-      { name: "Products", href: "/dashboard/products", icon: FileText },
-      { name: "Reports", href: "/dashboard/reports", icon: FileText },
-      { name: "Messages", href: "/dashboard/messages", icon: FileText },
-      {
-        name: "Notifications",
-        href: "/dashboard/notifications",
-        icon: FileText,
-      },
-      { name: "Settings", href: "/dashboard/settings", icon: FileText },
-    ],
-  },
-  user: {
-    title: "user",
+  SELLER: {
+    title: "Seller",
     items: [
       {
-        name: "My Dashboard",
-        href: "/dashboard/customer",
+        name: "Dashboard",
+        href: "/dashboard/seller",
         icon: LayoutDashboard,
       },
       {
@@ -102,9 +103,9 @@ export const roleSidebars = {
         href: "/dashboard/customer/notifications",
         icon: BellIcon,
       },
-      { name: "Profile Settings", href: "/dashboard/profile", icon: User },
     ],
   },
+
   CUSTOMER: {
     title: "Customer",
     items: [
@@ -123,38 +124,26 @@ export const roleSidebars = {
         href: "/dashboard/customer/notifications",
         icon: BellIcon,
       },
-      { name: "Profile Settings", href: "/dashboard/profile", icon: User },
-    ],
-  },
-  SELLER: {
-    title: "Seller",
-    items: [
-      { name: "Dashboard", href: "/dashboard/merchant", icon: LayoutDashboard },
-      { name: "Analytics", href: "/dashboard/analytics", icon: FileText },
-      { name: "Products", href: "/dashboard/products", icon: FileText },
-      { name: "Reports", href: "/dashboard/reports", icon: FileText },
-      { name: "Settings", href: "/dashboard/settings", icon: FileText },
+      {
+        name: "Profile Settings",
+        href: "/dashboard/customer/profile",
+        icon: User,
+      },
     ],
   },
 };
 
-export type UserRole = keyof typeof roleSidebars;
-
-// ============================================================
-// Better Auth Role → Sidebar Key mapping
-// ============================================================
-export const mapAuthRoleToSidebarRole = (
-  authRole: string | undefined | null
-): UserRole => {
-  switch (authRole?.toUpperCase()) {
-    case "ADMIN":
-      return "admin";
-    case "MODERATOR":
-      return "moderator";
-    case "BUYER":
-      return "merchant";
-    case "CUSTOMER":
-    default:
-      return "user";
-  }
+export type SidebarItem = {
+  name: string;
+  href: string;
+  icon: typeof LayoutDashboard;
 };
+
+/**
+ * Kept as a named type for callers that used to pass `UserRole` around. This is
+ * the API role now — there is no second naming scheme to translate from.
+ */
+export type UserRole = ApiRole;
+/** Settings icon kept exported so a future settings page can reuse the import. */
+export { Settings };
+export { Settings };
