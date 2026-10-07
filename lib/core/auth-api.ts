@@ -1,36 +1,36 @@
 /**
- * Auth calls that must go to the API server.
+ * The API calls this app makes, in one file. Everything goes to the Live API
+ * (`lib/core/api-url.ts` decides the address — never a local server).
  *
  * The server runs better-auth and exposes it under two prefixes that share
  * ONE user and session store:
  *
- * - `/api/v1/auth/*` — the REST surface this app uses: register, login,
- *   logout, resend-otp, verify-otp.
- * - `/api/auth/*`   — better-auth's own routes (get-session, sign-in/social).
- *   Only `get-session` and the social buttons need these.
+ * - `/api/auth/*`    — better-auth's own routes: sign-in/email (login),
+ *                      get-session, social sign-in.
+ * - `/api/v1/auth/*` — the hand-written REST routes: register, resend-otp,
+ *                      verify-otp (the registration / email-verification
+ *                      flow).
  *
- * Login via `/api/v1/auth/login` and verify via `/api/v1/auth/verify-otp` both
- * forward better-auth's `Set-Cookie` headers, so both issue the
- * `__Secure-better-auth.session_token` cookie — the same cookie
- * better-auth's `get-session` reads. `useAuth()` therefore works after either.
+ * LOGIN uses `/api/auth/sign-in/email`. That is what fixes the "wrong
+ * password gets an OTP" bug from the frontend's side: the Live API checks the
+ * password first and answers a plain 401 when it does not match, so no OTP
+ * email is ever sent for a failed login.
  *
- * Server behaviour this file has to work around:
- *
- * The CORS allowlist is `CLIENT_URL` plus `http://localhost:3000`. Any other
- * origin (127.0.0.1, a LAN IP, a Vercel preview URL) fails the preflight and
- * surfaces as `TypeError: Failed to fetch`. That is server-side; this file
- * cannot fix it.
- *
- * The server runs `requireEmailVerification: true`, so an account cannot sign
- * in until an OTP is verified. That makes verify-otp part of the register
- * flow, not an optional extra.
+ * The server runs `requireEmailVerification: true`, so a new account has to
+ * verify its address before it can sign in — that is why registration ends in
+ * the resend-otp/verify-otp pair below. That registration flow is out of
+ * scope for this task and is left untouched.
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+import { apiUrl } from "@/lib/core/api-url";
+import { readApiError } from "@/lib/core/api-error";
 
-/** Lets a form show a readable message instead of throwing mid-submit. */
+/**
+ * Always true: the Live API URL is hardcoded in `lib/core/api-url.ts`, so the
+ * app is always pointed at it and never needs an environment variable.
+ */
 export function isApiConfigured(): boolean {
-  return Boolean(API_BASE_URL);
+  return true;
 }
 
 /**
@@ -47,24 +47,18 @@ export function normalizeEmail(email: string): string {
 }
 
 /**
- * NEXT_PUBLIC_* values are inlined at build time, so this throws at runtime
- * rather than silently issuing requests to "undefined/api/v1/...".
+ * There is no base-URL check inside this file: `apiUrl()` in
+ * `lib/core/api-url.ts` always returns the Live API address.
  */
-function requireApiBaseUrl(): string {
-  if (!API_BASE_URL) {
-    throw new Error("NEXT_PUBLIC_BASE_URL is not set.");
-  }
-  return API_BASE_URL;
-}
 
 type Json = Record<string, unknown>;
 
 async function postJson(path: string, body: Json): Promise<Response> {
-  return fetch(`${requireApiBaseUrl()}${path}`, {
+  return fetch(apiUrl(path), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    // The session cookie belongs to the API's own domain, so it has to travel
-    // cross-origin.
+    // The session cookie belongs to the Live API's host; `include` sends and
+    // stores it on this cross-origin request.
     credentials: "include",
     body: JSON.stringify(body),
   });
@@ -81,63 +75,45 @@ export type AuthedUser = {
 };
 
 export type LoginResult =
-  | { ok: true; user: AuthedUser | null }
-  | {
-      ok: false;
-      status: number;
-      /**
-       * 403 from the server, which has two unrelated causes. Unlike the older
-       * comment here claimed, they ARE distinguishable: the server sends
-       * "Please verify your email before signing in. Check your inbox for the
-       * OTP." for an unverified address, and a different sentence for a
-       * BLOCKED/SUSPENDED account. Matched on that wording below.
-       */
-      needsVerification: boolean;
-      /** Raw `message` from the body, for the safe-message layer to vet. */
-      serverMessage: string | null;
-      /**
-       * The original response, unread. `readApiError` needs it to reach the
-       * per-field detail in `errorSources` — `message` is just
-       * "Validation Error" when the form sends an unvalidated body.
-       */
-      response: Response;
-    };
+  | { ok: true }
+  | { ok: false; status: number; message: string };
 
-/** Verbatim prefix the server uses for an unverified address at login. */
-const UNVERIFIED_LOGIN_MESSAGE =
-  "please verify your email before signing in";
-
-/** Signs in with email + password. The server sets the session cookie. */
+/**
+ * Signs the user in with email + password against the Live API.
+ *
+ *   POST /api/auth/sign-in/email
+ *
+ * The server checks the password first and answers
+ * `401 "Invalid email or password"` when it does not match. A wrong password
+ * NEVER sends an OTP email, and there is no "verify email" step that starts
+ * from here. Failed responses come back as a ready-to-show `message` — this
+ * function never throws.
+ *
+ * On success the server has already set the session cookie; there is nothing
+ * in the body the caller needs, so `ok: true` is enough — the caller
+ * redirects to `/dashboard`, whose layout resolves the role from the session.
+ */
 export async function loginWithPassword(
   email: string,
   password: string,
 ): Promise<LoginResult> {
-  const response = await postJson("/api/v1/auth/login", {
+  const response = await postJson("/api/auth/sign-in/email", {
     email: normalizeEmail(email),
     password,
   });
-  // `.clone()` so the caller can still read the body via `response`.
-  const body = await response.clone().json().catch(() => null);
-  const serverMessage =
-    typeof body?.message === "string" ? body.message : null;
 
-  // The session cookie is already stored by the browser at this point, because
-  // `credentials: "include"` was set on the request. Reading the role out of
-  // the body just saves a second /get-session call before redirecting.
-  if (response.ok && body?.success) {
-    const user = (body?.data as { user?: AuthedUser } | null)?.user ?? null;
-    return { ok: true, user };
+  if (response.ok) {
+    return { ok: true };
   }
 
   return {
     ok: false,
     status: response.status,
-    needsVerification:
-      response.status === 403 &&
-      typeof serverMessage === "string" &&
-      serverMessage.toLowerCase().startsWith(UNVERIFIED_LOGIN_MESSAGE),
-    serverMessage,
-    response,
+    message: await readApiError(
+      "sign-in",
+      response,
+      "Invalid email or password.",
+    ),
   };
 }
 

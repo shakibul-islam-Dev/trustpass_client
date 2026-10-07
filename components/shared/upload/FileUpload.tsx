@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { apiUrl } from "@/lib/core/api-url";
 
 interface FileUploadProps {
   onUploadSuccess: (url: string) => void;
@@ -60,11 +61,10 @@ export const FileUpload = ({
       formData.append("file", file); // ✅ change field name if backend expects "image"
 
       // 🚧 TODO: Replace with actual backend endpoint
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-
-      if (!baseUrl) throw new Error("NEXT_PUBLIC_BASE_URL is not set.");
-
-      const res = await fetch(`${baseUrl}/api/v1/upload`, {
+      // Relative path — next.config.ts rewrites /api/* to the API server, so
+      // the session cookie (which the upload endpoint needs) rides along as a
+      // normal first-party cookie. See lib/core/api-url.ts.
+      const res = await fetch(apiUrl("/api/v1/upload"), {
         method: "POST",
         credentials: "include",
         body: formData,
