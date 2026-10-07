@@ -69,6 +69,10 @@ const SEGMENT_ROLES: Record<string, readonly ApiRole[]> = {
   seller: ["SELLER", "ADMIN"],
   moderator: ["MODERATOR", "ADMIN"],
   admin: ["ADMIN"],
+  // /dashboard/change-password — every signed-in role may change its own
+  // password, so it needs a rule of its own; without one the loop in
+  // canAccessDashboardPath denies it to everyone except ADMIN.
+  "change-password": ["CUSTOMER", "SELLER", "MODERATOR", "ADMIN"],
 };
 
 /** Roles that may reach any dashboard subtree. */
