@@ -5,7 +5,7 @@
 // ============================================================
 
 const getBaseUrl = (): string => {
-  return process.env.NEXT_PUBLIC_BASE_URL || "https://trust-pass-server.vercel.app";
+  return process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000"
 };
 
 // ============================================================
@@ -25,6 +25,7 @@ export const postMutation = async (url: string, data: unknown) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
+        credentials: "include",
       cache: "no-store",
     });
 
@@ -52,6 +53,7 @@ export const deleteMutation = async (url: string) => {
     const res = await fetch(`${baseUrl}${url}`, {
       method: "DELETE",
       cache: "no-store",
+        credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -88,6 +90,7 @@ export const patchMutation = async (url: string, data: unknown) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
+        credentials: "include",
       cache: "no-store",
     });
 
@@ -119,6 +122,7 @@ export const getData = async (url: string) => {
     const res = await fetch(`${baseUrl}${url}`, {
       method: "GET",
       cache: "no-store",
+        credentials: "include",
     });
 
     if (!res.ok) {
