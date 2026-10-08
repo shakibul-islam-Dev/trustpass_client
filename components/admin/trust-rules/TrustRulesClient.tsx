@@ -15,26 +15,32 @@ import {
 } from "@/components/ui/select";
 import { TrustRuleModal } from "./TrustRuleModal";
 import { TrustRuleTable } from "./TrustRuleTable";
+import { DeleteTrustRuleDialog } from "./DeleteTrustRuleDialog"; // ✅ new
 import { fetchTrustRules } from "@/lib/admin_api/get-trust-rules";
-import { createTrustRule, deleteTrustRule, updateTrustRule } from "@/lib/admin_action/trust-rules_action";
-
+import {
+  createTrustRule,
+  deleteTrustRule,
+  updateTrustRule,
+} from "@/lib/admin_action/trust-rules_action";
 
 interface TrustRulesClientProps {
   initialRules: TrustRule[];
 }
 
 export const TrustRulesClient = ({ initialRules }: TrustRulesClientProps) => {
-  // --- States ---
   const [rules, setRules] = useState<TrustRule[]>(initialRules);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeFilter, setActiveFilter] = useState("all");
 
-  // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<TrustRule | null>(null);
 
-  // --- Reload ---
+  // ✅ Delete dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletingRule, setDeletingRule] = useState<TrustRule | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const reloadRules = async () => {
     try {
       const data = await fetchTrustRules();
@@ -45,11 +51,6 @@ export const TrustRulesClient = ({ initialRules }: TrustRulesClientProps) => {
     }
   };
 
-  // --- Handlers ---
-
-  /**
-   * Handles saving a rule (Add or Edit).
-   */
   const handleSaveRule = async (data: {
     ruleKey: string;
     label: string;
@@ -60,7 +61,6 @@ export const TrustRulesClient = ({ initialRules }: TrustRulesClientProps) => {
     try {
       let result;
       if (editingRule) {
-        // Edit — only send updatable fields
         result = await updateTrustRule(editingRule.id, {
           label: data.label,
           points: data.points,
@@ -68,7 +68,6 @@ export const TrustRulesClient = ({ initialRules }: TrustRulesClientProps) => {
           isActive: data.isActive,
         });
       } else {
-        // Create
         result = await createTrustRule({
           ruleKey: data.ruleKey,
           label: data.label,
@@ -78,12 +77,18 @@ export const TrustRulesClient = ({ initialRules }: TrustRulesClientProps) => {
         });
       }
 
+      console.log("📥 Save result:", result);
+
       if (result?.error || result?.success === false) {
-        toast.error(editingRule ? "Failed to update rule." : "Failed to create rule.");
+        toast.error(
+          editingRule ? "Failed to update rule." : "Failed to create rule."
+        );
         return;
       }
 
-      toast.success(editingRule ? "Rule updated successfully!" : "Rule created successfully!");
+      toast.success(
+        editingRule ? "Rule updated successfully!" : "Rule created successfully!"
+      );
       await reloadRules();
     } catch (error) {
       console.error("Save rule error:", error);
@@ -92,31 +97,49 @@ export const TrustRulesClient = ({ initialRules }: TrustRulesClientProps) => {
   };
 
   /**
-   * Handles deleting a rule.
+   * Opens the delete confirmation dialog.
    */
-  const handleDelete = async (ruleId: string) => {
-    if (!confirm("Are you sure you want to delete this rule?")) return;
-
-    try {
-      const result = await deleteTrustRule(ruleId);
-      if (result?.error || result?.success === false) {
-        toast.error("Failed to delete rule.");
-        return;
-      }
-      toast.success("Rule deleted successfully!");
-      await reloadRules();
-    } catch (error) {
-      console.error("Delete error:", error);
-      toast.error("Something went wrong.");
+  const openDeleteDialog = (ruleId: string) => {
+    const rule = rules.find((r) => r.id === ruleId);
+    if (rule) {
+      setDeletingRule(rule);
+      setIsDeleteDialogOpen(true);
     }
   };
 
   /**
-   * Handles toggling the active status of a rule.
+   * Confirms deletion.
    */
+  const handleConfirmDelete = async () => {
+    if (!deletingRule) return;
+
+    setIsDeleting(true);
+    try {
+      const result = await deleteTrustRule(deletingRule.id);
+      console.log("📥 Delete result:", result);
+
+      if (result?.error || result?.success === false) {
+        toast.error("Failed to delete rule.");
+        return;
+      }
+
+      toast.success("Rule deleted successfully!");
+      setIsDeleteDialogOpen(false);
+      setDeletingRule(null);
+      await reloadRules();
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Something went wrong.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleToggleActive = async (ruleId: string, currentStatus: boolean) => {
     try {
-      const result = await updateTrustRule(ruleId, { isActive: !currentStatus });
+      const result = await updateTrustRule(ruleId, {
+        isActive: !currentStatus,
+      });
       if (result?.error || result?.success === false) {
         toast.error("Failed to update status.");
         return;
@@ -129,23 +152,16 @@ export const TrustRulesClient = ({ initialRules }: TrustRulesClientProps) => {
     }
   };
 
-  /**
-   * Opens the modal for Add mode.
-   */
   const openAddModal = () => {
     setEditingRule(null);
     setIsModalOpen(true);
   };
 
-  /**
-   * Opens the modal for Edit mode.
-   */
   const openEditModal = (rule: TrustRule) => {
     setEditingRule(rule);
     setIsModalOpen(true);
   };
 
-  // --- Filtering Logic ---
   const filteredRules = useMemo(() => {
     return rules.filter((rule) => {
       const matchesSearch =
@@ -166,7 +182,6 @@ export const TrustRulesClient = ({ initialRules }: TrustRulesClientProps) => {
 
   return (
     <>
-      {/* Top Actions */}
       <div className="flex items-center justify-end">
         <Button onClick={openAddModal}>
           <Plus className="mr-2 h-4 w-4" />
@@ -174,9 +189,7 @@ export const TrustRulesClient = ({ initialRules }: TrustRulesClientProps) => {
         </Button>
       </div>
 
-      {/* Filters Row */}
       <div className="flex flex-col sm:flex-row gap-4">
-        {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -187,7 +200,6 @@ export const TrustRulesClient = ({ initialRules }: TrustRulesClientProps) => {
           />
         </div>
 
-        {/* Status Filter */}
         <Select
           value={statusFilter}
           onValueChange={(v) => setStatusFilter(v ?? "all")}
@@ -197,13 +209,11 @@ export const TrustRulesClient = ({ initialRules }: TrustRulesClientProps) => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="VERIFICATION">Verification</SelectItem>
-            <SelectItem value="ACTIVITY">Activity</SelectItem>
-            <SelectItem value="REPORT">Report</SelectItem>
+            <SelectItem value="ACTIVE">Active</SelectItem>
+            <SelectItem value="INACTIVE">Inactive</SelectItem>
           </SelectContent>
         </Select>
 
-        {/* Active Filter */}
         <Select
           value={activeFilter}
           onValueChange={(v) => setActiveFilter(v ?? "all")}
@@ -219,21 +229,31 @@ export const TrustRulesClient = ({ initialRules }: TrustRulesClientProps) => {
         </Select>
       </div>
 
-      {/* Table */}
       <TrustRuleTable
         rules={filteredRules}
         onEdit={openEditModal}
-        onDelete={handleDelete}
+        onDelete={openDeleteDialog}  // ✅ নতুন handler
         onToggleActive={handleToggleActive}
       />
 
-      {/* Modal */}
       <TrustRuleModal
         key={editingRule?.id ?? "new"}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         rule={editingRule}
         onSave={handleSaveRule}
+      />
+
+      {/* ✅ Delete Confirmation Dialog */}
+      <DeleteTrustRuleDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setDeletingRule(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        ruleName={deletingRule?.label}
+        isLoading={isDeleting}
       />
     </>
   );

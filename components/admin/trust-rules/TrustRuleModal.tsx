@@ -25,7 +25,7 @@ import type { TrustRule, TTrustRuleStatus } from "@/types/admin";
 interface TrustRuleModalProps {
   isOpen: boolean;
   onClose: () => void;
-  rule: TrustRule | null; // null = Add mode
+  rule: TrustRule | null;
   onSave: (data: {
     ruleKey: string;
     label: string;
@@ -36,9 +36,8 @@ interface TrustRuleModalProps {
 }
 
 const STATUS_OPTIONS: { value: TTrustRuleStatus; label: string }[] = [
-  { value: "VERIFICATION", label: "Verification" },
-  { value: "ACTIVITY", label: "Activity" },
-  { value: "REPORT", label: "Report" },
+  { value: "ACTIVE", label: "Active" },
+  { value: "INACTIVE", label: "Inactive" },
 ];
 
 export const TrustRuleModal = ({
@@ -49,25 +48,44 @@ export const TrustRuleModal = ({
 }: TrustRuleModalProps) => {
   const isEditMode = !!rule;
 
-  // Form state (initialized from rule prop when editing)
+  // Form state
   const [ruleKey, setRuleKey] = useState(rule?.ruleKey ?? "");
   const [label, setLabel] = useState(rule?.label ?? "");
-  const [points, setPoints] = useState(rule?.points ?? 10);
+  const [points, setPoints] = useState<number | string>(rule?.points ?? 10);
   const [status, setStatus] = useState<TTrustRuleStatus>(
-    rule?.status ?? "VERIFICATION"
+    rule?.status ?? "ACTIVE"
   );
   const [isActive, setIsActive] = useState(rule?.isActive ?? true);
 
   const handleSubmit = () => {
+    // Validation
     if (!ruleKey.trim() || !label.trim()) {
       toast.error("Rule key and label are required.");
       return;
     }
 
+    // ✅ Points validation
+    const pointsNum = Number(points);
+    if (isNaN(pointsNum)) {
+      toast.error("Points must be a valid number.");
+      return;
+    }
+
+    console.log("📤 Form submitting:", {
+      ruleKey: ruleKey.trim(),
+      label: label.trim(),
+      points: pointsNum,
+      pointsType: typeof pointsNum,
+      status,
+      statusType: typeof status,
+      isActive,
+      isActiveType: typeof isActive,
+    });
+
     onSave({
       ruleKey: ruleKey.trim(),
       label: label.trim(),
-      points: Number(points),
+      points: pointsNum,
       status,
       isActive,
     });
@@ -99,7 +117,7 @@ export const TrustRuleModal = ({
               placeholder="e.g., email_verified"
               value={ruleKey}
               onChange={(e) => setRuleKey(e.target.value)}
-              disabled={isEditMode} // Usually ruleKey can't be changed after creation
+              disabled={isEditMode}
             />
             <p className="text-xs text-muted-foreground">
               Unique identifier (lowercase, underscores)
@@ -124,7 +142,9 @@ export const TrustRuleModal = ({
             <Label htmlFor="status">Status</Label>
             <Select
               value={status}
-              onValueChange={(v) => setStatus((v ?? "VERIFICATION") as TTrustRuleStatus)}
+              onValueChange={(v) =>
+                setStatus((v ?? "ACTIVE") as TTrustRuleStatus)  // ✅ ACTIVE fix
+              }
             >
               <SelectTrigger id="status">
                 <SelectValue placeholder="Select status" />
@@ -147,7 +167,11 @@ export const TrustRuleModal = ({
               type="number"
               placeholder="e.g., 10"
               value={points}
-              onChange={(e) => setPoints(Number(e.target.value))}
+              onChange={(e) => {
+                const val = e.target.value;
+                // ✅ Keep as string if empty, else convert
+                setPoints(val === "" ? "" : Number(val));
+              }}
             />
             <p className="text-xs text-muted-foreground">
               Positive numbers add points, negative to deduct.

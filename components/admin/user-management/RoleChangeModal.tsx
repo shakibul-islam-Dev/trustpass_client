@@ -16,8 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { User, UserRole } from "@/types/admin";
-
+import type { User, UserRole } from "@/types/admin";
 
 interface RoleChangeModalProps {
   isOpen: boolean;
@@ -26,16 +25,23 @@ interface RoleChangeModalProps {
   onRoleChange: (userId: string, newRole: UserRole) => void;
 }
 
+const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
+  { value: "CUSTOMER", label: "Customer" },
+  { value: "SELLER", label: "Seller" },
+  { value: "MODERATOR", label: "Moderator" },
+  { value: "ADMIN", label: "Admin" },
+];
+
 export const RoleChangeModal = ({
   isOpen,
   onClose,
   user,
   onRoleChange,
 }: RoleChangeModalProps) => {
-  const [selectedRole, setSelectedRole] = useState<UserRole | "">("");
+  const [selectedRole, setSelectedRole] = useState<UserRole>("CUSTOMER");
 
   useEffect(() => {
-    if (user) {
+    if (user?.role) {
       setSelectedRole(user.role);
     }
   }, [user]);
@@ -43,9 +49,7 @@ export const RoleChangeModal = ({
   if (!user) return null;
 
   const handleSave = () => {
-    if (selectedRole && user.id) {
-      onRoleChange(user.id, selectedRole as UserRole);
-    }
+    onRoleChange(user.id, selectedRole);
   };
 
   return (
@@ -61,17 +65,19 @@ export const RoleChangeModal = ({
           </label>
           <Select
             value={selectedRole}
-            onValueChange={(value: string | null) => {
-              if (value) setSelectedRole(value as UserRole);
-            }}
+            onValueChange={(value) =>
+              setSelectedRole((value ?? "CUSTOMER") as UserRole)
+            }
           >
             <SelectTrigger>
               <SelectValue placeholder="Select new role" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Customer">Customer</SelectItem>
-              <SelectItem value="Business Owner">Business Owner</SelectItem>
-              <SelectItem value="Admin">Admin</SelectItem>
+              {ROLE_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

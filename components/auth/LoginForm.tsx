@@ -1,180 +1,86 @@
 "use client";
 
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, SubmitHandler } from "react-hook-form";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import OtpForm from "@/components/otp/OtpForm";
-import { readApiError, safeApiMessage, safeThrownError } from "@/lib/core/api-error";
-import {
-  isApiConfigured,
-  loginWithPassword,
-  resendOtp,
-  verifyOtp,
-} from "@/lib/core/auth-api";
+import { safeApiMessage, safeThrownError } from "@/lib/core/api-error";
+import { isApiConfigured, loginWithPassword } from "@/lib/core/auth-api";
 import {
   isApiConfigured as isSessionApiConfigured,
   signInWithSocial,
 } from "@/lib/core/session";
-import { homeForRole, type ApiRole } from "@/lib/core/roles";
 
-type Inputs = {
-  email: string;
-  password: string;
-};
-
-
-
+/**
+ * The sign-in screen (renders at /auth/login).
+ *
+ * One step, no OTP: the Live API checks the email + password via
+ * `POST /api/auth/sign-in/email` and answers a plain 401 when the password is
+ * wrong — no OTP email is sent, so there is no "verify email" screen to fall
+ * into after a failed login.
+ *
+ * Plain `useState` and `fetch` (through `loginWithPassword`) — readable top
+ * to bottom.
+ */
 export default function LoginForm() {
   const router = useRouter();
 
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  // Non-null while step 2 is showing. Holds the address to verify, so the
-  // field the user typed is the one that gets verified even if they cannot
-  // edit it here.
-  const [pendingVerificationEmail, setPendingVerificationEmail] =
-    useState<string | null>(null);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [isResending, setIsResending] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { isSubmitting },
-  } = useForm<Inputs>({
-    mode: "onSubmit",
-  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ==========================================
-  // SIGN IN  ->  POST /api/v1/auth/login
-  // The server authenticates with email + password
-  // and sets the session cookie.
+  // SIGN IN  ->  POST /api/auth/sign-in/email
   // ==========================================
 
-  const handleLogin: SubmitHandler<Inputs> = async (formData) => {
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    // Clear last round's feedback, otherwise two messages can show at once.
     setErrorMessage(null);
     setSuccessMessage(null);
-    setNotice(null);
 
     if (!isApiConfigured()) {
       setErrorMessage("API URL is not configured.");
       return;
     }
 
+    if (!email.trim() || !password) {
+      setErrorMessage("Enter your email and password.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
-      const result = await loginWithPassword(formData.email, formData.password);
+      // loginWithPassword never throws — failures come back on `result`.
+      const result = await loginWithPassword(email, password);
 
-      if (result.ok) {
-        setSuccessMessage("Login successful! Redirecting...");
-        // Send each role to its own dashboard straight away. The /dashboard
-        // page would bounce here anyway; doing it here just saves a round trip.
-        router.replace(homeForRole(result.user?.role as ApiRole | undefined));
-        router.refresh();
+      if (!result.ok) {
+        setErrorMessage(result.message);
         return;
       }
 
-      // The address exists and the password matched, but it is not verified.
-      // Move to step 2 instead of showing a dead end.
-      if (result.needsVerification) {
-        setPendingVerificationEmail(formData.email.trim().toLowerCase());
-        setNotice(
-          "This email address is not verified yet. Enter the 6-digit code we " +
-            "sent to finish signing in.",
-        );
-        return;
-      }
-
-      setErrorMessage(
-        await readApiError("login", result.response, "Failed to log in."),
-      );
+      setSuccessMessage("Login successful! Redirecting...");
+      // /dashboard has no page of its own: the dashboard layout reads the
+      // session and sends each role to its own home. Redirecting there keeps
+      // role logic out of this form.
+      router.replace("/dashboard");
+      router.refresh();
     } catch (error) {
       setErrorMessage(
         safeThrownError("login", error, "Something went wrong while signing in."),
       );
-    }
-  };
-
-  // ==========================================
-  // VERIFY OTP  ->  POST /api/v1/auth/verify-otp
-  //
-  // The server forwards its own Set-Cookie here, so a successful verification
-  // normally signs the user in. If it did not, fall back to the password
-  // screen rather than pushing them into a dashboard they cannot load.
-  // ==========================================
-
-  const handleVerifyOtp = async (otp: string) => {
-    if (!pendingVerificationEmail) return;
-
-    setIsVerifying(true);
-    setErrorMessage(null);
-    setNotice(null);
-
-    try {
-      const result = await verifyOtp(pendingVerificationEmail, otp);
-
-      if (!result.ok) {
-        setErrorMessage(
-          result.invalidCode
-            ? "That code is not right or has expired. Request a new one below."
-            : await readApiError(
-                "verify-otp",
-                result.response,
-                "Could not verify that code.",
-              ),
-        );
-        return;
-      }
-
-      // A correct code both verifies the address and signs the user in, so they can
-      // go straight to their dashboard.
-      setSuccessMessage("Email verified. Redirecting...");
-      router.replace(homeForRole(result.user?.role as ApiRole | undefined));
-      router.refresh();
-    } catch (error) {
-      setErrorMessage(
-        safeThrownError("verify-otp", error, "Could not verify that code."),
-      );
     } finally {
-      setIsVerifying(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    if (!pendingVerificationEmail) return;
-
-    setIsResending(true);
-    setErrorMessage(null);
-    setNotice(null);
-
-    try {
-      const response = await resendOtp(pendingVerificationEmail);
-
-      if (!response.ok) {
-        setErrorMessage(
-          await readApiError(
-            "resend-otp",
-            response,
-            "Could not send a new code. Try again in a moment.",
-          ),
-        );
-        return;
-      }
-
-      setNotice("If that account is still unverified, a new code is on its way.");
-    } catch (error) {
-      setErrorMessage(
-        safeThrownError("resend-otp", error, "Could not send a new code."),
-      );
-    } finally {
-      setIsResending(false);
+      setIsSubmitting(false);
     }
   };
 
   // ==========================================
-  // SOCIAL LOGIN  ->  handled by the server
+  // SOCIAL LOGIN  ->  handled by the Live API
   // ==========================================
 
   const handleSocialLogin = async (provider: "google" | "facebook") => {
@@ -186,8 +92,8 @@ export default function LoginForm() {
       return;
     }
 
-    // Navigates away to the provider on success, so there is nothing to render
-    // afterwards. A `false` return means no authorize URL came back.
+    // Navigates away to the provider on success, so there is nothing to
+    // render afterwards. A `false` return means no authorize URL came back.
     const redirected = await signInWithSocial(provider, "/");
 
     if (!redirected) {
@@ -199,23 +105,17 @@ export default function LoginForm() {
     }
   };
 
-  // ==========================================
-  // UI
-  // ==========================================
-
   return (
     <div className="flex min-h-[80vh] items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-800 dark:bg-slate-900">
         {/* Header */}
         <div className="space-y-2 text-center">
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            {pendingVerificationEmail ? "Verify your email" : "Sign In"}
+            Sign In
           </h2>
 
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            {pendingVerificationEmail
-              ? "Enter the code we emailed you to finish signing in."
-              : "Enter your email and password to continue."}
+            Enter your email and password to continue.
           </p>
         </div>
 
@@ -233,39 +133,7 @@ export default function LoginForm() {
           </div>
         )}
 
-        {/* Neutral notice (e.g. "code sent", "check your inbox") */}
-        {notice && !errorMessage && (
-          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-center text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-300">
-            {notice}
-          </div>
-        )}
-
-        {pendingVerificationEmail ? (
-          <>
-            <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-              Code sent to{" "}
-              <span className="font-medium text-slate-700 dark:text-slate-200">
-                {pendingVerificationEmail}
-              </span>
-            </p>
-
-            <OtpForm
-              email={pendingVerificationEmail}
-              isVerifying={isVerifying}
-              onVerify={handleVerifyOtp}
-              onResend={handleResendOtp}
-              isResending={isResending}
-              onBack={() => {
-                setPendingVerificationEmail(null);
-                setErrorMessage(null);
-                setNotice(null);
-              }}
-              backButtonText="Use a different account"
-            />
-          </>
-        ) : (
-          <>
-        <form onSubmit={handleSubmit(handleLogin)} className="space-y-4" noValidate>
+        <form onSubmit={handleLogin} className="space-y-4" noValidate>
           <div className="space-y-2">
             <label
               htmlFor="email"
@@ -280,7 +148,8 @@ export default function LoginForm() {
               placeholder="name@example.com"
               autoComplete="email"
               className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-950 dark:border-slate-700 dark:focus:ring-slate-300"
-              {...register("email")}
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
             />
           </div>
 
@@ -298,8 +167,19 @@ export default function LoginForm() {
               placeholder="••••••••"
               autoComplete="current-password"
               className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-950 dark:border-slate-700 dark:focus:ring-slate-300"
-              {...register("password")}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
             />
+          </div>
+
+          {/* The password reset flow lives under /auth/forgot-password. */}
+          <div className="flex justify-end">
+            <Link
+              href="/auth/forgot-password"
+              className="text-sm font-medium text-slate-900 underline-offset-4 hover:underline dark:text-white"
+            >
+              Forgot password?
+            </Link>
           </div>
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
@@ -353,8 +233,6 @@ export default function LoginForm() {
             Sign up
           </button>
         </p>
-          </>
-        )}
       </div>
     </div>
   );

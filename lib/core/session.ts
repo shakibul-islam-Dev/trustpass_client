@@ -1,31 +1,32 @@
 /**
  * Session handling, entirely against the API server.
  *
- * There is no better-auth client in this app. Every call below is plain `fetch`
- * to `NEXT_PUBLIC_BASE_URL`, and the session lives in the server's own
- * httpOnly cookie — this app never sees or stores the token itself.
+ * There is no better-auth client in this app. Every call below is plain `fetch
+ * to a relative `/api/...` path that `next.config.ts` rewrites to the API
+ * server, and the session lives in the server's own httpOnly cookie — this app
+ * never sees or stores the token itself.
  *
- * Why a plain fetch works for the session cookie: the cookie is issued by the
- * API server for the API server's domain, so it is only ever present on
- * requests to that origin. `credentials: "include"` is what carries it, which
- * is why it must be set on EVERY call below, including `getSession`.
+ * Why a relative path instead of `NEXT_PUBLIC_BASE_URL` straight from the
+ * browser: the cookie is issued by the API server for the API server's host.
+ * Fetching that host directly is a CROSS-SITE request, and browsers that block
+ * third-party cookies refuse to store the session cookie at all — login then
+ * succeeds but every later request is anonymous, so the dashboard bounces the
+ * user back to /auth/login. Going through the rewrite keeps the request on
+ * this origin, so the cookie is a normal first-party cookie. See
+ * `lib/core/api-url.ts`.
+ *
+ * `credentials: "include"` is still required on EVERY call below, including
+ * `getSession`.
  *
  * Two endpoints matter:
  *   GET  /api/auth/get-session  -> { session, user } | null
  *   POST /api/v1/auth/logout    -> revokes the session server-side
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+import { apiUrl } from "@/lib/core/api-url";
 
 export function isApiConfigured(): boolean {
-  return Boolean(API_BASE_URL);
-}
-
-export function requireApiBaseUrl(): string {
-  if (!API_BASE_URL) {
-    throw new Error("NEXT_PUBLIC_BASE_URL is not set.");
-  }
-  return API_BASE_URL;
+  return Boolean(process.env.NEXT_PUBLIC_BASE_URL);
 }
 
 /** Roles as stored by the API (prisma `user.role`). */
@@ -62,10 +63,11 @@ export async function getSession(): Promise<Session> {
   let response: Response;
 
   try {
-    response = await fetch(`${requireApiBaseUrl()}/api/auth/get-session`, {
+    response = await fetch(apiUrl("/api/auth/get-session"), {
       method: "GET",
-      // Required. The cookie belongs to the API's domain, so it only travels
-      // cross-origin when credentials are included.
+      // Required. The cookie belongs to the API server's host, so it only
+      // travels when credentials are included — and now it is a first-party
+      // cookie because this request is proxied through this app's origin.
       credentials: "include",
       headers: { Accept: "application/json" },
       cache: "no-store",
@@ -96,7 +98,7 @@ export async function getSession(): Promise<Session> {
  */
 export async function signOut(): Promise<boolean> {
   try {
-    const response = await fetch(`${requireApiBaseUrl()}/api/v1/auth/logout`, {
+    const response = await fetch(apiUrl("/api/v1/auth/logout"), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -124,7 +126,7 @@ export async function getSocialAuthUrl(
 ): Promise<string | null> {
   try {
     const response = await fetch(
-      `${requireApiBaseUrl()}/api/auth/sign-in/social`,
+      apiUrl("/api/auth/sign-in/social"),
       {
         method: "POST",
         credentials: "include",

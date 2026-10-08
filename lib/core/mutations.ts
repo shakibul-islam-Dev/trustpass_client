@@ -5,7 +5,7 @@
 // ============================================================
 
 const getBaseUrl = (): string => {
-  return process.env.NEXT_PUBLIC_BASE_URL || "https://trust-pass-server.vercel.app";
+  return process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000";
 };
 
 // ============================================================
@@ -35,19 +35,28 @@ export const postMutation = async (
       method: "POST",
       headers,
       body: data === undefined ? undefined : JSON.stringify(data),
+      credentials: "include",
       cache: "no-store",
     });
 
     if (!res.ok) {
       const rawText = await res.text();
       console.error("POST Error:", rawText);
-      return { error: true, status: res.status };
+
+      return {
+        error: true,
+        status: res.status,
+      };
     }
 
     return await res.json();
   } catch (err) {
     console.error("POST Exception:", err);
-    return { error: true, message: "Server connection failed!" };
+
+    return {
+      error: true,
+      message: "Server connection failed!",
+    };
   }
 };
 
@@ -61,14 +70,16 @@ export const deleteMutation = async (url: string) => {
   try {
     const res = await fetch(`${baseUrl}${url}`, {
       method: "DELETE",
-      cache: "no-store",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
+      cache: "no-store",
     });
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
+
       throw new Error(
         errorData.message || `HTTP error! status: ${res.status}`
       );
@@ -77,6 +88,7 @@ export const deleteMutation = async (url: string) => {
     return await res.json();
   } catch (error) {
     console.error("DELETE Exception:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -98,11 +110,13 @@ export const patchMutation = async (url: string, data: unknown) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
+      credentials: "include",
       cache: "no-store",
     });
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
+
       throw new Error(
         errorData.message || `HTTP error! status: ${res.status}`
       );
@@ -111,6 +125,7 @@ export const patchMutation = async (url: string, data: unknown) => {
     return await res.json();
   } catch (error) {
     console.error("PATCH Exception:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -135,21 +150,25 @@ export const getData = async (url: string, token?: string) => {
     const res = await fetch(`${baseUrl}${url}`, {
       method: "GET",
       headers,
+      credentials: "include",
       cache: "no-store",
     });
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
+
       return {
         success: false,
         statusCode: res.status,
-        error: errorData.message || `HTTP error! status: ${res.status}`,
+        error:
+          errorData.message || `HTTP error! status: ${res.status}`,
       };
     }
 
     return await res.json();
   } catch (error) {
     console.error("GET Exception:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
