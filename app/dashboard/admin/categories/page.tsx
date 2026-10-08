@@ -2,6 +2,7 @@ import { CategoryClient } from "@/components/admin/category-management/CategoryC
 import { fetchCategories } from "@/lib/admin_api/getcategories";
 
 export const dynamic = "force-dynamic";
+
 /**
  * Server Component — Fetches initial data on the server.
  * Passes data to Client Component for interactivity.
