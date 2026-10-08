@@ -1,11 +1,18 @@
-"use server";
+// Previous implementation by: Existing Developer
+// Kept for reference because Server Action cannot send cross-origin cookies.
+//
+// "use server";
+// import { getData } from "../core/mutations";
+// export const fetchMyReports = async (query) => {
+//   const response = await getData(`/api/v1/reports/me${query}`);
+//   // ...
+// };
 
-import { getData } from "../core/mutations";
+// Updated implementation for: Customer My Reports page
+// Client-side fetch — cookie automatic goes via credentials: "include".
+// Developer: Aritro
 
-
-// ============================================================
-// RESPONSE TYPE (matches backend)
-// ============================================================
+import { apiUrl } from "@/lib/core/api-url";
 
 export interface IReportResponse {
   id: string;
@@ -28,17 +35,36 @@ export interface IReportResponse {
 export const fetchMyReports = async (
   query = ""
 ): Promise<IReportResponse[]> => {
-  const response = await getData(`/api/v1/reports/me${query}`);
+  const url = apiUrl(`/api/v1/reports/me${query}`);
+  console.log("🔍 fetchMyReports URL:", url);
 
-  if (response?.error || response?.success === false) {
-    console.error("fetchMyReports error:", response);
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+
+    console.log("📥 fetchMyReports status:", response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      console.error("❌ fetchMyReports error:", response.status, errorText);
+      return [];
+    }
+
+    const data = await response.json();
+    console.log("📥 fetchMyReports data:", data);
+
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data?.reports)) return data.reports;
+
+    console.warn("⚠️ Unexpected response shape:", data);
+    return [];
+  } catch (error) {
+    console.error("❌ fetchMyReports exception:", error);
     return [];
   }
-
-  if (Array.isArray(response)) return response;
-  if (Array.isArray(response?.data)) return response.data;
-  if (Array.isArray(response?.reports)) return response.reports;
-
-  console.warn("Unexpected response shape:", response);
-  return [];
 };

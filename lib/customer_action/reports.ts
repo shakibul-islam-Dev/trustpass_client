@@ -1,12 +1,17 @@
-"use server";
+// Previous implementation by: Existing Developer
+// Kept for reference because Server Action cannot send cross-origin cookies.
+//
+// "use server";
+// import { postMutation } from "../core/mutations";
+// export const submitReport = async (payload) => {
+//   return await postMutation("/api/v1/reports", payload);
+// };
 
-import { postMutation } from "../core/mutations";
+// Updated implementation for: Report Submission (Customer)
+// Client-side fetch — cookie automatic goes via credentials: "include".
+// Developer: Aritro
 
-
-
-// ============================================================
-// BACKEND INTERFACES (match with backend)
-// ============================================================
+import { apiUrl } from "@/lib/core/api-url";
 
 export type TReportReason =
   | "SPAM"
@@ -33,13 +38,34 @@ export interface IUpdateReportStatusPayload {
 }
 
 // ============================================================
-// API CALL
+// POST /api/v1/reports — Submit report
 // ============================================================
 
-/**
- * Submits a new report.
- * API: POST /api/v1/reports
- */
 export const submitReport = async (payload: ICreateReportPayload) => {
-  return await postMutation("/api/v1/reports", payload);
+  console.log("🟢 submitReport payload:", payload);
+
+  try {
+    const res = await fetch(apiUrl("/api/v1/reports"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      credentials: "include",   // ← Cookie automatic
+      cache: "no-store",
+    });
+
+    console.log("📥 submitReport status:", res.status);
+
+    if (!res.ok) {
+      const rawText = await res.text().catch(() => "");
+      console.error("❌ submitReport failed:", res.status, rawText);
+      return { error: true, status: res.status, message: rawText };
+    }
+
+    const data = await res.json();
+    console.log("✅ submitReport success:", data);
+    return data;
+  } catch (err) {
+    console.error("❌ submitReport exception:", err);
+    return { error: true, message: "Server connection failed!" };
+  }
 };
