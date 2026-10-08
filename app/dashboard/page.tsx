@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { homeForRole } from "@/lib/core/roles";
+import OtpForm from "@/components/otp/OtpForm";
 
 /**
  * `/dashboard` itself.
@@ -29,6 +30,7 @@ export default function DashboardIndexPage() {
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
+   
       <div className="text-sm text-muted-foreground">
         {isPending ? "Loading..." : "Taking you to your dashboard..."}
       </div>
