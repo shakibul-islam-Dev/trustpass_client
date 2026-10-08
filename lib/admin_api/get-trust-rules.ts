@@ -1,7 +1,19 @@
-// src/lib/admin_api/get-trust-rules.ts
-"use server";
+// Previous implementation by: Existing Developer
+// Kept for reference because Server Action cannot send cross-origin cookies.
+//
+// "use server";
+// import { getData } from "../core/mutations";
+// export const fetchTrustRules = async () => {
+//   const response = await getData("/api/v1/trust-rules");
+//   // ...
+// };
 
-import { getData } from "../core/mutations";
+// Updated implementation for: Trust Rules page (Admin)
+// Client-side fetch — cookie automatic goes via credentials: "include".
+// Developer: Aritro
+
+import { apiUrl } from "@/lib/core/api-url";
+
 
 export type TTrustRuleStatus = "ACTIVE" | "INACTIVE";
 
@@ -21,6 +33,8 @@ export interface ITrustRuleFilters {
   status?: TTrustRuleStatus;
 }
 
+
+
 const buildQuery = (filters: ITrustRuleFilters): string => {
   const params = new URLSearchParams();
   if (filters.isActive !== undefined)
@@ -30,24 +44,43 @@ const buildQuery = (filters: ITrustRuleFilters): string => {
   return query ? `?${query}` : "";
 };
 
+
+
+
 export const fetchTrustRules = async (
   filters: ITrustRuleFilters = {}
 ): Promise<ITrustRuleResponse[]> => {
-  const url = `/api/v1/trust-rules${buildQuery(filters)}`;
-  console.log("🔍 Fetching:", url);
+  const url = apiUrl(`/api/v1/trust-rules${buildQuery(filters)}`);
+  console.log("🔍 fetchTrustRules URL:", url);
 
-  const response = await getData(url);
-  console.log("📥 fetchTrustRules response:", JSON.stringify(response, null, 2));
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      credentials: "include",   // ← Cookie automatic (browser)
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
 
-  if (response?.error || response?.success === false) {
-    console.error("❌ fetchTrustRules error:", response);
+    console.log("📥 fetchTrustRules status:", response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      console.error("❌ fetchTrustRules error:", response.status, errorText);
+      return [];
+    }
+
+    const data = await response.json();
+    console.log("📥 fetchTrustRules data:", data);
+
+    // Handle different response shapes
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data?.rules)) return data.rules;
+
+    console.warn("⚠️ Unexpected response shape:", data);
+    return [];
+  } catch (error) {
+    console.error("❌ fetchTrustRules exception:", error);
     return [];
   }
-
-  if (Array.isArray(response)) return response;
-  if (Array.isArray(response?.data)) return response.data;
-  if (Array.isArray(response?.rules)) return response.rules;
-
-  console.warn("⚠️ Unexpected response shape:", response);
-  return [];
 };
