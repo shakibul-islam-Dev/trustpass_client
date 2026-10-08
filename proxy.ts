@@ -7,21 +7,23 @@ import { NextResponse } from "next/server";
  * There is deliberately NO session gate here, and this file is a no-op on
  * purpose. Keep it that way unless you have a reason to change it.
  *
- * The session cookie is issued by the API server
- * (NEXT_PUBLIC_BASE_URL) for *its own* domain, so it is never present on this
- * app's origin. `cookies()` in proxy would therefore be empty for every
- * signed-in user, and any check built on it would be false 100% of the time —
- * locking everyone out of /dashboard, or worse, appearing to work while doing
- * nothing. The cookie is also httpOnly, so it cannot be read in the browser
- * either.
+ * Sessions are authenticated by the API's own middleware on every protected
+ * endpoint, not by this app, so a gate here would add a second, weaker copy of
+ * the check for no benefit. Two things worth knowing:
  *
- * Session enforcement therefore lives in three places instead:
+ * - The proxy-free path: the cookie is httpOnly, so it can never be read by
+ *   scripts on this app; the session is only ever verified by round-tripping
+ *   it to the API (e.g. `useAuth()` -> `getSession()`).
+ * - Since the `/api/*` rewrite in `next.config.ts` (see lib/core/api-url.ts),
+ *   the session cookie IS issued for this app's own origin, so it would be
+ *   visible to `cookies()` here — but it is still a UX/redirect concern at
+ *   best, and the API remains the actual boundary.
+ *
+ * Session enforcement therefore lives in two places instead:
  *   1. `useAuth()` + `lib/core/roles.ts` in app/dashboard/layout.tsx. Reads the
  *      session from the API and redirects by role. UX, not a boundary.
  *   2. The API's own `auth()` middleware rejects unauthorised requests. This is
  *      the real boundary.
- *   3. Login/register/OTP only ever talk to the API, so no request carries a
- *      token this app could fabricate or leak.
  */
 export default function proxy() {
   return NextResponse.next();

@@ -1,6 +1,6 @@
 import { TrustRulesClient } from "@/components/admin/trust-rules/TrustRulesClient";
 import { fetchTrustRules } from "@/lib/admin_api/get-trust-rules";
-
+export const dynamic = "force-dynamic";
 /**
  * Server Component — fetches initial trust rules on the server.
  */

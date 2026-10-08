@@ -493,3 +493,101 @@ Test accounts were removed from the database afterwards.
 - **Email is only checked for shape**, not for real deliverability. A typo like `user@gmial.com` still gets a 201. Real confirmation is the click on the emailed code.
 - **`getSession()` cannot tell "logged out" from "server unreachable".** Both show no user, which is the safe default but makes outages look like sign-outs.
 - **Rate limiting** is set on better-auth's own OTP routes. The `/api/v1/auth/*` wrappers in front of them are not separately limited.
+
+---
+
+## 11. 2026-10-06 — the four reported problems and what was done
+
+Four things were reported broken, each was reproduced, root-caused and fixed:
+
+### 11.1 "A user can sign in with a wrong password, and it emails an OTP" — FIXED (server)
+
+Reproduced: logging in with a **wrong** password on an **unverified** account
+answered `403 "Please verify your email before signing in. Check your inbox for
+the OTP."` — the password was never checked. The login screen switched to the
+OTP step, the code was emailed to the address, and finishing the OTP signed the
+visitor in. Nobody needed the password.
+
+Root cause (`loginUser` in `trust-pass-server`): the `emailVerified` check ran
+**before** better-auth ever saw the password.
+
+Fix (`src/app/v1/modules/auth/auth.service.ts`): the password is verified first
+(via `auth.api.signInEmail`). better-auth only answers
+`403 EMAIL_NOT_VERIFIED` after the password matched, which is still translated
+to the friendly message. Wrong password now answers `401` regardless of
+verification state.
+
+Deploy needed: this is server code — push `trust-pass-server` to apply it.
+
+### 11.2 "After login I land back on /auth/login" — FIXED (client)
+
+Reproduced in a real browser (headless Chrome): with third-party cookies
+blocked, login "succeeded" (`200`, `Set-Cookie` was even sent by the server)
+but the browser **refused to store** the cookie — 0 cookies kept. The next
+`get-session` read "no user", and the dashboard bounced the user to
+`/auth/login`. With third-party cookies allowed it worked, which is exactly the
+"works for me, breaks for others" symptom.
+
+Root cause: the client lived on one origin (`localhost:3000`,
+`trustpass-client.vercel.app`) and the API on another
+(`trust-pass-server.vercel.app`). The session cookie was cross-site, so any
+browser that blocks third-party cookies (Safari, Firefox, Brave, Chrome's
+tracking protection...) dropped it.
+
+Fix (`next.config.ts` + `lib/core/api-url.ts`): the browser now calls
+**relative** `/api/...` paths, and Next.js `rewrites()` forwards them to the
+API server. To the browser the request is first-party, so the cookie is stored
+and sent in every browser. The dashboard no longer bounces — verified with
+third-party cookies blocked.
+
+### 11.3 "The second OTP code arrives too late" — FIXED (server) + UX note
+
+Reproduced: every Resend press **invalidated the previous code** (better-auth's
+default `resendStrategy: "rotate"`). The second email holds a *new* code, but
+if it arrives a minute behind the first, the user types the newest code they
+have and gets `Invalid OTP` — and has to wait for yet another one. That is the
+"2nd OTP comes too late" experience.
+
+Fix (`src/app/libs/auth.ts`): `emailOTP` now uses `resendStrategy: "reuse"` —
+resends mail the **same** code until it expires or is used up, so any code that
+arrives works.
+
+Deploy needed: server code again — push `trust-pass-server`.
+
+Honest caveat: the request round-trip itself is ~2–4s (SMTP happens inside the
+call on Vercel), and inbox delivery past that is Gmail's timing, not the app's.
+The fix removes the "your newest code does not work" loop.
+
+### 11.4 "There is no Forgot password option" — ADDED (client)
+
+New flow, fully client-side, using the server's email-OTP routes (the default
+link-based reset answers `400 RESET_PASSWORD_DISABLED` on this server, so a
+6-digit-code reset is used instead):
+
+- `/auth/forgot-password` — enter the address; a "Reset your password" code is
+  emailed.
+- `/auth/reset-password?email=...` — code + new password
+  (`POST /api/auth/email-otp/request-password-reset` →
+  `POST /api/auth/email-otp/reset-password`).
+- `/auth/reset-password?token=...` still handles the token/link flow for when
+  the server ever enables `sendResetPassword`.
+- "Forgot password?" link added to the sign-in form.
+
+New files: `lib/core/password-api.ts` (two new functions),
+`components/password/ForgotPasswordForm.tsx`, `ResetWithOtpForm.tsx`,
+`ResetPasswordSwitch.tsx`, pages under `app/auth/forgot-password` and
+`app/auth/reset-password`.
+
+Verified end to end in a browser: forgot-password → code read from the
+database → reset → sign-in with the new password → dashboard.
+
+### Verified after the fixes
+
+- Wrong password on unverified account → `401` (was `403` OTP handout).
+- Correct password on unverified account → `403` "please verify".
+- Resend twice → same OTP stays valid (reuse).
+- Full forgot-password flow → new password signs in, old one answers `401`.
+- Login in a browser with third-party cookies blocked → stays on the dashboard.
+- `tsc --noEmit` (client + server), ESLint, `npm run build` → all pass.
+
+Test accounts were removed from the database afterwards.

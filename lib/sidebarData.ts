@@ -9,6 +9,7 @@ import {
   Factory,
   BellIcon,
   FolderTree,
+  Key,
 } from "lucide-react";
 import type { ApiRole } from "@/lib/core/roles";
 
@@ -61,6 +62,11 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         href: "/dashboard/admin/categories",
         icon: FolderTree,
       },
+      {
+        name: "Change Password",
+        href: "/dashboard/change-password",
+        icon: Key,
+      },
     ],
   },
 
@@ -82,6 +88,11 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         href: "/dashboard/moderator/reports",
         icon: Flag,
       },
+      {
+        name: "Change Password",
+        href: "/dashboard/change-password",
+        icon: Key,
+      },
     ],
   },
 
@@ -102,6 +113,11 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         name: "Notifications",
         href: "/dashboard/customer/notifications",
         icon: BellIcon,
+      },
+      {
+        name: "Change Password",
+        href: "/dashboard/change-password",
+        icon: Key,
       },
     ],
   },
@@ -129,6 +145,11 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         href: "/dashboard/customer/profile",
         icon: User,
       },
+      {
+        name: "Change Password",
+        href: "/dashboard/change-password",
+        icon: Key,
+      },
     ],
   },
 };
@@ -144,6 +165,6 @@ export type SidebarItem = {
  * the API role now — there is no second naming scheme to translate from.
  */
 export type UserRole = ApiRole;
-
 /** Settings icon kept exported so a future settings page can reuse the import. */
 export { Settings };
+// export { Settings };
