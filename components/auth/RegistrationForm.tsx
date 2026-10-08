@@ -3,24 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, SubmitHandler, useForm } from "react-hook-form";
+import { LockKeyhole, Mail, Phone, ShoppingBag, Store, UserRound } from "lucide-react";
+import AuthShell from "@/components/auth/AuthShell";
 import { Button } from "../ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { GoogleIcon, FacebookIcon } from "@/components/auth/social-icons";
 import { readApiError, safeApiMessage, safeThrownError } from "@/lib/core/api-error";
 import {
   isApiConfigured,
@@ -55,7 +45,6 @@ interface InputForm {
   email: string;
   password: string;
   phone: string;
-  gender: "MALE" | "FEMALE" | "OTHER";
   // Only the two self-service roles. The server's schema also accepts
   // MODERATOR and ADMIN, which would let anyone make themselves an admin.
   role: "CUSTOMER" | "SELLER";
@@ -86,7 +75,6 @@ export default function RegistrationForm() {
       email: "",
       password: "",
       phone: "",
-      gender: "MALE",
       role: "CUSTOMER",
     },
     shouldUnregister: false,
@@ -120,7 +108,6 @@ export default function RegistrationForm() {
         email,
         password,
         phone: phone || undefined,
-        gender: formData.gender,
         role: formData.role,
       });
 
@@ -287,215 +274,246 @@ export default function RegistrationForm() {
   // ============================================================
 
  return (
-  <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 dark:bg-gray-900">
-    <Card className="w-full max-w-md shadow-xl">
-      <CardHeader className="text-center">
-        <CardTitle className="text-3xl font-extrabold tracking-tight">
-          Trust Pass
-        </CardTitle>
-        <CardDescription>
-          {otpEmail
-            ? "Verify your email to finish"
-            : "Create your account to get started"}
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent>
-        {/* Error Message */}
-        {errorMessage && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>{errorMessage}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Shown only after a 409. Puts the one useful next step right under
-            the message instead of silently redirecting away from it. */}
-        {emailTaken && (
-          <Button
-            type="button"
-            variant="outline"
-            className="mb-4 w-full"
-            onClick={() => router.push("/auth/login")}
-          >
-            Go to sign in
-          </Button>
-        )}
-
-        {/* Neutral notice (e.g. "code sent") */}
-        {notice && !errorMessage && (
-          <Alert className="mb-4">
-            <AlertDescription>{notice}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* ====================================================
-             OTP step — replaces the form once the account exists.
-        ==================================================== */}
-        {otpEmail ? (
-          <>
-            <p className="mb-4 text-center text-sm text-muted-foreground">
-              Code sent to{" "}
-              <span className="font-medium text-foreground">{otpEmail}</span>
-            </p>
-
-            <OtpForm
-              email={otpEmail}
-              isVerifying={isVerifying}
-              onVerify={handleVerifyOtp}
-              onResend={handleResendOtp}
-              isResending={isResending}
-              onBack={() => {
-                setOtpEmail(null);
-                setNotice(null);
-                setErrorMessage(null);
-              }}
-              backButtonText="Back to sign up"
-            />
-          </>
-        ) : (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-            {/* Full Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                type="text"
-                autoComplete="name"
-                placeholder="John Doe"
-                {...register("name")}
-              />
-            </div>
-
-            {/* Email */}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                placeholder="john@example.com"
-                {...register("email")}
-              />
-            </div>
-
-            {/* Password */}
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="new-password"
-                placeholder="••••••••"
-                {...register("password")}
-              />
-            </div>
-
-            {/* Phone */}
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number (Optional)</Label>
-              <Input
-                id="phone"
-                type="text"
-                autoComplete="tel"
-                placeholder="+8801712345678"
-                {...register("phone")}
-              />
-            </div>
-
-            {/* Gender */}
-            <div className="space-y-2">
-              <Label htmlFor="gender">Gender</Label>
-              <Controller
-                control={control}
-                name="gender"
-                render={({ field }) => (
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <SelectTrigger id="gender">
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MALE">Male</SelectItem>
-                      <SelectItem value="FEMALE">Female</SelectItem>
-                      <SelectItem value="OTHER">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-
-            {/* Account Type */}
-            <div className="space-y-2">
-              <Label htmlFor="role">Account Type</Label>
-              <Controller
-                control={control}
-                name="role"
-                render={({ field }) => (
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <SelectTrigger id="role">
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CUSTOMER">Customer</SelectItem>
-                      <SelectItem value="SELLER">Seller</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-
-            {/* Create Account */}
-            <Button
-              type="submit"
-              className="mt-2 w-full py-2.5 font-medium"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Creating Account..." : "Create Account"}
-            </Button>
-
-            {/* Google */}
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-2 w-full py-2.5 font-medium"
-              onClick={handleGoogleLogin}
-              disabled={isSubmitting}
-            >
-              Continue with Google
-            </Button>
-
-            {/* Facebook */}
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-2 w-full py-2.5 font-medium"
-              onClick={handleFacebookLogin}
-              disabled={isSubmitting}
-            >
-              Continue with Facebook
-            </Button>
-        </form>
-        )}
-
-        {/* Link to the other form. Without this, a visitor who picked "Sign Up"
-            by mistake had no way back except editing the URL. */}
-        <p className="mt-4 text-center text-sm text-muted-foreground">
+    <AuthShell
+      size="lg"
+      title={otpEmail ? "Check your inbox" : "Create your account"}
+      subtitle={
+        otpEmail
+          ? "We sent a 6-digit code to your email. Enter it below to verify your account and finish signing up."
+          : "Join TrustPass and start buying & selling with confidence."
+      }
+      footer={
+        <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <button
             type="button"
-            className="font-medium text-primary underline-offset-4 hover:underline"
+            className="font-semibold text-primary underline-offset-4 transition-colors hover:text-primary-deep hover:underline"
             onClick={() => router.push("/auth/login")}
           >
             Sign in
           </button>
         </p>
-      </CardContent>
-    </Card>
-  </div>
-);
+      }
+    >
+      {/* Error Message */}
+      {errorMessage && (
+        <Alert variant="destructive" className="shadow-surface">
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Shown only after a 409. Puts the one useful next step right under
+          the message instead of silently redirecting away from it. */}
+      {emailTaken && (
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          onClick={() => router.push("/auth/login")}
+        >
+          Go to sign in
+        </Button>
+      )}
+
+      {/* Neutral notice (e.g. "code sent") */}
+      {notice && !errorMessage && (
+        <Alert className="border-success/30 bg-success-soft text-success shadow-surface">
+          <AlertDescription>{notice}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* ====================================================
+           OTP step — replaces the form once the account exists.
+      ==================================================== */}
+      {otpEmail ? (
+        <div className="space-y-5">
+          <p className="text-center text-sm text-muted-foreground">
+            Code sent to{" "}
+            <span className="font-medium text-foreground">{otpEmail}</span>
+          </p>
+
+          <OtpForm
+            email={otpEmail}
+            isVerifying={isVerifying}
+            onVerify={handleVerifyOtp}
+            onResend={handleResendOtp}
+            isResending={isResending}
+            onBack={() => {
+              setOtpEmail(null);
+              setNotice(null);
+              setErrorMessage(null);
+            }}
+            backButtonText="Back to sign up"
+          />
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+          {/* Full Name */}
+          <div className="space-y-2">
+            <Label htmlFor="name">Full Name</Label>
+            <div className="relative">
+              <UserRound className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="name"
+                type="text"
+                autoComplete="name"
+                placeholder="John Doe"
+                className="h-12 rounded-xl border-border/80 bg-background/70 pl-10 shadow-sm transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10"
+                {...register("name")}
+              />
+            </div>
+          </div>
+
+          {/* Email */}
+          <div className="space-y-2">
+            <Label htmlFor="email">Email Address</Label>
+            <div className="relative">
+              <Mail className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="john@example.com"
+                className="h-12 rounded-xl border-border/80 bg-background/70 pl-10 shadow-sm transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10"
+                {...register("email")}
+              />
+            </div>
+          </div>
+
+          {/* Password */}
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <LockKeyhole className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••"
+                className="h-12 rounded-xl border-border/80 bg-background/70 pl-10 shadow-sm transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10"
+                {...register("password")}
+              />
+            </div>
+          </div>
+
+          {/* Phone */}
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number (Optional)</Label>
+            <div className="relative">
+              <Phone className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="phone"
+                type="text"
+                autoComplete="tel"
+                placeholder="+8801712345678"
+                className="h-12 rounded-xl border-border/80 bg-background/70 pl-10 shadow-sm transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10"
+                {...register("phone")}
+              />
+            </div>
+          </div>
+
+          {/* Account Type */}
+          <div className="space-y-2">
+            <Label>Account Type</Label>
+            <Controller
+              control={control}
+              name="role"
+              render={({ field }) => (
+                <RadioGroup
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  className="grid grid-cols-1 gap-2.5 min-[420px]:grid-cols-2"
+                >
+                  {[
+                    {
+                      value: "CUSTOMER",
+                      label: "Customer",
+                      icon: ShoppingBag,
+                      description: "Buy from businesses you can trust",
+                    },
+                    {
+                      value: "SELLER",
+                      label: "Seller",
+                      icon: Store,
+                      description: "List products & grow your business",
+                    },
+                  ].map((option) => {
+                    const Icon = option.icon;
+                    return (
+                      <Label
+                        key={option.value}
+                        htmlFor={`role-${option.value}`}
+                        className="group flex min-h-28 cursor-pointer flex-col justify-center gap-2 rounded-2xl border border-border/80 bg-background/50 p-4 shadow-sm transition-all duration-(--duration-base) hover:-translate-y-0.5 hover:border-primary/40 hover:bg-surface-secondary has-[[data-checked]]:border-primary has-[[data-checked]]:bg-primary has-[[data-checked]]:text-primary-foreground has-[[data-checked]]:shadow-glow"
+                      >
+                        <RadioGroupItem
+                          id={`role-${option.value}`}
+                          value={option.value}
+                          className="sr-only"
+                        />
+                        <span className="flex items-center gap-2 text-sm font-semibold">
+                          <Icon className="size-4.5 text-muted-foreground group-has-[[data-checked]]:text-primary-foreground" />
+                          {option.label}
+                        </span>
+                        <span className="text-xs text-muted-foreground group-has-[[data-checked]]:text-primary-foreground/85">
+                          {option.description}
+                        </span>
+                      </Label>
+                    );
+                  })}
+                </RadioGroup>
+              )}
+            />
+          </div>
+
+          {/* Create Account */}
+          <Button
+            type="submit"
+            className="h-12 w-full gap-2 rounded-xl bg-gradient-to-br from-primary to-primary-deep text-primary-foreground shadow-glow transition-all hover:-translate-y-0.5 hover:shadow-glow-hover"
+            disabled={isSubmitting}
+            size="lg"
+          >
+            {isSubmitting ? "Creating Account..." : "Create Account"}
+          </Button>
+
+          {/* Divider */}
+          <div className="relative py-1">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+
+            <div className="relative flex justify-center">
+              <span className="bg-card px-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          {/* Social */}
+          <div className="grid grid-cols-1 gap-2.5 min-[420px]:grid-cols-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 rounded-xl border-border/80 bg-background/70 gap-2 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:bg-surface-secondary"
+              onClick={handleGoogleLogin}
+              disabled={isSubmitting}
+            >
+              <GoogleIcon className="size-4.5 shrink-0" />
+              Google
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 rounded-xl border-border/80 bg-background/70 gap-2 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:bg-surface-secondary"
+              onClick={handleFacebookLogin}
+              disabled={isSubmitting}
+            >
+              <FacebookIcon className="size-4.5 shrink-0" />
+              Facebook
+            </Button>
+          </div>
+        </form>
+      )}
+    </AuthShell>
+  );
 }

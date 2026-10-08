@@ -3,7 +3,13 @@
 import { type FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { LockKeyhole, Mail } from "lucide-react";
+import AuthShell from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { GoogleIcon, FacebookIcon } from "@/components/auth/social-icons";
 import { safeApiMessage, safeThrownError } from "@/lib/core/api-error";
 import { isApiConfigured, loginWithPassword } from "@/lib/core/auth-api";
 import {
@@ -106,134 +112,127 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-[80vh] items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-800 dark:bg-slate-900">
-        {/* Header */}
-        <div className="space-y-2 text-center">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Sign In
-          </h2>
+    <AuthShell
+      size="lg"
+      title="Welcome back"
+      subtitle="Enter your email and password to continue."
+      footer={
+        <p className="text-center text-sm text-muted-foreground">
+          Don&apos;t have an account?{" "}
+          <button
+            type="button"
+            className="font-semibold text-primary underline-offset-4 transition-colors hover:text-primary-deep hover:underline"
+            onClick={() => router.push("/auth/register")}
+          >
+            Sign up
+          </button>
+        </p>
+      }
+    >
+      {/* Error */}
+      {errorMessage && (
+        <Alert variant="destructive" className="shadow-surface">
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      )}
 
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Enter your email and password to continue.
-          </p>
-        </div>
+      {/* Success */}
+      {successMessage && (
+        <Alert className="border-success/30 bg-success-soft text-success shadow-surface">
+          <AlertDescription>{successMessage}</AlertDescription>
+        </Alert>
+      )}
 
-        {/* Error */}
-        {errorMessage && (
-          <div className="rounded-md border border-red-200 bg-red-50 p-3 text-center text-sm text-red-600 dark:border-red-900 dark:bg-red-950/50 dark:text-red-400">
-            {errorMessage}
-          </div>
-        )}
+      <form onSubmit={handleLogin} className="space-y-5" noValidate>
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
 
-        {/* Success */}
-        {successMessage && (
-          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-center text-sm text-emerald-600 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-400">
-            {successMessage}
-          </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-4" noValidate>
-          <div className="space-y-2">
-            <label
-              htmlFor="email"
-              className="text-sm font-medium text-slate-700 dark:text-slate-300"
-            >
-              Email
-            </label>
-
-            <input
+          <div className="relative">
+            <Mail className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
               id="email"
               type="email"
               placeholder="name@example.com"
               autoComplete="email"
-              className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-950 dark:border-slate-700 dark:focus:ring-slate-300"
+              className="h-12 rounded-xl border-border/80 bg-background/70 pl-10 shadow-sm transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <label
-              htmlFor="password"
-              className="text-sm font-medium text-slate-700 dark:text-slate-300"
-            >
-              Password
-            </label>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
 
-            <input
+          <div className="relative">
+            <LockKeyhole className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
               id="password"
               type="password"
               placeholder="••••••••"
               autoComplete="current-password"
-              className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-950 dark:border-slate-700 dark:focus:ring-slate-300"
+              className="h-12 rounded-xl border-border/80 bg-background/70 pl-10 shadow-sm transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
           </div>
 
           {/* The password reset flow lives under /auth/forgot-password. */}
-          <div className="flex justify-end">
+          <div className="flex justify-end pt-1">
             <Link
               href="/auth/forgot-password"
-              className="text-sm font-medium text-slate-900 underline-offset-4 hover:underline dark:text-white"
+              className="text-sm font-medium text-primary underline-offset-4 transition-colors hover:text-primary-deep hover:underline"
             >
               Forgot password?
             </Link>
           </div>
-
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Signing in..." : "Sign In"}
-          </Button>
-        </form>
-
-        {/* Divider */}
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-slate-200 dark:border-slate-800" />
-          </div>
-
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-slate-500 dark:bg-slate-900">
-              Or continue with
-            </span>
-          </div>
         </div>
 
-        {/* Social Login */}
-        <div className="grid grid-cols-2 gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => handleSocialLogin("google")}
-            className="w-full"
-          >
-            Google
-          </Button>
+        <Button
+          type="submit"
+          className="h-12 w-full justify-center gap-2 rounded-xl bg-gradient-to-br from-primary to-primary-deep text-primary-foreground shadow-glow transition-all hover:-translate-y-0.5 hover:shadow-glow-hover"
+          disabled={isSubmitting}
+          size="lg"
+        >
+          {isSubmitting ? "Signing in..." : "Sign In"}
+        </Button>
+      </form>
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => handleSocialLogin("facebook")}
-            className="w-full"
-          >
-            Facebook
-          </Button>
+      {/* Divider */}
+      <div className="relative py-1">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-border" />
         </div>
 
-        {/* Link to the sign-up form, so someone without an account is not
-            stranded here. */}
-        <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-          Don&apos;t have an account?{" "}
-          <button
-            type="button"
-            className="font-medium text-slate-900 underline-offset-4 hover:underline dark:text-white"
-            onClick={() => router.push("/auth/register")}
-          >
-            Sign up
-          </button>
-        </p>
+        <div className="relative flex justify-center">
+          <span className="bg-card px-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            Or continue with
+          </span>
+        </div>
       </div>
-    </div>
+
+      {/* Social Login */}
+      <div className="grid grid-cols-2 gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => handleSocialLogin("google")}
+          className="h-12 w-full gap-2.5 rounded-xl border-border/80 bg-background/70 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:bg-surface-secondary"
+        >
+          <GoogleIcon className="size-4.5 shrink-0" />
+          Google
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => handleSocialLogin("facebook")}
+          className="h-12 w-full gap-2.5 rounded-xl border-border/80 bg-background/70 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:bg-surface-secondary"
+        >
+          <FacebookIcon className="size-4.5 shrink-0" />
+          Facebook
+        </Button>
+      </div>
+    </AuthShell>
   );
 }

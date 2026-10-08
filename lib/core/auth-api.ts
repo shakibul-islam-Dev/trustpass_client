@@ -202,7 +202,6 @@ export async function registerAccount(body: {
   email: string;
   password: string;
   phone?: string;
-  gender: string;
   role: "CUSTOMER" | "SELLER";
 }): Promise<Response> {
   return postJson("/api/v1/auth/register", {

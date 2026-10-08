@@ -3,6 +3,16 @@
 import { type FormEvent, useState } from "react";
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { isApiConfigured } from "@/lib/core/auth-api";
 import { changePassword } from "@/lib/core/password-api";
 
@@ -99,120 +109,103 @@ export default function ChangePasswordForm() {
 
   return (
     <div className="flex min-h-[70vh] items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-800 dark:bg-slate-900">
-        {/* Header */}
-        <div className="space-y-2 text-center">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+      <Card className="w-full max-w-md shadow-overlay">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold tracking-tight sm:text-3xl">
             Change password
-          </h2>
+          </CardTitle>
 
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <CardDescription>
             Use your current password to set a new one.
-          </p>
-        </div>
+          </CardDescription>
+        </CardHeader>
 
-        {/* Error */}
-        {errorMessage && (
-          <div className="rounded-md border border-red-200 bg-red-50 p-3 text-center text-sm text-red-600 dark:border-red-900 dark:bg-red-950/50 dark:text-red-400">
-            {errorMessage}
-          </div>
-        )}
+        <CardContent className="space-y-5">
+          {/* Error */}
+          {errorMessage && (
+            <Alert variant="destructive">
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
 
-        {/* Success */}
-        {successMessage && (
-          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-center text-sm text-emerald-600 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-400">
-            {successMessage}
-          </div>
-        )}
+          {/* Success */}
+          {successMessage && (
+            <Alert className="border-success/30 bg-success-soft text-success">
+              <AlertDescription>{successMessage}</AlertDescription>
+            </Alert>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          <div className="space-y-2">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <div className="space-y-2">
+              <Label htmlFor="current-password">Current password</Label>
+
+              <Input
+                id="current-password"
+                type="password"
+                placeholder="••••••••"
+                autoComplete="current-password"
+                value={currentPassword}
+                onChange={(event) => setCurrentPassword(event.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="change-new-password">New password</Label>
+
+              <Input
+                id="change-new-password"
+                type="password"
+                placeholder="••••••••"
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="change-confirm-password">Confirm new password</Label>
+
+              <Input
+                id="change-confirm-password"
+                type="password"
+                placeholder="••••••••"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+              />
+            </div>
+
             <label
-              htmlFor="current-password"
-              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+              htmlFor="revoke-other-sessions"
+              className="flex cursor-pointer items-start gap-2 text-sm text-muted-foreground"
             >
-              Current password
+              <input
+                id="revoke-other-sessions"
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+                checked={revokeOtherSessions}
+                onChange={(event) => setRevokeOtherSessions(event.target.checked)}
+              />
+
+              <span>Sign out my other devices after changing it.</span>
             </label>
 
-            <input
-              id="current-password"
-              type="password"
-              placeholder="••••••••"
-              autoComplete="current-password"
-              className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-950 dark:border-slate-700 dark:focus:ring-slate-300"
-              value={currentPassword}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-            />
-          </div>
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : "Change password"}
+            </Button>
+          </form>
 
-          <div className="space-y-2">
-            <label
-              htmlFor="change-new-password"
-              className="text-sm font-medium text-slate-700 dark:text-slate-300"
+          {/* Shown only after the API answered 401 (see `sessionExpired`). */}
+          {sessionExpired && (
+            <Link
+              href="/auth/login"
+              className={buttonVariants({ variant: "outline", className: "w-full" })}
             >
-              New password
-            </label>
-
-            <input
-              id="change-new-password"
-              type="password"
-              placeholder="••••••••"
-              autoComplete="new-password"
-              className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-950 dark:border-slate-700 dark:focus:ring-slate-300"
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label
-              htmlFor="change-confirm-password"
-              className="text-sm font-medium text-slate-700 dark:text-slate-300"
-            >
-              Confirm new password
-            </label>
-
-            <input
-              id="change-confirm-password"
-              type="password"
-              placeholder="••••••••"
-              autoComplete="new-password"
-              className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-950 dark:border-slate-700 dark:focus:ring-slate-300"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-            />
-          </div>
-
-          <label
-            htmlFor="revoke-other-sessions"
-            className="flex cursor-pointer items-start gap-2 text-sm text-slate-600 dark:text-slate-300"
-          >
-            <input
-              id="revoke-other-sessions"
-              type="checkbox"
-              className="mt-0.5 h-4 w-4 accent-slate-900 dark:accent-slate-100"
-              checked={revokeOtherSessions}
-              onChange={(event) => setRevokeOtherSessions(event.target.checked)}
-            />
-
-            <span>Sign out my other devices after changing it.</span>
-          </label>
-
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Change password"}
-          </Button>
-        </form>
-
-        {/* Shown only after the API answered 401 (see `sessionExpired`). */}
-        {sessionExpired && (
-          <Link
-            href="/auth/login"
-            className={buttonVariants({ variant: "outline", className: "w-full" })}
-          >
-            Back to sign in
-          </Link>
-        )}
-      </div>
+              Back to sign in
+            </Link>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -9,7 +9,18 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-geist-sans);
+
+  /* Fluid, responsive typography scale */
+  --text-xs-fluid: clamp(0.75rem, 0.7rem + 0.2vw, 0.8125rem);
+  --text-sm-fluid: clamp(0.875rem, 0.85rem + 0.25vw, 0.9375rem);
+  --text-base-fluid: clamp(0.9375rem, 0.9rem + 0.3vw, 1rem);
+  --text-lg-fluid: clamp(1.0625rem, 1rem + 0.4vw, 1.125rem);
+  --text-xl-fluid: clamp(1.1875rem, 1.1rem + 0.5vw, 1.375rem);
+  --text-2xl-fluid: clamp(1.5rem, 1.3rem + 0.8vw, 1.875rem);
+  --text-3xl-fluid: clamp(1.875rem, 1.6rem + 1.2vw, 2.5rem);
+  --text-4xl-fluid: clamp(2.25rem, 1.8rem + 1.8vw, 3rem);
+  --text-5xl-fluid: clamp(2.75rem, 2.1rem + 2.5vw, 3.75rem);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,6 +50,36 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  /* HeroUI-inspired surface + semantic colors */
+  --color-surface: var(--surface);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-surface-tertiary: var(--surface-tertiary);
+  --color-default: var(--default);
+  --color-default-foreground: var(--default-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-separator: var(--separator);
+  --color-focus: var(--focus);
+  --color-backdrop: var(--backdrop);
+  /* Soft tint backgrounds (badges, tags, subtle fills) */
+  --color-primary-soft: color-mix(in oklab, var(--primary) 12%, transparent);
+  --color-primary-soft-hover: color-mix(in oklab, var(--primary) 20%, transparent);
+  --color-success-soft: color-mix(in oklab, var(--success) 15%, transparent);
+  --color-warning-soft: color-mix(in oklab, var(--warning) 15%, transparent);
+  --color-danger-soft: color-mix(in oklab, var(--danger) 15%, transparent);
+  /* Layered elevation */
+  --shadow-surface: var(--surface-shadow);
+  --shadow-overlay: var(--overlay-shadow);
+  /* Brand glow — soft halo behind gradient CTAs */
+  --shadow-glow: var(--glow-shadow);
+  --shadow-glow-hover: var(--glow-shadow-hover);
+  --color-primary-deep: var(--primary-deep);
+  /* Motion */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 300ms;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -46,85 +87,217 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-field: calc(var(--radius) * 1.5);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
+  --background: oklch(0.9702 0 0);
+  --foreground: oklch(0.2103 0.0059 285.89);
+
+  /* HeroUI surface elevation (light) */
+  --surface: oklch(1 0 0);
+  --surface-secondary: oklch(0.9524 0.0013 286.37);
+  --surface-tertiary: oklch(0.9373 0.0013 286.37);
+
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface);
+  --popover-foreground: var(--foreground);
+
+  --default: oklch(0.94 0.001 286.375);
+  --default-foreground: var(--foreground);
+
+  /* Brand accent — HeroUI blue, used sparingly */
+  --primary: oklch(0.6204 0.195 253.83);
+  --primary-foreground: oklch(0.9911 0 0);
+
+  --secondary: var(--default);
+  --secondary-foreground: var(--default-foreground);
+
+  --muted: var(--surface-secondary);
+  --muted-foreground: oklch(0.5517 0.0138 285.94);
+
+  /* Neutral hover highlight for menus/dropdowns */
+  --accent: var(--surface-secondary);
+  --accent-foreground: var(--foreground);
+
+  --success: oklch(0.7329 0.1935 150.81);
+  --warning: oklch(0.7819 0.1585 72.33);
+  --danger: oklch(0.6532 0.2328 25.74);
+  --destructive: var(--danger);
+
+  --border: oklch(0.92 0.004 286.32);
+  --separator: var(--border);
+  --input: var(--border);
+  --ring: var(--primary);
+  --focus: var(--primary);
+  --backdrop: rgb(0 0 0 / 0.5);
+
+  --radius: 0.5rem;
+
+  --surface-shadow: 0 2px 4px 0 rgb(0 0 0 / 0.04), 0 1px 2px 0 rgb(0 0 0 / 0.06), 0 0 1px 0 rgb(0 0 0 / 0.06);
+  --overlay-shadow: 0 4px 16px 0 rgb(24 24 27 / 0.08), 0 8px 24px 0 rgb(24 24 27 / 0.09);
+  --glow-shadow: 0 8px 24px -8px color-mix(in oklab, var(--primary) 55%, transparent);
+  --glow-shadow-hover: 0 12px 32px -8px color-mix(in oklab, var(--primary) 65%, transparent);
+  --primary-deep: oklch(0.56 0.17 253.83);
+
+  --chart-1: oklch(0.6204 0.195 253.83);
+  --chart-2: oklch(0.7329 0.1935 150.81);
+  --chart-3: oklch(0.7819 0.1585 72.33);
+  --chart-4: oklch(0.6532 0.2328 25.74);
+  --chart-5: oklch(0.5517 0.0138 285.94);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary: oklch(0.6204 0.195 253.83);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-ring: oklch(0.6204 0.195 253.83);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
+  --background: oklch(0.12 0.005 285.823);
+  --foreground: oklch(0.9911 0 0);
+
+  /* HeroUI surface elevation (dark) */
+  --surface: oklch(0.2103 0.0059 285.89);
+  --surface-secondary: oklch(0.257 0.0037 286.14);
+  --surface-tertiary: oklch(0.2721 0.0024 247.91);
+
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface);
+  --popover-foreground: var(--foreground);
+
+  --default: oklch(0.274 0.006 286.033);
+  --default-foreground: var(--foreground);
+
+  /* Brand accent stays the same blue in dark */
+  --primary: oklch(0.6204 0.195 253.83);
+  --primary-foreground: oklch(0.9911 0 0);
+
+  --secondary: var(--default);
+  --secondary-foreground: var(--default-foreground);
+
+  --muted: var(--surface-secondary);
+  --muted-foreground: oklch(0.705 0.015 286.067);
+
+  /* Neutral hover highlight for menus/dropdowns */
+  --accent: var(--default);
+  --accent-foreground: var(--foreground);
+
+  --success: oklch(0.7329 0.1935 150.81);
+  --warning: oklch(0.7819 0.1585 72.33);
+  --danger: oklch(0.704 0.191 22.216);
+  --destructive: var(--danger);
+
+  --border: oklch(0.22 0.006 286.033);
+  --separator: var(--border);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --ring: var(--primary);
+  --focus: var(--primary);
+  --backdrop: rgb(0 0 0 / 0.6);
+
+  --surface-shadow: 0 0 0 0 transparent;
+  --overlay-shadow: 0 0 0 0 transparent;
+  --glow-shadow: 0 0 0 0 transparent;
+  --glow-shadow-hover: 0 0 0 0 transparent;
+  --primary-deep: oklch(0.52 0.16 253.83);
+
+  --chart-1: oklch(0.6204 0.195 253.83);
+  --chart-2: oklch(0.7329 0.1935 150.81);
+  --chart-3: oklch(0.7819 0.1585 72.33);
+  --chart-4: oklch(0.6532 0.2328 25.74);
+  --chart-5: oklch(0.705 0.015 286.067);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary: oklch(0.6204 0.195 253.83);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: oklch(0.6204 0.195 253.83);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
+  html {
+    @apply font-sans text-base-fluid antialiased;
+    scroll-behavior: smooth;
+    text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+  }
+
   body {
     @apply bg-background text-foreground;
+    margin: 0;
+    font-optical-sizing: auto;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
   }
-  html {
-    @apply font-sans;
+
+  /* Simple, gorgeous heading typography */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading;
+    margin: 0;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+
+  h1 {
+    font-size: var(--text-4xl-fluid);
+    font-weight: 800;
+  }
+
+  h2 {
+    font-size: var(--text-3xl-fluid);
+    font-weight: 700;
+  }
+
+  h3 {
+    font-size: var(--text-2xl-fluid);
+    font-weight: 700;
+  }
+
+  h4 {
+    font-size: var(--text-xl-fluid);
+    font-weight: 600;
+  }
+
+  h5 {
+    font-size: var(--text-base-fluid);
+    font-weight: 600;
+  }
+
+  h6 {
+    font-size: var(--text-sm-fluid);
+    font-weight: 600;
+  }
+
+  p {
+    margin: 0;
+    text-wrap: pretty;
+  }
+
+  /* Respect users who prefer reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
