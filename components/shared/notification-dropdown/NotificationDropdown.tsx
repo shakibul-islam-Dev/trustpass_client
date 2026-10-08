@@ -32,11 +32,11 @@ export const NotificationDropdown = ({
     isLoading,
     markAsRead,
     markAllAsRead,
+    deleteNotification,
   } = useNotifications();
 
   /**
    * Handles clicking on a notification item.
-   * Marks as read, then navigates to the link (if any).
    */
   const handleItemClick = (notification: Notification) => {
     if (!notification.isRead) {
@@ -56,18 +56,19 @@ export const NotificationDropdown = ({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          {/* Unread badge */}
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs font-semibold">
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </span>
-          )}
-          <span className="sr-only">Notifications</span>
-        </Button>
-      } />
+      <DropdownMenuTrigger
+        render={
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs font-semibold">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+            <span className="sr-only">Notifications</span>
+          </Button>
+        }
+      />
 
       <DropdownMenuContent align="end" className="w-[380px] p-0">
         {/* Header */}
@@ -114,6 +115,7 @@ export const NotificationDropdown = ({
                   notification={notification}
                   onMarkAsRead={markAsRead}
                   onItemClick={handleItemClick}
+                  onDelete={deleteNotification}
                 />
               ))}
             </div>
