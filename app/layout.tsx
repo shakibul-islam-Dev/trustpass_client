@@ -5,6 +5,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import Footer from "@/components/shared/Footer";
 import Navbar from "@/components/shared/navbar/Navbar";
+import AppToaster from "@/components/shared/AppToaster";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           <Navbar />
           {children}
+          <AppToaster />
           <Footer></Footer>
         </ThemeProvider>
       </body>
