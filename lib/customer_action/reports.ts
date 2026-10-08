@@ -8,6 +8,7 @@
 // };
 
 // Updated implementation for: Report Submission (Customer)
+// Backend expects multipart/form-data with a `file` field (see Postman).
 // Client-side fetch — cookie automatic goes via credentials: "include".
 // Developer: Aritro
 
@@ -28,6 +29,8 @@ export interface ICreateReportPayload {
   title?: string;
   description: string;
   evidenceUrls?: string[];
+  /** Optional: single image file to upload with the report */
+  file?: File | null;
 }
 
 export interface IUpdateReportStatusPayload {
@@ -38,19 +41,43 @@ export interface IUpdateReportStatusPayload {
 }
 
 // ============================================================
-// POST /api/v1/reports — Submit report
+// POST /api/v1/reports — Submit report (with optional file)
 // ============================================================
 
 export const submitReport = async (payload: ICreateReportPayload) => {
-  console.log("🟢 submitReport payload:", payload);
+  console.log("🟢 submitReport payload:", {
+    businessId: payload.businessId,
+    reason: payload.reason,
+    title: payload.title,
+    description: payload.description,
+    hasFile: !!payload.file,
+    fileName: payload.file?.name,
+  });
 
   try {
+    // Build multipart/form-data — this is what the backend expects
+    // (confirmed via Postman: form-data with `file`, `businessId`, `reason`,
+    //  `title`, `description`).
+    const formData = new FormData();
+    formData.append("businessId", payload.businessId);
+    formData.append("reason", payload.reason);
+    formData.append("description", payload.description);
+
+    if (payload.title) {
+      formData.append("title", payload.title);
+    }
+
+    if (payload.file) {
+      formData.append("file", payload.file);
+    }
+
     const res = await fetch(apiUrl("/api/v1/reports"), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      credentials: "include",   // ← Cookie automatic
+      body: formData,   // ← NOT JSON.stringify — send FormData directly
+      credentials: "include",
       cache: "no-store",
+      // ⚠️ Do NOT set Content-Type manually.
+      // Browser will set it with the correct multipart boundary.
     });
 
     console.log("📥 submitReport status:", res.status);
