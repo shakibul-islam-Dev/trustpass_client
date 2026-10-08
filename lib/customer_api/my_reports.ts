@@ -9,7 +9,9 @@
 // };
 
 // Updated implementation for: Customer My Reports page
-// Client-side fetch — cookie automatic goes via credentials: "include".
+// Client-side fetch + response normalization.
+// Backend returns nested objects (business.name, reporter.name),
+// but UI expects flat fields (businessName, customerName).
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
@@ -31,6 +33,40 @@ export interface IReportResponse {
   createdAt: string;
   updatedAt?: string;
 }
+
+// ============================================================
+// NORMALIZE — backend nested object → flat UI shape
+// ============================================================
+
+const normalizeReport = (raw: any): IReportResponse => ({
+  id: raw.id,
+  businessId: raw.businessId,
+  businessName:
+    raw.businessName ||
+    raw.business?.name ||
+    "Unknown Business",
+
+  customerId: raw.customerId || raw.reporterId,
+  customerName:
+    raw.customerName ||
+    raw.reporter?.name ||
+    "Unknown Customer",
+
+  reason: raw.reason,
+  title: raw.title,
+  description: raw.description,
+  evidenceUrls: raw.evidenceUrls ?? [],
+  status: raw.status,
+  adminNote: raw.adminNote,
+  actionTaken: raw.actionTaken,
+  penaltyPoints: raw.penaltyPoints,
+  createdAt: raw.createdAt,
+  updatedAt: raw.updatedAt,
+});
+
+// ============================================================
+// GET /api/v1/reports/me — List own reports
+// ============================================================
 
 export const fetchMyReports = async (
   query = ""
@@ -54,15 +90,23 @@ export const fetchMyReports = async (
       return [];
     }
 
-    const data = await response.json();
-    console.log("📥 fetchMyReports data:", data);
+    const json = await response.json();
+    console.log("📥 fetchMyReports raw data:", json);
 
-    if (Array.isArray(data)) return data;
-    if (Array.isArray(data?.data)) return data.data;
-    if (Array.isArray(data?.reports)) return data.reports;
+    let rawArray: any[] = [];
+    if (Array.isArray(json)) rawArray = json;
+    else if (Array.isArray(json?.data)) rawArray = json.data;
+    else if (Array.isArray(json?.reports)) rawArray = json.reports;
+    else if (Array.isArray(json?.data?.reports)) rawArray = json.data.reports;
+    else {
+      console.warn("⚠️ Unexpected response shape:", json);
+      return [];
+    }
 
-    console.warn("⚠️ Unexpected response shape:", data);
-    return [];
+    const normalized = rawArray.map(normalizeReport);
+    console.log("✅ fetchMyReports normalized:", normalized);
+
+    return normalized;
   } catch (error) {
     console.error("❌ fetchMyReports exception:", error);
     return [];
