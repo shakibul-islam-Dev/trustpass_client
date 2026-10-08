@@ -24,7 +24,6 @@ export default function Navbar() {
   if (path.startsWith("/dashboard")) {
     return null;
   }
-
   /**
    * Revokes the session on the API, then leaves.
    *
@@ -33,6 +32,9 @@ export default function Navbar() {
    * server has already invalidated it.
    */
   const handleLogout = async () => {
+    // TODO: Uncomment when Better Auth is ready
+    // await signOut();
+    console.log("Logout clicked");
     await signOut();
     router.replace("/auth/login");
     router.refresh();

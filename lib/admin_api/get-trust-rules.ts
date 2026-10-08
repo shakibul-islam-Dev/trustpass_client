@@ -1,14 +1,9 @@
+// src/lib/admin_api/get-trust-rules.ts
 "use server";
 
 import { getData } from "../core/mutations";
 
-
-
-// ============================================================
-// BACKEND RESPONSE TYPE
-// ============================================================
-
-export type TTrustRuleStatus = "VERIFICATION" | "ACTIVITY" | "REPORT";
+export type TTrustRuleStatus = "ACTIVE" | "INACTIVE";
 
 export interface ITrustRuleResponse {
   id: string;
@@ -26,25 +21,14 @@ export interface ITrustRuleFilters {
   status?: TTrustRuleStatus;
 }
 
-// ============================================================
-// BUILD QUERY STRING
-// ============================================================
-
 const buildQuery = (filters: ITrustRuleFilters): string => {
   const params = new URLSearchParams();
-
   if (filters.isActive !== undefined)
     params.set("isActive", String(filters.isActive));
-  if (filters.status)
-    params.set("status", filters.status);
-
+  if (filters.status) params.set("status", filters.status);
   const query = params.toString();
   return query ? `?${query}` : "";
 };
-
-// ============================================================
-// GET /api/v1/trust-rules  — List trust rules
-// ============================================================
 
 export const fetchTrustRules = async (
   filters: ITrustRuleFilters = {}
@@ -53,8 +37,6 @@ export const fetchTrustRules = async (
   console.log("🔍 Fetching:", url);
 
   const response = await getData(url);
-
-  // Log full response so we can see what's happening
   console.log("📥 fetchTrustRules response:", JSON.stringify(response, null, 2));
 
   if (response?.error || response?.success === false) {
