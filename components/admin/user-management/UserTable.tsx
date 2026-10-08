@@ -1,29 +1,19 @@
-// Previous implementation by: Existing Developer
-// Kept for reference — original had no pagination or serial number.
-//
-// export const UserTable = ({ users, onRoleChangeClick }: UserTableProps) => {
-//   return (
-//     <div>
-//       <Table>
-//         {/* no pagination, no serial number */}
-//       </Table>
-//     </div>
-//   );
-// };
-
-// Updated implementation for: User Management page (Admin)
-// Added: serial number column + 20-per-page pagination.
-// Developer: Aritro
-
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal, Shield, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  MoreHorizontal,
+  Shield,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -39,9 +29,9 @@ import type { User, UserRole } from "@/types/admin";
 interface UserTableProps {
   users: User[];
   onRoleChangeClick: (user: User) => void;
+  onDeleteClick: (user: User) => void;
 }
 
-// Display-friendly role labels
 const ROLE_LABEL: Record<UserRole, string> = {
   ADMIN: "Admin",
   MODERATOR: "Moderator",
@@ -61,10 +51,10 @@ const PAGE_SIZE = 20;
 export const UserTable = ({
   users,
   onRoleChangeClick,
+  onDeleteClick,
 }: UserTableProps) => {
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Calculate pagination
   const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE));
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const endIndex = startIndex + PAGE_SIZE;
@@ -105,11 +95,9 @@ export const UserTable = ({
             ) : (
               paginatedUsers.map((user, index) => (
                 <TableRow key={user.id}>
-                  {/* Serial Number */}
                   <TableCell className="text-muted-foreground text-sm">
                     {startIndex + index + 1}
                   </TableCell>
-
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
@@ -144,6 +132,16 @@ export const UserTable = ({
                         >
                           <Shield className="mr-2 h-4 w-4" />
                           Change Role
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => onDeleteClick(user)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete User
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

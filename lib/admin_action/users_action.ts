@@ -56,3 +56,42 @@ export const updateUserRole = async (
     };
   }
 };
+
+// ============================================================
+// DELETE /api/v1/users/:id — Delete user (ADMIN)
+// ============================================================
+
+export const deleteUser = async (userId: string) => {
+  console.log("🔴 deleteUser:", userId);
+
+  try {
+    const res = await fetch(apiUrl(`/api/v1/users/${userId}`), {
+      method: "DELETE",
+      credentials: "include",   // ← Cookie automatic
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    console.log("📥 deleteUser status:", res.status);
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      console.error("❌ deleteUser failed:", res.status, errorData);
+      return {
+        error: true,
+        status: res.status,
+        message: errorData.message || "Failed to delete user",
+      };
+    }
+
+    const data = await res.json();
+    console.log("✅ deleteUser success:", data);
+    return data;
+  } catch (error) {
+    console.error("❌ deleteUser exception:", error);
+    return {
+      error: true,
+      message: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
