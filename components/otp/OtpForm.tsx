@@ -1,6 +1,15 @@
 "use client"
 
-import { FormEvent, useState } from "react"
+import {
+  type ClipboardEvent,
+  type FormEvent,
+  type KeyboardEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react"
+import { ArrowLeft, KeyRound, RefreshCw } from "lucide-react"
+import { cn } from "cn"
 import { Button } from "@/components/ui/button"
 
 interface OtpFormProps {
@@ -18,8 +27,9 @@ interface OtpFormProps {
   resendingText?: string
 }
 
+const OTP_LENGTH = 6
+
 export default function OtpForm({
-  email,
   isVerifying = false,
   onVerify,
   onBack,
@@ -32,81 +42,166 @@ export default function OtpForm({
   resendingText = "Sending...",
 }: OtpFormProps) {
   const [otpCode, setOtpCode] = useState("")
+  const otpRef = useRef("")
+  const inputsRef = useRef<Array<HTMLInputElement | null>>([])
+  const formRef = useRef<HTMLFormElement>(null)
+
+  useEffect(() => {
+    inputsRef.current[0]?.focus()
+  }, [])
+
+  const updateCode = (next: string) => {
+    otpRef.current = next
+    setOtpCode(next)
+  }
+
+  const focusBox = (index: number) => {
+    inputsRef.current[index]?.focus()
+  }
 
   /**
    * No local checks here on purpose — the server validates the code and its
    * message ("OTP must be exactly 6 digits") is what the user sees. The only
-   * thing done locally is keeping non-digits out of the field, which is input
+   * thing done locally is keeping non-digits out of the fields, which is input
    * tidying rather than validation.
    */
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    await onVerify(otpCode.trim())
+    await onVerify(otpRef.current.trim())
   }
 
-  const handleOtpChange = (value: string) => {
-    setOtpCode(value.replace(/\D/g, "").slice(0, 6))
+  const handleBoxChange = (index: number, raw: string) => {
+    const digits = raw.replace(/\D/g, "")
+    const chars = otpRef.current.split("")
+
+    if (digits.length === 0) {
+      // Cleared — wipe this box and step back to the previous one.
+      chars[index] = ""
+      updateCode(chars.join(""))
+      focusBox(Math.max(0, index - 1))
+      return
+    }
+
+    // Fill this box(es), then move the caret forward.
+    let pos = index
+    for (const ch of digits) {
+      if (pos >= OTP_LENGTH) break
+      chars[pos] = ch
+      pos++
+    }
+
+    const next = chars.join("")
+    updateCode(next)
+
+    if (pos < OTP_LENGTH) focusBox(pos)
+
+    // Six digits in hand -> let the server check it immediately.
+    if (next.length === OTP_LENGTH) formRef.current?.requestSubmit()
   }
+
+  const handlePaste = (e: ClipboardEvent<HTMLFormElement>) => {
+    const digits = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, OTP_LENGTH)
+    if (!digits) return
+
+    e.preventDefault()
+    updateCode(digits)
+    focusBox(Math.min(digits.length, OTP_LENGTH - 1))
+
+    if (digits.length === OTP_LENGTH) formRef.current?.requestSubmit()
+  }
+
+  const handleKeyDown =
+    (index: number) => (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Backspace" && !otpRef.current[index] && index > 0) {
+        e.preventDefault()
+        focusBox(index - 1)
+      } else if (e.key === "ArrowLeft" && index > 0) {
+        e.preventDefault()
+        focusBox(index - 1)
+      } else if (e.key === "ArrowRight" && index < OTP_LENGTH - 1) {
+        e.preventDefault()
+        focusBox(index + 1)
+      }
+    }
+
+  const inputProps = (index: number) => ({
+    ref: (node: HTMLInputElement | null) => {
+      inputsRef.current[index] = node
+    },
+    value: otpCode[index] ?? "",
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+      handleBoxChange(index, e.target.value),
+    onKeyDown: handleKeyDown(index),
+  })
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-        We sent a 6-digit code to{" "}
-        <span className="font-medium text-gray-700 dark:text-gray-200">
-          {email}
-        </span>
-      </p>
-
-      <div>
-        <label
-          htmlFor="otp"
-          className="mb-1 block text-xs font-semibold text-gray-700 dark:text-gray-300"
-        >
-          6-Digit OTP Code
-        </label>
-
-        <input
-          id="otp"
-          name="otp"
-          type="text"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          maxLength={6}
-          placeholder="123456"
-          value={otpCode}
-          onChange={(e) => handleOtpChange(e.target.value)}
-          disabled={isVerifying}
-          className="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-center text-lg font-bold tracking-widest outline-none transition focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:text-white"
-        />
+    <form
+      ref={formRef}
+      onSubmit={handleSubmit}
+      onPaste={handlePaste}
+      className="space-y-5"
+      noValidate
+    >
+      {/* 6 individual digit boxes */}
+      <div role="group" aria-label="6-digit code" className="flex justify-between gap-2">
+        {Array.from({ length: OTP_LENGTH }).map((_, index) => (
+          <input
+            key={index}
+            {...inputProps(index)}
+            type="text"
+            inputMode="numeric"
+            pattern="\d*"
+            maxLength={OTP_LENGTH}
+            autoComplete={index === 0 ? "one-time-code" : "off"}
+            aria-label={`Digit ${index + 1}`}
+            placeholder="•"
+            disabled={isVerifying}
+            className="h-12 w-10 rounded-xl border border-border/80 bg-background/70 text-center text-xl font-bold text-foreground shadow-sm outline-none transition-[border-color,box-shadow] duration-(--duration-base) placeholder:text-muted-foreground/35 focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-50 sm:h-14 sm:w-12 md:text-2xl"
+          />
+        ))}
       </div>
 
       <Button
         type="submit"
-        className="mt-2 w-full py-2.5 font-medium"
-        disabled={isVerifying}
+        className="h-11 w-full justify-center gap-2 rounded-xl bg-gradient-to-br from-primary to-primary-deep text-primary-foreground shadow-glow transition-shadow hover:shadow-glow-hover"
+        disabled={isVerifying || otpCode.length !== OTP_LENGTH}
+        size="lg"
       >
+        <KeyRound className="size-4.5" />
         {isVerifying ? verifyingText : submitButtonText}
       </Button>
 
       {onResend && (
-        <button
-          type="button"
-          onClick={() => void onResend()}
-          disabled={isVerifying || isResending}
-          className="w-full text-center text-sm text-slate-500 hover:underline disabled:cursor-not-allowed disabled:opacity-60 dark:text-slate-400"
-        >
-          {isResending ? resendingText : resendButtonText}
-        </button>
+        <div className="space-y-2 text-center">
+          <p className="text-xs text-muted-foreground">
+            Didn&apos;t receive the code?
+          </p>
+          <button
+            type="button"
+            onClick={() => void onResend()}
+            disabled={isVerifying || isResending}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 transition-colors hover:text-primary-deep hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <RefreshCw
+              className={cn("size-3.5", isResending && "animate-spin")}
+            />
+            {isResending ? resendingText : resendButtonText}
+          </button>
+        </div>
       )}
 
       {onBack && (
         <Button
           type="button"
           variant="outline"
-          className="mt-2 w-full py-2.5 font-medium"
+          className="h-11 w-full justify-center gap-2 rounded-xl border-border/80 bg-background/70 transition-colors hover:border-primary/30 hover:bg-surface-secondary"
           onClick={onBack}
           disabled={isVerifying}
         >
+          <ArrowLeft className="size-4" />
           {backButtonText}
         </Button>
       )}

@@ -3,7 +3,12 @@
 import { type FormEvent, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { LockKeyhole } from "lucide-react";
+import AuthShell from "@/components/auth/AuthShell";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { isApiConfigured } from "@/lib/core/auth-api";
 import { resetPassword } from "@/lib/core/password-api";
 
@@ -81,106 +86,108 @@ export default function ResetPasswordForm() {
   };
 
   return (
-    <div className="flex min-h-[80vh] items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-800 dark:bg-slate-900">
-        {/* Header */}
-        <div className="space-y-2 text-center">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Reset your password
-          </h2>
+    <AuthShell
+      title="Reset your password"
+      subtitle="Choose a new password for your account."
+      footer={
+        <p className="text-center text-sm text-muted-foreground">
+          Need a fresh link?{" "}
+          <Link
+            href="/auth/forgot-password"
+            className="font-semibold text-primary underline-offset-4 transition-colors hover:text-primary-deep hover:underline"
+          >
+            Request one
+          </Link>
+        </p>
+      }
+    >
+      {/* Error */}
+      {errorMessage && (
+        <Alert variant="destructive" className="shadow-surface">
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      )}
 
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Choose a new password for your account.
+      {/* Success */}
+      {successMessage && (
+        <Alert className="border-success/30 bg-success-soft text-success shadow-surface">
+          <AlertDescription>{successMessage}</AlertDescription>
+        </Alert>
+      )}
+
+      {!token ? (
+        /* The link was opened without a token — wrong URL, or the email
+           rewrote it. Say so instead of showing a form that can never work. */
+        <div className="space-y-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            This reset link is not valid. Request a new one from the
+            &quot;Forgot password?&quot; option, or ask for the email again.
           </p>
+
+          {/* `buttonVariants` styles a Link with the button look. Button
+              itself cannot render a Link — no asChild in this codebase. */}
+          <Link
+            href="/auth/login"
+            className={buttonVariants({ variant: "outline", className: "w-full" })}
+          >
+            Back to sign in
+          </Link>
         </div>
+      ) : successMessage ? (
+        <div className="space-y-4">
+          <Link
+            href="/auth/login"
+            className={buttonVariants({ className: "w-full" })}
+          >
+            Sign in
+          </Link>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          <div className="space-y-2">
+            <Label htmlFor="new-password">New password</Label>
 
-        {/* Error */}
-        {errorMessage && (
-          <div className="rounded-md border border-red-200 bg-red-50 p-3 text-center text-sm text-red-600 dark:border-red-900 dark:bg-red-950/50 dark:text-red-400">
-            {errorMessage}
-          </div>
-        )}
-
-        {/* Success */}
-        {successMessage && (
-          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-center text-sm text-emerald-600 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-400">
-            {successMessage}
-          </div>
-        )}
-
-        {!token ? (
-          /* The link was opened without a token — wrong URL, or the email
-             rewrote it. Say so instead of showing a form that can never work. */
-          <div className="space-y-4 text-center">
-            <p className="text-sm text-slate-600 dark:text-slate-300">
-              This reset link is not valid. Request a new one from the
-              &quot;Forgot password?&quot; option, or ask for the email again.
-            </p>
-
-            {/* `buttonVariants` styles a Link with the button look. Button
-                itself cannot render a Link — no asChild in this codebase. */}
-            <Link
-              href="/auth/login"
-              className={buttonVariants({ variant: "outline", className: "w-full" })}
-            >
-              Back to sign in
-            </Link>
-          </div>
-        ) : successMessage ? (
-          <div className="space-y-4">
-            <Link
-              href="/auth/login"
-              className={buttonVariants({ className: "w-full" })}
-            >
-              Sign in
-            </Link>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            <div className="space-y-2">
-              <label
-                htmlFor="new-password"
-                className="text-sm font-medium text-slate-700 dark:text-slate-300"
-              >
-                New password
-              </label>
-
-              <input
+            <div className="relative">
+              <LockKeyhole className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
                 id="new-password"
                 type="password"
                 placeholder="••••••••"
                 autoComplete="new-password"
-                className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-950 dark:border-slate-700 dark:focus:ring-slate-300"
+                className="h-11 rounded-xl border-border/80 bg-background/70 pl-10 shadow-sm transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10"
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
               />
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <label
-                htmlFor="confirm-password"
-                className="text-sm font-medium text-slate-700 dark:text-slate-300"
-              >
-                Confirm new password
-              </label>
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Confirm new password</Label>
 
-              <input
+            <div className="relative">
+              <LockKeyhole className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
                 id="confirm-password"
                 type="password"
                 placeholder="••••••••"
                 autoComplete="new-password"
-                className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-950 dark:border-slate-700 dark:focus:ring-slate-300"
+                className="h-11 rounded-xl border-border/80 bg-background/70 pl-10 shadow-sm transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10"
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
               />
             </div>
+          </div>
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Reset password"}
-            </Button>
-          </form>
-        )}
-      </div>
-    </div>
+          <Button
+            type="submit"
+            className="h-11 w-full justify-center gap-2 rounded-xl bg-gradient-to-br from-primary to-primary-deep text-primary-foreground shadow-glow transition-shadow hover:shadow-glow-hover"
+            disabled={isSubmitting}
+            size="lg"
+          >
+            {isSubmitting ? "Saving..." : "Reset password"}
+          </Button>
+        </form>
+      )}
+    </AuthShell>
   );
 }

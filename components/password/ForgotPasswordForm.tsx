@@ -2,7 +2,12 @@
 
 import { type FormEvent, useState } from "react";
 import Link from "next/link";
+import { Mail } from "lucide-react";
+import AuthShell from "@/components/auth/AuthShell";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { isApiConfigured } from "@/lib/core/auth-api";
 import { requestPasswordReset } from "@/lib/core/password-api";
 import { readApiError } from "@/lib/core/api-error";
@@ -78,84 +83,76 @@ export default function ForgotPasswordForm() {
   };
 
   return (
-    <div className="flex min-h-[80vh] items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-800 dark:bg-slate-900">
-        {/* Header */}
-        <div className="space-y-2 text-center">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Forgot password?
-          </h2>
-
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Enter the email you signed up with and we will email you a link to
-            reset your password.
-          </p>
-        </div>
-
-        {/* Error */}
-        {errorMessage && (
-          <div className="rounded-md border border-red-200 bg-red-50 p-3 text-center text-sm text-red-600 dark:border-red-900 dark:bg-red-950/50 dark:text-red-400">
-            {errorMessage}
-          </div>
-        )}
-
-        {/* Success */}
-        {successMessage && (
-          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-center text-sm text-emerald-600 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-400">
-            {successMessage}
-          </div>
-        )}
-
-        {!successMessage ? (
-          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            <div className="space-y-2">
-              <label
-                htmlFor="forgot-email"
-                className="text-sm font-medium text-slate-700 dark:text-slate-300"
-              >
-                Email
-              </label>
-
-              <input
-                id="forgot-email"
-                type="email"
-                placeholder="name@example.com"
-                autoComplete="email"
-                className="w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-950 dark:border-slate-700 dark:focus:ring-slate-300"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Sending..." : "Send reset link"}
-            </Button>
-          </form>
-        ) : (
-          /* Once the email is on its way there is nothing left to type on this
-             page — just send the user back. The link in the email is the path
-             forward now. */
-          <Link
-            href="/auth/login"
-            className={buttonVariants({ className: "w-full" })}
-          >
-            Back to sign in
-          </Link>
-        )}
-
-        {/* Escape hatch back to plain sign-in. */}
-        {!successMessage && (
-          <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+    <AuthShell
+      title="Forgot password?"
+      subtitle="Enter the email you signed up with, and we will email you a link to reset your password."
+      footer={
+        !successMessage && (
+          <p className="text-center text-sm text-muted-foreground">
             Remembered it?{" "}
             <Link
               href="/auth/login"
-              className="font-medium text-slate-900 underline-offset-4 hover:underline dark:text-white"
+              className="font-semibold text-primary underline-offset-4 transition-colors hover:text-primary-deep hover:underline"
             >
               Back to sign in
             </Link>
           </p>
-        )}
-      </div>
-    </div>
+        )
+      }
+    >
+      {/* Error */}
+      {errorMessage && (
+        <Alert variant="destructive" className="shadow-surface">
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Success */}
+      {successMessage && (
+        <Alert className="border-success/30 bg-success-soft text-success shadow-surface">
+          <AlertDescription>{successMessage}</AlertDescription>
+        </Alert>
+      )}
+
+      {!successMessage ? (
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          <div className="space-y-2">
+            <Label htmlFor="forgot-email">Email</Label>
+
+            <div className="relative">
+              <Mail className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="forgot-email"
+                type="email"
+                placeholder="name@example.com"
+                autoComplete="email"
+                className="h-11 rounded-xl border-border/80 bg-background/70 pl-10 shadow-sm transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </div>
+          </div>
+
+          <Button
+            type="submit"
+            className="h-11 w-full justify-center gap-2 rounded-xl bg-gradient-to-br from-primary to-primary-deep text-primary-foreground shadow-glow transition-shadow hover:shadow-glow-hover"
+            disabled={isSubmitting}
+            size="lg"
+          >
+            {isSubmitting ? "Sending..." : "Send reset link"}
+          </Button>
+        </form>
+      ) : (
+        /* Once the email is on its way there is nothing left to type on this
+           page — just send the user back. The link in the email is the path
+           forward now. */
+        <Link
+          href="/auth/login"
+          className={buttonVariants({ className: "w-full" })}
+        >
+          Back to sign in
+        </Link>
+      )}
+    </AuthShell>
   );
 }
