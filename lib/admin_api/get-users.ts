@@ -1,12 +1,18 @@
-"use server";
+// Previous implementation by: Existing Developer
+// Kept for reference because Server Action cannot send cross-origin cookies.
+//
+// "use server";
+// import { getData } from "../core/mutations";
+// export const fetchUsers = async () => {
+//   const response = await getData("/api/v1/admin/users");
+//   // ...
+// };
 
-import { getData } from "../core/mutations";
+// Updated implementation for: User Management page (Admin)
+// Client-side fetch — cookie automatic goes via credentials: "include".
+// Developer: Aritro
 
-
-
-// ============================================================
-// BACKEND RESPONSE TYPE
-// ============================================================
+import { apiUrl } from "@/lib/core/api-url";
 
 export interface IUserResponse {
   id: string;
@@ -19,20 +25,12 @@ export interface IUserResponse {
   updatedAt: string;
 }
 
-// ============================================================
-// FILTERS TYPE (PLURAL)
-// ============================================================
-
-export interface IUserFilters {   // ← plural
+export interface IUserFilters {
   page?: number;
   limit?: number;
   search?: string;
   role?: string;
 }
-
-// ============================================================
-// BUILD QUERY
-// ============================================================
 
 const buildQuery = (filters: IUserFilters): string => {
   const params = new URLSearchParams();
@@ -44,36 +42,41 @@ const buildQuery = (filters: IUserFilters): string => {
   return query ? `?${query}` : "";
 };
 
-// ============================================================
-// GET /api/v1/users — List users (ADMIN)
-// ============================================================
-
 export const fetchUsers = async (
-  filters: IUserFilters = {}   // ← plural
+  filters: IUserFilters = {}
 ): Promise<IUserResponse[]> => {
-  const url = `/api/v1/admin/users${buildQuery(filters)}`;
+  const url = apiUrl(`/api/v1/admin/users${buildQuery(filters)}`);
   console.log("🔍 fetchUsers URL:", url);
 
-  const response = await getData(url);
-  console.log("📥 fetchUsers raw response:", JSON.stringify(response, null, 2));
-
-  if (response?.error || response?.success === false) {
-    console.error("❌ fetchUsers error details:", {
-      error: response?.error,
-      success: response?.success,
-      message: response?.message,
-      status: response?.status,
-      fullResponse: response,
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      credentials: "include",   // ← Cookie automatic (browser)
+      cache: "no-store",
+      headers: { Accept: "application/json" },
     });
+
+    console.log("📥 fetchUsers status:", response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      console.error("❌ fetchUsers error:", response.status, errorText);
+      return [];
+    }
+
+    const data = await response.json();
+    console.log("📥 fetchUsers data:", data);
+
+    // Handle different response shapes
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data?.data?.data)) return data.data.data;
+    if (Array.isArray(data?.users)) return data.users;
+
+    console.warn("⚠️ Unexpected response shape:", data);
+    return [];
+  } catch (error) {
+    console.error("❌ fetchUsers exception:", error);
     return [];
   }
-
-  // Handle different response shapes
-  if (Array.isArray(response)) return response;
-  if (Array.isArray(response?.data)) return response.data;
-  if (Array.isArray(response?.data?.data)) return response.data.data;
-  if (Array.isArray(response?.users)) return response.users;
-
-  console.warn("⚠️ Unexpected response shape:", response);
-  return [];
 };

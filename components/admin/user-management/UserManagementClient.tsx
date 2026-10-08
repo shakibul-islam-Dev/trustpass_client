@@ -2,12 +2,13 @@
 
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
-import { updateUserRole } from "@/lib/admin_action/users_action";
+import { updateUserRole, deleteUser } from "@/lib/admin_action/users_action";
 import { fetchUsers } from "@/lib/admin_api/get-users";
-import type { User, UserRole } from "@/types/admin";  // ✅ import
+import type { User, UserRole } from "@/types/admin";
 import { UserFilters } from "./UserFilters";
 import { UserTable } from "./UserTable";
 import { RoleChangeModal } from "./RoleChangeModal";
+import { DeleteUserDialog } from "./DeleteUserDialog";
 
 interface UserManagementClientProps {
   initialUsers: any[];
@@ -16,12 +17,11 @@ interface UserManagementClientProps {
 export const UserManagementClient = ({
   initialUsers,
 }: UserManagementClientProps) => {
-  // Map backend users → frontend shape (already matches!)
   const mappedUsers: User[] = initialUsers.map((u) => ({
     id: u.id,
     name: u.name,
     email: u.email,
-    role: u.role as UserRole,   // "ADMIN" | "MODERATOR" | "SELLER" | "CUSTOMER"
+    role: u.role as UserRole,
     createdAt: new Date(u.createdAt).toLocaleDateString(),
     avatar: u.image,
   }));
@@ -29,10 +29,13 @@ export const UserManagementClient = ({
   const [users, setUsers] = useState<User[]>(mappedUsers);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const reloadUsers = async () => {
     try {
@@ -76,7 +79,36 @@ export const UserManagementClient = ({
     setIsModalOpen(true);
   };
 
-  // Filtering
+  const openDeleteDialog = (user: User) => {
+    setDeletingUser(user);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingUser) return;
+
+    setIsDeleting(true);
+    try {
+      const result = await deleteUser(deletingUser.id);
+      console.log("📥 Delete user result:", result);
+
+      if (result?.error || result?.success === false) {
+        toast.error("Failed to delete user.");
+        return;
+      }
+
+      toast.success("User deleted successfully!");
+      setIsDeleteDialogOpen(false);
+      setDeletingUser(null);
+      await reloadUsers();
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Something went wrong.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
       const matchesSearch =
@@ -99,6 +131,7 @@ export const UserManagementClient = ({
       <UserTable
         users={filteredUsers}
         onRoleChangeClick={openRoleModal}
+        onDeleteClick={openDeleteDialog}
       />
 
       <RoleChangeModal
@@ -107,6 +140,17 @@ export const UserManagementClient = ({
         onClose={() => setIsModalOpen(false)}
         user={selectedUser}
         onRoleChange={handleRoleChange}
+      />
+
+      <DeleteUserDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setDeletingUser(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        userName={deletingUser?.name}
+        isLoading={isDeleting}
       />
     </>
   );

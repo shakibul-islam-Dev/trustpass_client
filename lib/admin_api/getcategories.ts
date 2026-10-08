@@ -1,12 +1,17 @@
-"use server";
+// Previous implementation by: Aritro (Server Action)
+// Kept for reference because Server Action cannot send cross-origin cookies.
+//
+// import { getData } from "../core/mutations";
+// export const fetchCategories = async () => {
+//   const response = await getData("/api/v1/categories");
+//   // ...
+// };
 
-import { getData } from "../core/mutations";
+// Updated implementation for: Categories page (Client-side fetch)
+// This runs in the browser, so `credentials: "include"` sends the session
+// cookie automatically — no manual forwarding needed.
 
-
-
-// ============================================================
-// BACKEND INTERFACES
-// ============================================================
+import { apiUrl } from "@/lib/core/api-url";
 
 export interface ICategoryResponse {
   id: string;
@@ -16,7 +21,7 @@ export interface ICategoryResponse {
   isActive: boolean;
   createdAt: string;
   updatedAt?: string;
-  productsCount?: number; // Optional - if backend provides it
+  productsCount?: number;
 }
 
 export interface ICategoryFilters {
@@ -26,61 +31,71 @@ export interface ICategoryFilters {
   isActive?: boolean;
 }
 
-// ============================================================
-// BUILD QUERY STRING
-// ============================================================
-
 const buildQuery = (filters: ICategoryFilters): string => {
   const params = new URLSearchParams();
-
   if (filters.page) params.set("page", String(filters.page));
   if (filters.limit) params.set("limit", String(filters.limit));
   if (filters.search) params.set("search", filters.search);
   if (filters.isActive !== undefined)
     params.set("isActive", String(filters.isActive));
-
   const query = params.toString();
   return query ? `?${query}` : "";
 };
 
-// ============================================================
-// GET /api/v1/categories  — List categories (Public)
-// ============================================================
-
 export const fetchCategories = async (
   filters: ICategoryFilters = {}
 ): Promise<ICategoryResponse[]> => {
-  const response = await getData(
-    `/api/v1/categories${buildQuery(filters)}`
-  );
+  const url = apiUrl(`/api/v1/categories${buildQuery(filters)}`);
+  console.log("🔍 fetchCategories URL:", url);
 
-  // Handle error
-  if (response?.error || response?.success === false) {
-    console.error("fetchCategories error:", response);
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      credentials: "include",   // ← Cookie automatic goes (browser)
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+
+    console.log("📥 fetchCategories status:", response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      console.error("❌ fetchCategories error:", response.status, errorText);
+      return [];
+    }
+
+    const data = await response.json();
+    console.log("📥 fetchCategories data:", data);
+
+    // Handle different response shapes
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data?.categories)) return data.categories;
+
+    console.warn("⚠️ Unexpected response shape:", data);
+    return [];
+  } catch (error) {
+    console.error("❌ fetchCategories exception:", error);
     return [];
   }
-
-  // Handle different response shapes
-  if (Array.isArray(response)) return response;
-  if (Array.isArray(response?.data)) return response.data;
-  if (Array.isArray(response?.categories)) return response.categories;
-
-  console.warn("Unexpected response shape:", response);
-  return [];
 };
-
-// ============================================================
-// GET /api/v1/categories/:id  — Get single category
-// ============================================================
 
 export const fetchCategoryById = async (
   id: string
 ): Promise<ICategoryResponse | null> => {
-  const response = await getData(`/api/v1/categories/${id}`);
+  try {
+    const response = await fetch(apiUrl(`/api/v1/categories/${id}`), {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    });
 
-  if (response?.error || response?.success === false) {
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    return data?.data ?? data ?? null;
+  } catch (error) {
+    console.error("fetchCategoryById error:", error);
     return null;
   }
-
-  return response?.data ?? response ?? null;
 };
