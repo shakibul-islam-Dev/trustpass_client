@@ -1,14 +1,36 @@
+"use client";
 
+import { useState, useEffect } from "react";
 import { UserManagementClient } from "@/components/admin/user-management/UserManagementClient";
 import { fetchUsers } from "@/lib/admin_api/get-users";
 
-export const dynamic = "force-dynamic";
+/**
+ * Previous implementation by: Existing Developer
+ * Kept for reference — was a Server Component that could not forward cookies.
+ *
+ * export const dynamic = "force-dynamic";
+ * export default async function UserManagementPage() {
+ *   const users = await fetchUsers();
+ *   // ...
+ * }
+ *
+ * Updated by: Aritro
+ * Reason: Client Component so the browser sends cookies automatically
+ * via credentials: "include".
+ */
+export default function UserManagementPage() {
+  const [users, setUsers] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-export default async function UserManagementPage() {
-  console.log("🎯 Server: Fetching users...");
-  const users = await fetchUsers({ page: 1, limit: 100 });
-  console.log("🎯 Server: Users fetched:", users.length, "users");
-  console.log("🎯 Server: First user:", users[0]);
+  useEffect(() => {
+    const load = async () => {
+      setIsLoading(true);
+      const data = await fetchUsers({ page: 1, limit: 100 });
+      setUsers(data);
+      setIsLoading(false);
+    };
+    load();
+  }, []);
 
   return (
     <div className="p-6 space-y-6 bg-background min-h-screen">
@@ -21,7 +43,11 @@ export default async function UserManagementPage() {
         </p>
       </div>
 
-      <UserManagementClient initialUsers={users} />
+      {isLoading ? (
+        <div className="text-sm text-muted-foreground">Loading users...</div>
+      ) : (
+        <UserManagementClient initialUsers={users} />
+      )}
     </div>
   );
 }

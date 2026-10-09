@@ -18,8 +18,12 @@ import type {
   ICreateReportPayload,
   TReportReason,
 } from "@/lib/customer_action/reports";
-import { FileUpload } from "@/components/shared/upload/FileUpload";
 
+// Previous implementation by: Existing Developer
+// Removed: FileUpload component (was calling /api/v1/upload — 404).
+// Updated by: Aritro
+// Reason: Backend accepts multipart/form-data with a `file` field directly
+// on POST /api/v1/reports (confirmed via Postman — 201 Created).
 
 interface ReportFormProps {
   businessId: string;
@@ -54,22 +58,17 @@ export const ReportForm = ({
   onCancel,
   isSubmitting = false,
 }: ReportFormProps) => {
-  // --- Form State ---
   const [reason, setReason] = useState<TReportReason>("FRAUD");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [evidenceUrls, setEvidenceUrls] = useState<string[]>([]);
   const [currentUrl, setCurrentUrl] = useState("");
+  const [file, setFile] = useState<File | null>(null);
 
-  // --- Handlers ---
-
-  /**
-   * Adds a new evidence URL to the list.
-   */
   const handleAddEvidence = () => {
     if (!currentUrl.trim()) return;
     try {
-      new URL(currentUrl); // Validate URL format
+      new URL(currentUrl);
       setEvidenceUrls((prev) => [...prev, currentUrl.trim()]);
       setCurrentUrl("");
       toast.success("Evidence URL added");
@@ -78,29 +77,40 @@ export const ReportForm = ({
     }
   };
 
-  /**
-   * Removes an evidence URL from the list.
-   */
   const handleRemoveEvidence = (index: number) => {
     setEvidenceUrls((prev) => prev.filter((_, i) => i !== index));
     toast.info("Evidence removed");
   };
 
-  /**
-   * Handles Cloudinary image upload success.
-   */
-  const handleImageUpload = (url: string) => {
-    setEvidenceUrls((prev) => [...prev, url]);
-    toast.success("Image uploaded successfully");
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+
+    const allowed = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!allowed.includes(f.type)) {
+      toast.error("Only JPG, PNG, and WEBP images are allowed.");
+      e.target.value = "";
+      return;
+    }
+
+    if (f.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB.");
+      e.target.value = "";
+      return;
+    }
+
+    setFile(f);
+    toast.success(`Selected: ${f.name}`);
   };
 
-  /**
-   * Handles form submission.
-   */
+  const handleRemoveFile = () => {
+    setFile(null);
+    toast.info("File removed");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
     if (description.trim().length < 20) {
       toast.error("Description must be at least 20 characters long.");
       return;
@@ -112,6 +122,7 @@ export const ReportForm = ({
       title: title.trim() || undefined,
       description: description.trim(),
       evidenceUrls: evidenceUrls.length > 0 ? evidenceUrls : undefined,
+      file: file ?? undefined,
     };
 
     await onSubmit(payload);
@@ -119,14 +130,14 @@ export const ReportForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Reason Dropdown */}
+      {/* Reason */}
       <div className="space-y-2">
         <Label htmlFor="reason">
           Report Reason <span className="text-destructive">*</span>
         </Label>
         <Select
           value={reason}
-          onValueChange={(value) => setReason((value ?? "FRAUD") as TReportReason)}
+          onValueChange={(v) => setReason((v ?? "FRAUD") as TReportReason)}
         >
           <SelectTrigger id="reason">
             <SelectValue placeholder="Select a reason" />
@@ -144,10 +155,11 @@ export const ReportForm = ({
         </p>
       </div>
 
-      {/* Title (Optional) */}
+      {/* Title */}
       <div className="space-y-2">
         <Label htmlFor="title">
-          Title <span className="text-muted-foreground text-xs">(Optional)</span>
+          Title{" "}
+          <span className="text-muted-foreground text-xs">(Optional)</span>
         </Label>
         <Input
           id="title"
@@ -186,11 +198,13 @@ export const ReportForm = ({
           <span className="text-muted-foreground text-xs">(Optional)</span>
         </Label>
 
-        {/* Upload Button + URL Input Row */}
         <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-          <FileUpload
-            onUploadSuccess={handleImageUpload}
+          <input
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/webp"
+            onChange={handleFileChange}
             disabled={isSubmitting}
+            className="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer hover:file:bg-primary/90 file:font-medium"
           />
 
           <div className="hidden sm:flex items-center text-xs text-muted-foreground shrink-0">
@@ -223,59 +237,77 @@ export const ReportForm = ({
           </div>
         </div>
 
-      {/* Evidence List with Thumbnails */}
-{evidenceUrls.length > 0 && (
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-    {evidenceUrls.map((url, index) => {
-      const isImage =
-        /\.(jpg|jpeg|png|webp|gif)$/i.test(url) ||
-        url.includes("cloudinary.com");
-
-      return (
-        <div
-          key={index}
-          className="flex items-center gap-2 p-2 border rounded-md bg-muted/30 min-w-0"
-        >
-          {isImage ? (
-            <img
-              src={url}
-              alt={`Evidence ${index + 1}`}
-              className="h-12 w-12 rounded object-cover border shrink-0"
-              loading="lazy"
-            />
-          ) : (
-            <div className="h-12 w-12 rounded bg-muted flex items-center justify-center shrink-0">
-              <Plus className="h-4 w-4 text-muted-foreground" />
-            </div>
-          )}
-
-          <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-xs font-medium">Evidence #{index + 1}</span>
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-primary hover:underline truncate"
+        {file && (
+          <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
+            <span className="text-xs font-medium truncate flex-1">
+              📎 {file.name} ({(file.size / 1024).toFixed(0)} KB)
+            </span>
+            <button
+              type="button"
+              onClick={handleRemoveFile}
+              className="text-muted-foreground hover:text-destructive p-1 rounded shrink-0"
+              title="Remove file"
             >
-              {url}
-            </a>
+              <X className="h-4 w-4" />
+            </button>
           </div>
+        )}
 
-          <button
-            type="button"
-            onClick={() => handleRemoveEvidence(index)}
-            className="text-muted-foreground hover:text-destructive p-1 rounded shrink-0"
-            title="Remove"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      );
-    })}
-  </div>
-)}
+        {evidenceUrls.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+            {evidenceUrls.map((url, index) => {
+              const isImage =
+                /\.(jpg|jpeg|png|webp|gif)$/i.test(url) ||
+                url.includes("cloudinary.com");
+
+              return (
+                <div
+                  key={index}
+                  className="flex items-center gap-2 p-2 border rounded-md bg-muted/30 min-w-0"
+                >
+                  {isImage ? (
+                    <img
+                      src={url}
+                      alt={`Evidence ${index + 1}`}
+                      className="h-12 w-12 rounded object-cover border shrink-0"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded bg-muted flex items-center justify-center shrink-0">
+                      <Plus className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  )}
+
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="text-xs font-medium">
+                      Evidence #{index + 1}
+                    </span>
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline truncate"
+                    >
+                      {url}
+                    </a>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveEvidence(index)}
+                    className="text-muted-foreground hover:text-destructive p-1 rounded shrink-0"
+                    title="Remove"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <p className="text-xs text-muted-foreground">
-          Upload images (max 5MB) or paste image URLs as evidence.
+          Upload one image (max 5MB) or paste image URLs as evidence.
         </p>
       </div>
 

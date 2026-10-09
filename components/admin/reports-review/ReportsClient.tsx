@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -10,29 +11,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search } from "lucide-react";
-import { ReportTable } from "@/components/admin/reports-review/ReportTable";
-import { ReportDetailsModal } from "@/components/admin/reports-review/ReportDetailsModal";
-import {
-  fetchReports,
-  type IReportResponse,
-  type TReportStatus,
-} from "@/lib/admin_api/get-reports";
 import { updateReportStatus } from "@/lib/admin_action/reports_action";
+import type {
+  IReportResponse,
+  TReportStatus,
+} from "@/lib/admin_api/get-reports";
+import { ReportDetailsModal } from "./ReportDetailsModal";
+import { ReportTable } from "./ReportTable";
 
-/**
- * Moderator Reports page.
- *
- * Reuses the Admin report-management components
- * (`components/admin/reports-review/*`) because both roles hit the same
- * endpoints (GET /api/v1/reports, PATCH /api/v1/reports/:id/status).
- * See Role Access Matrix — "Verify documents/reports": MODERATOR, ADMIN.
- *
- * Implemented by: Aritro
- */
-export default function ModeratorReportsPage() {
-  const [reports, setReports] = useState<IReportResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+interface ReportsClientProps {
+  initialReports: IReportResponse[];
+}
+
+export const ReportsClient = ({ initialReports }: ReportsClientProps) => {
+  const [reports, setReports] = useState<IReportResponse[]>(initialReports);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -40,22 +33,10 @@ export default function ModeratorReportsPage() {
   const [selectedReport, setSelectedReport] =
     useState<IReportResponse | null>(null);
 
-  const loadReports = async () => {
-    setIsLoading(true);
-    try {
-      const data = await fetchReports({ page: 1, limit: 100 });
-      setReports(data);
-    } catch (error) {
-      console.error("Failed to load reports:", error);
-      toast.error("Failed to load reports.");
-    } finally {
-      setIsLoading(false);
-    }
+  const openDetailsModal = (report: IReportResponse) => {
+    setSelectedReport(report);
+    setIsDetailsModalOpen(true);
   };
-
-  useEffect(() => {
-    loadReports();
-  }, []);
 
   const handleStatusUpdate = async (
     reportId: string,
@@ -80,11 +61,6 @@ export default function ModeratorReportsPage() {
     }
   };
 
-  const openDetailsModal = (report: IReportResponse) => {
-    setSelectedReport(report);
-    setIsDetailsModalOpen(true);
-  };
-
   const filteredReports = useMemo(() => {
     return reports.filter((report) => {
       const matchesSearch =
@@ -103,16 +79,7 @@ export default function ModeratorReportsPage() {
   }, [reports, searchTerm, statusFilter]);
 
   return (
-    <div className="p-6 space-y-6 bg-background min-h-screen">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Reports Review</h1>
-        <p className="text-muted-foreground mt-1">
-          Review customer reports and take action.
-        </p>
-      </div>
-
-      {/* Filters */}
+    <>
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -141,27 +108,17 @@ export default function ModeratorReportsPage() {
         </Select>
       </div>
 
-      {/* Table */}
-      {isLoading ? (
-        <div className="space-y-2">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-16 bg-muted animate-pulse rounded-md" />
-          ))}
-        </div>
-      ) : (
-        <ReportTable
-          reports={filteredReports}
-          onViewDetails={openDetailsModal}
-        />
-      )}
+      <ReportTable
+        reports={filteredReports}
+        onViewDetails={openDetailsModal}
+      />
 
-      {/* Details Modal */}
       <ReportDetailsModal
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         report={selectedReport}
         onStatusUpdate={handleStatusUpdate}
       />
-    </div>
+    </>
   );
-}
+};

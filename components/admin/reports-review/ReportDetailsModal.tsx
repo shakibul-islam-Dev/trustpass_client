@@ -1,120 +1,155 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+"use client";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, ExternalLink } from "lucide-react";
-import type { CustomerReport } from "@/types/admin";
+import { FileText, ExternalLink, CheckCircle, XCircle } from "lucide-react";
+import type {
+  IReportResponse,
+  TReportStatus,
+} from "@/lib/admin_api/get-reports";
 
-interface ReportDetailsModalProps {
+interface ReportsDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  report: CustomerReport | null;
-  onResolve: (reportId: string) => void;
-  onReject: (reportId: string) => void;
+  report: IReportResponse | null;
+  onStatusUpdate: (reportId: string, status: TReportStatus) => void;
 }
 
 export const ReportDetailsModal = ({
   isOpen,
   onClose,
   report,
-  onResolve,
-  onReject,
-}: ReportDetailsModalProps) => {
+  onStatusUpdate,
+}: ReportsDetailsModalProps) => {
   if (!report) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Report Details</DialogTitle>
           <DialogDescription>
-            Review the report submitted against <strong>{report.businessName}</strong>.
+            Report against <strong>{report.businessName || "Unknown"}</strong>
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4 space-y-4">
-          {/* Report Info Grid */}
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-muted-foreground">Customer</p>
-              <p className="font-medium">{report.customerName}</p>
+              <p className="font-medium">{report.customerName || "-"}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Category</p>
-              <Badge variant="outline">{report.category.replace("_", " ")}</Badge>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Priority</p>
-              <Badge variant={
-                report.priority === 'HIGH' ? "destructive" :
-                report.priority === 'MEDIUM' ? "secondary" :
-                "outline"
-              }>
-                {report.priority}
+              <p className="text-muted-foreground">Reason</p>
+              <Badge variant="outline">
+                {report.reason.replace(/_/g, " ")}
               </Badge>
             </div>
             <div>
               <p className="text-muted-foreground">Status</p>
-              <Badge variant={
-                report.status === 'RESOLVED' ? "default" :
-                report.status === 'REJECTED' ? "destructive" :
-                "secondary"
-              }>
-                {report.status}
-              </Badge>
+              <Badge>{report.status}</Badge>
             </div>
-            <div className="col-span-2">
+            <div>
               <p className="text-muted-foreground">Date</p>
-              <p className="font-medium">{report.createdAt}</p>
+              <p className="font-medium">
+                {new Date(report.createdAt).toLocaleDateString()}
+              </p>
             </div>
           </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Description:</p>
+          {report.title && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Title:</p>
+              <p className="text-sm p-3 border rounded-md bg-muted/30">
+                {report.title}
+              </p>
+            </div>
+          )}
+
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">
+              Description:
+            </p>
             <p className="text-sm p-3 border rounded-md bg-muted/30">
               {report.description}
             </p>
           </div>
 
-          {/* Evidence (if any) */}
-          {report.evidenceUrl && (
+          {report.evidenceUrls && report.evidenceUrls.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Evidence:</p>
-              <div className="flex items-center justify-between p-3 border rounded-md bg-muted/30">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-primary" />
-                  <span className="text-sm">Attached Evidence</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => window.open(report.evidenceUrl, "_blank")}
+              <p className="text-sm font-medium text-muted-foreground">
+                Evidence:
+              </p>
+              {report.evidenceUrls.map((url, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 border rounded-md bg-muted/30"
                 >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  View
-                </Button>
-              </div>
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <span className="text-sm">Evidence #{index + 1}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.open(url, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    View
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {report.adminNote && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Admin Note:
+              </p>
+              <p className="text-sm p-3 border rounded-md bg-primary/5 border-primary/20">
+                {report.adminNote}
+              </p>
             </div>
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-3">
-          <Button variant="outline" onClick={onClose} className="min-w-28 px-4">Close</Button>
-          <Button
-            variant="destructive"
-            onClick={() => { onReject(report.id); onClose(); }}
-            disabled={report.status === 'REJECTED'}
-            className="min-w-28 px-4"
-          >
-            Reject
+        <DialogFooter className="gap-2 flex-wrap">
+          <Button variant="outline" onClick={onClose}>
+            Close
           </Button>
-          <Button
-            onClick={() => { onResolve(report.id); onClose(); }}
-            disabled={report.status === 'RESOLVED'}
-            className="min-w-28 px-4"
-          >
-            Mark Resolved
-          </Button>
+
+          {report.status === "PENDING" && (
+            <>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  onStatusUpdate(report.id, "REJECTED");
+                  onClose();
+                }}
+              >
+                <XCircle className="mr-2 h-4 w-4" />
+                Reject
+              </Button>
+              <Button
+                onClick={() => {
+                  onStatusUpdate(report.id, "RESOLVED");
+                  onClose();
+                }}
+              >
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Mark Resolved
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

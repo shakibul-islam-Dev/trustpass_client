@@ -1,4 +1,8 @@
-import { Bell, Check, CheckCheck, ExternalLink, Clock } from "lucide-react";
+// Previous implementation by: Existing Developer
+// Updated by: Aritro
+// Reason: Added delete button + onDelete prop for notification deletion.
+
+import { Bell, Check, CheckCheck, ExternalLink, Clock, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,12 +12,14 @@ interface CustomerNotificationListProps {
   notifications: Notification[];
   onMarkAsRead: (notificationId: string) => void;
   onMarkAllAsRead: () => void;
+  onDelete: (notificationId: string) => void;
 }
 
 export const CustomerNotificationList = ({
   notifications,
   onMarkAsRead,
   onMarkAllAsRead,
+  onDelete,
 }: CustomerNotificationListProps) => {
   // Count unread notifications
   const unreadCount = notifications.filter((n) => !n.isRead).length;
@@ -54,7 +60,11 @@ export const CustomerNotificationList = ({
           <p className="text-sm text-muted-foreground">
             {unreadCount > 0 ? (
               <>
-                You have <span className="font-semibold text-foreground">{unreadCount}</span> unread notification{unreadCount > 1 ? "s" : ""}
+                You have{" "}
+                <span className="font-semibold text-foreground">
+                  {unreadCount}
+                </span>{" "}
+                unread notification{unreadCount > 1 ? "s" : ""}
               </>
             ) : (
               "All caught up! No unread notifications."
@@ -94,9 +104,11 @@ export const CustomerNotificationList = ({
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                   {/* Icon */}
-                  <div className={`p-2 rounded-full ${
-                    !notification.isRead ? "bg-primary/10" : "bg-muted"
-                  }`}>
+                  <div
+                    className={`p-2 rounded-full ${
+                      !notification.isRead ? "bg-primary/10" : "bg-muted"
+                    }`}
+                  >
                     {getNotificationIcon(notification.type)}
                   </div>
 
@@ -104,7 +116,11 @@ export const CustomerNotificationList = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className={`text-sm ${!notification.isRead ? "font-semibold" : "font-medium"}`}>
+                        <p
+                          className={`text-sm ${
+                            !notification.isRead ? "font-semibold" : "font-medium"
+                          }`}
+                        >
                           {notification.title}
                         </p>
                         {getTypeBadge(notification.type)}
@@ -130,7 +146,9 @@ export const CustomerNotificationList = ({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => window.open(notification.link, "_self")}
+                            onClick={() =>
+                              window.open(notification.link, "_self")
+                            }
                           >
                             <ExternalLink className="h-3 w-3 mr-1" />
                             View
@@ -148,6 +166,17 @@ export const CustomerNotificationList = ({
                             Mark Read
                           </Button>
                         )}
+
+                        {/* Delete Button */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onDelete(notification.id)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          title="Delete notification"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
                   </div>

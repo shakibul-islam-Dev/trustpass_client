@@ -1,4 +1,13 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+"use client";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Phone, Mail, Package, Star, FileText } from "lucide-react";
@@ -8,24 +17,39 @@ interface BusinessDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   business: Business | null;
-  onToggleFeatured: (businessId: string, isFeatured: boolean) => void;
-  onApprove: (businessId: string) => void;
-  onReject: (businessId: string) => void;
 }
+
+// Map verification status to Badge variant
+// Backend can return PENDING | UNDER_REVIEW | APPROVED | REJECTED | SUSPENDED | VERIFIED.
+// The frontend type narrows to PENDING | VERIFIED | REJECTED, so we normalize.
+const getStatusVariant = (status: string | undefined) => {
+  switch (String(status || "PENDING").toUpperCase()) {
+    case "VERIFIED":
+    case "APPROVED":
+      return "default";
+    case "REJECTED":
+    case "SUSPENDED":
+      return "destructive";
+    default:
+      return "secondary";
+  }
+};
 
 export const BusinessDetailsModal = ({
   isOpen,
   onClose,
   business,
-  onToggleFeatured,
-  onApprove,
-  onReject,
 }: BusinessDetailsModalProps) => {
   if (!business) return null;
 
+  const statusLabel = (business.verificationStatus || "PENDING").replace(
+    /_/g,
+    " "
+  );
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {business.name}
@@ -39,26 +63,24 @@ export const BusinessDetailsModal = ({
         </DialogHeader>
 
         <div className="py-4 space-y-4">
-          {/* Status Badges */}
-          <div className="flex gap-2">
-            <Badge variant={
-              business.verificationStatus === 'VERIFIED' ? "default" :
-              business.verificationStatus === 'REJECTED' ? "destructive" :
-              "secondary"
-            }>
-              {business.verificationStatus}
+          <div className="flex gap-2 flex-wrap">
+            <Badge variant={getStatusVariant(business.verificationStatus as string)}>
+              {String(business.verificationStatus || "PENDING").replace(/_/g, " ")}
             </Badge>
-            <Badge variant={
-              business.trustScore >= 80 ? "default" :
-              business.trustScore >= 50 ? "secondary" :
-              "destructive"
-            }>
+            <Badge
+              variant={
+                business.trustScore >= 80
+                  ? "default"
+                  : business.trustScore >= 50
+                    ? "secondary"
+                    : "destructive"
+              }
+            >
               Trust Score: {business.trustScore}
             </Badge>
             <Badge variant="outline">{business.category}</Badge>
           </div>
 
-          {/* Info Grid */}
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="flex items-start gap-2">
               <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
@@ -105,26 +127,9 @@ export const BusinessDetailsModal = ({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0 flex-wrap">
-          <Button variant="outline" onClick={onClose}>Close</Button>
-          <Button
-            variant="secondary"
-            onClick={() => onToggleFeatured(business.id, business.isFeatured)}
-          >
-            {business.isFeatured ? "Remove Featured" : "Mark Featured"}
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => { onReject(business.id); onClose(); }}
-            disabled={business.verificationStatus === 'REJECTED'}
-          >
-            Reject
-          </Button>
-          <Button
-            onClick={() => { onApprove(business.id); onClose(); }}
-            disabled={business.verificationStatus === 'VERIFIED'}
-          >
-            Approve
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Close
           </Button>
         </DialogFooter>
       </DialogContent>

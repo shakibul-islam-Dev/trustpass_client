@@ -1,13 +1,22 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+"use client";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, ExternalLink } from "lucide-react";
-import type { VerificationRequest } from "@/types/admin";
+import type { IVerificationResponse } from "@/lib/admin_api/get-verifications";
 
 interface VerificationDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  request: VerificationRequest | null;
+  request: IVerificationResponse | null;
   onApprove: (requestId: string) => void;
   onReject: (requestId: string) => void;
 }
@@ -21,13 +30,17 @@ export const VerificationDetailsModal = ({
 }: VerificationDetailsModalProps) => {
   if (!request) return null;
 
+  const trustScore = request.trustScore ?? 0;
+  const documents = request.documents ?? [];
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Verification Details</DialogTitle>
           <DialogDescription>
-            Review the documents submitted for <strong>{request.businessName}</strong>.
+            Review the documents submitted for{" "}
+            <strong>{request.businessName}</strong>.
           </DialogDescription>
         </DialogHeader>
 
@@ -36,41 +49,53 @@ export const VerificationDetailsModal = ({
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-muted-foreground">Owner</p>
-              <p className="font-medium">{request.ownerName}</p>
+              <p className="font-medium">{request.ownerName || "-"}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Trade License</p>
-              <p className="font-medium">{request.tradeLicenseNo}</p>
+              <p className="font-medium">{request.tradeLicenseNo || "-"}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Category</p>
-              <p className="font-medium">{request.category}</p>
+              <p className="font-medium">{request.category || "-"}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Trust Score</p>
-              <Badge variant={request.trustScore >= 80 ? "default" : "secondary"}>
-                {request.trustScore}
+              <Badge variant={trustScore >= 80 ? "default" : "secondary"}>
+                {trustScore}
               </Badge>
             </div>
           </div>
 
           {/* Documents List */}
           <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Uploaded Documents:</p>
-            {request.documents.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic">No documents uploaded.</p>
+            <p className="text-sm font-medium text-muted-foreground">
+              Uploaded Documents:
+            </p>
+            {documents.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">
+                No documents uploaded.
+              </p>
             ) : (
-              request.documents.map((doc) => (
-                <div key={doc.id} className="flex items-center justify-between p-3 border rounded-md bg-muted/30">
+              documents.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="flex items-center justify-between p-3 border rounded-md bg-muted/30"
+                >
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4 text-primary" />
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium">{doc.documentType.replace("_", " ")}</span>
-                      <span className="text-xs text-muted-foreground">Uploaded: {doc.uploadedAt}</span>
+                      <span className="text-sm font-medium">
+                        {(doc.documentType || "UNKNOWN").replace(/_/g, " ")}
+                      </span>
+                      {doc.uploadedAt && (
+                        <span className="text-xs text-muted-foreground">
+                          Uploaded: {doc.uploadedAt}
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  {/* Fixed: Removed asChild, used onClick instead */}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -86,18 +111,30 @@ export const VerificationDetailsModal = ({
         </div>
 
         <DialogFooter className="gap-2 sm:gap-3">
-          <Button variant="outline" onClick={onClose} className="min-w-24 px-4">Close</Button>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="min-w-24 px-4"
+          >
+            Close
+          </Button>
           <Button
             variant="destructive"
-            onClick={() => { onReject(request.id); onClose(); }}
-            disabled={request.status === 'REJECTED'}
+            onClick={() => {
+              onReject(request.id);
+              onClose();
+            }}
+            disabled={request.status === "REJECTED"}
             className="min-w-24 px-4"
           >
             Reject
           </Button>
           <Button
-            onClick={() => { onApprove(request.id); onClose(); }}
-            disabled={request.status === 'VERIFIED'}
+            onClick={() => {
+              onApprove(request.id);
+              onClose();
+            }}
+            disabled={request.status === "APPROVED"}
             className="min-w-24 px-4"
           >
             Approve
