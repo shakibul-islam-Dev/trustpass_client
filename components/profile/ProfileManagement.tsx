@@ -1,17 +1,7 @@
 "use client";
 
-import {
-  BriefcaseBusiness,
-  Camera,
-  CheckCircle2,
-  FileText,
-  Lock,
-  Mail,
-  MapPin,
-  Phone,
-  ShieldCheck,
-  UserRound,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Camera, Loader2, Save } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,202 +14,204 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import ProfilePhotoPicker from "@/components/seller/ProfilePhotoPicker";
+import {
+  getMe,
+  getMyProfile,
+  updateMe,
+  updateMyProfile,
+  type ApiUser,
+} from "@/lib/core/profile-api";
 
-const detailRows = [
-  { label: "Full name", value: "Shakibul Islam", icon: UserRound },
-  { label: "Email address", value: "shakibul@trustpass.io", icon: Mail },
-  { label: "Phone number", value: "+880 1712 345678", icon: Phone },
-  { label: "Location", value: "Dhaka, Bangladesh", icon: MapPin },
-];
-
-const documentItems = [
-  { name: "National ID", status: "Verified", tone: "success" as const },
-  { name: "Trade license", status: "Pending", tone: "warning" as const },
-  { name: "Business agreement", status: "Uploaded", tone: "primary-soft" as const },
-];
+const VALID_LINK_PREFIXES = ["https://", "http://"];
 
 export default function ProfileManagement() {
+  const [user, setUser] = useState<ApiUser | null>(null);
+  const [links, setLinks] = useState<string[]>([]);
+  const [about, setAbout] = useState("");
+  const [linksText, setLinksText] = useState("");
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    const load = async () => {
+      const [userResult, profileResult] = await Promise.all([getMe(), getMyProfile()]);
+      if (!active) return;
+
+      if (!userResult.ok || !userResult.data) {
+        setLoadError(userResult.message);
+        setIsLoading(false);
+        return;
+      }
+
+      setUser(userResult.data);
+      setAbout(profileResult.data?.about ?? "");
+      setLinks(profileResult.data?.links ?? []);
+      setLinksText((profileResult.data?.links ?? []).join("\n"));
+      setIsLoading(false);
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const parsedLinks = linksText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const handleSave = async () => {
+    setMessage(null);
+
+    const invalidLink = parsedLinks.find((link) => !VALID_LINK_PREFIXES.some((prefix) => link.startsWith(prefix)));
+    if (invalidLink) {
+      setMessage({ tone: "error", text: `"${invalidLink}" is not a valid link — start it with https:// or http://` });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const name = user?.name?.trim() ?? "";
+      if (name.length > 0 && name.length < 2) {
+        setMessage({ tone: "error", text: "Name must be at least 2 characters." });
+        return;
+      }
+
+      const [userResult, profileResult] = await Promise.all([
+        updateMe({
+          name: name || undefined,
+          phone: user?.phone?.trim() || undefined,
+          gender: user?.gender ?? undefined,
+        }),
+        updateMyProfile({ about: about.trim() || undefined, links: parsedLinks }),
+      ]);
+
+      if (!userResult.ok || !profileResult.ok) {
+        setMessage({ tone: "error", text: userResult.ok ? profileResult.message : userResult.message });
+        return;
+      }
+
+      if (userResult.data) setUser(userResult.data);
+      setMessage({ tone: "success", text: "Profile updated successfully." });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-64 items-center justify-center text-sm text-muted-foreground">
+        Loading profile…
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <Card className="border-border/80 bg-surface shadow-surface">
+        <CardContent className="py-8 text-center text-sm text-danger">{loadError}</CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6 p-4 md:p-6 xl:p-8">
       <Card className="overflow-hidden border-border/80 bg-surface shadow-surface">
         <CardContent className="p-0">
-          <div className="flex flex-col gap-6 border-b border-border/80 bg-gradient-to-r from-primary/5 via-background to-surface p-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-6 border-b border-border/80 bg-gradient-to-r from-primary/5 via-background to-surface p-6 md:flex-row md:items-start md:justify-between">
             <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-xl font-semibold text-primary-foreground shadow-surface">
-                  SI
-                </div>
-                <button
-                  type="button"
-                  className="absolute -right-1 -bottom-1 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface text-foreground shadow-surface transition-colors hover:bg-surface-secondary"
-                  aria-label="Upload profile photo"
-                >
-                  <Camera className="size-4" />
-                </button>
+              <ProfilePhotoPicker name={user?.name || "Your profile photo"} />
+              <div>
+                <p className="text-lg font-semibold text-foreground">{user?.name || "Your account"}</p>
+                <p className="text-sm text-muted-foreground">{user?.email}</p>
+                {user?.role && (
+                  <Badge variant="outline" className="mt-2 border-primary/20 bg-primary/5 text-primary">
+                    {user.role}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <CardContent className="space-y-5 p-6">
+            {message && (
+              <Alert variant={message.tone === "error" ? "destructive" : "default"} className={message.tone === "success" ? "border-success/30 bg-success-soft text-success shadow-surface" : "shadow-surface"}>
+                <AlertDescription>{message.text}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Full name</Label>
+                <Input value={user?.name ?? ""} onChange={(event) => setUser((current) => (current ? { ...current, name: event.target.value } : current))} />
               </div>
 
               <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                    Shakibul Islam
-                  </h1>
-                  <Badge variant="success">Verified seller</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Business owner · Trusted profile • Last updated 2 days ago
-                </p>
+                <Label>Email address</Label>
+                <Input value={user?.email ?? ""} disabled />
               </div>
-            </div>
 
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" className="gap-2">
-                <FileText className="size-4" />
-                View public profile
-              </Button>
-              <Button type="button" className="gap-2">
-                <ShieldCheck className="size-4" />
-                Edit profile
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
-        <Card className="border-border/80 bg-surface shadow-surface">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle>Personal information</CardTitle>
-                <CardDescription>Core details used across your trust profile.</CardDescription>
+              <div className="space-y-2">
+                <Label>Phone number</Label>
+                <Input placeholder="+880 1XXX-XXXXXX" value={user?.phone ?? ""} onChange={(event) => setUser((current) => (current ? { ...current, phone: event.target.value } : current))} />
               </div>
-              <Badge variant="outline" className="gap-1.5">
-                <CheckCircle2 className="size-3.5" />
-                98% complete
-              </Badge>
-            </div>
-          </CardHeader>
 
-          <CardContent className="space-y-5">
-            <div className="grid gap-5 md:grid-cols-2">
-              {detailRows.map(({ label, value, icon: Icon }) => (
-                <div key={label} className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                    {label}
-                  </Label>
-                  <div className="relative">
-                    <Icon className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      readOnly
-                      value={value}
-                      className="h-11 rounded-xl border-border/80 bg-background/60 pl-10 text-foreground shadow-sm"
-                    />
-                  </div>
-                </div>
-              ))}
+              <div className="space-y-2">
+                <Label>Gender</Label>
+                <select
+                  value={user?.gender ?? ""}
+                  onChange={(event) => setUser((current) => (current ? { ...current, gender: (event.target.value || null) as ApiUser["gender"] } : current))}
+                  className="h-10 w-full rounded-field border border-border bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                >
+                  <option value="">Prefer not to say</option>
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                Bio
-              </Label>
-              <textarea
-                readOnly
-                value="Trusted local seller focused on quality household products, reliable deliveries, and friendly customer support."
-                className="min-h-28 w-full rounded-xl border border-border bg-background/60 px-3.5 py-3 text-sm text-foreground shadow-sm outline-none"
+              <Label htmlFor="profile-about">About</Label>
+              <Textarea id="profile-about" placeholder="Tell customers a little about yourself…" value={about} onChange={(event) => setAbout(event.target.value)} maxLength={500} />
+              <p className="text-right text-xs text-muted-foreground">{about.length}/500</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="profile-links">Links</Label>
+              <Textarea
+                id="profile-links"
+                placeholder={"One link per line, e.g.\nhttps://facebook.com/yourpage"}
+                value={linksText}
+                onChange={(event) => setLinksText(event.target.value)}
+                rows={3}
               />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/80 bg-surface shadow-surface">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle>Security</CardTitle>
-                <CardDescription>Protect your account and recovery options.</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="space-y-4">
-            <div className="rounded-xl border border-border bg-background/50 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">Password</p>
-                  <p className="text-sm text-muted-foreground">Last changed 18 days ago</p>
-                </div>
-                <div className="rounded-full bg-success/10 p-2 text-success">
-                  <Lock className="size-4" />
-                </div>
-              </div>
-              <Button type="button" variant="outline" className="mt-4 w-full gap-2">
-                <Lock className="size-4" />
-                Change password
-              </Button>
+              <p className="text-xs text-muted-foreground">Each link must start with https:// or http://</p>
             </div>
 
-            <div className="rounded-xl border border-border bg-background/50 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">Two-step verification</p>
-                  <p className="text-sm text-muted-foreground">Recommended for account protection</p>
-                </div>
-                <div className="rounded-full bg-primary/10 p-2 text-primary">
-                  <ShieldCheck className="size-4" />
-                </div>
-              </div>
-              <Button type="button" variant="outline" className="mt-4 w-full gap-2">
-                <ShieldCheck className="size-4" />
-                Enable 2FA
+            <div className="flex justify-end gap-3 pt-2">
+              <Button type="button" className="gap-2" disabled={isSaving} onClick={() => void handleSave()}>
+                {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                {isSaving ? "Saving…" : "Save changes"}
               </Button>
             </div>
           </CardContent>
-        </Card>
-      </div>
-
-      <Card className="border-border/80 bg-surface shadow-surface">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <CardTitle>Documents & verification</CardTitle>
-              <CardDescription>Keep your identity and business records updated.</CardDescription>
-            </div>
-            <Button type="button" variant="outline" className="gap-2">
-              <FileText className="size-4" />
-              Upload new document
-            </Button>
-          </div>
-        </CardHeader>
-
-        <CardContent className="grid gap-4 md:grid-cols-3">
-          {documentItems.map(({ name, status, tone }) => (
-            <div
-              key={name}
-              className="rounded-xl border border-border bg-background/50 p-4 transition-colors hover:border-primary/30 hover:bg-surface-secondary"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-2">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <BriefcaseBusiness className="size-4" />
-                  </div>
-                  <p className="font-medium text-foreground">{name}</p>
-                </div>
-                <Badge variant={tone === "success" ? "success" : tone === "warning" ? "warning" : "primary-soft"}>
-                  {status}
-                </Badge>
-              </div>
-              <p className="mt-4 text-sm text-muted-foreground">
-                {status === "Verified"
-                  ? "Approved by TrustPass review team."
-                  : status === "Pending"
-                    ? "Awaiting review from the verification team."
-                    : "Document attached and ready for review."}
-              </p>
-            </div>
-          ))}
         </CardContent>
       </Card>
+
+      <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+        <Camera className="size-3.5" />
+        Photo upload, name, and links are saved to your account on the API server.
+      </p>
     </div>
   );
 }

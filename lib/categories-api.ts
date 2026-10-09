@@ -1,11 +1,9 @@
 import type { ICategoriesResponse, ICategoryResponse } from "@/types/categories";
-
-const getCategoryApiBaseUrl = () =>
-	process.env.NEXT_PUBLIC_BASE_URL || "https://trust-pass-server.vercel.app";
+import { apiUrl } from "@/lib/core/api-url";
 
 const fetchCategoryApi = async <T extends { success: boolean }>(url: string): Promise<T> => {
 	try {
-		const response = await fetch(`${getCategoryApiBaseUrl()}${url}`, {
+		const response = await fetch(apiUrl(url), {
 			method: "GET",
 			cache: "no-store",
 		});

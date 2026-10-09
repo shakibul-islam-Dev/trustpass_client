@@ -36,34 +36,36 @@ const MyReportsPage = () => {
    * TODO: Add pagination + filters as query params when ready.
    */
   const loadReports = async () => {
-    setIsLoading(true);
-    try {
-      const data = await fetchMyReports("?page=1&limit=50");
+  setIsLoading(true);
+  try {
+    const data = await fetchMyReports("?page=1&limit=50");
 
+    // Backend response is already normalized by fetchMyReports
+    // (business.name → businessName, reporter.name → customerName)
     const mapped: CustomerReport[] = data.map((r) => ({
-  id: r.id,
-  businessId: r.businessId,
-  businessName: r.businessName ?? "Unknown Business",
-  customerId: r.customerId ?? "",
-  customerName: r.customerName ?? "",
-  reason: r.reason,                    // ← category থেকে reason
-  title: r.title,
-  description: r.description,
-  evidenceUrls: r.evidenceUrls,        // ← evidenceUrl থেকে evidenceUrls
-  status: r.status,
-  adminNote: r.adminNote,
-  priority: "MEDIUM",
-  createdAt: r.createdAt,
-}));
+      id: r.id,
+      businessId: r.businessId,
+      businessName: r.businessName ?? "Unknown Business",
+      customerId: r.customerId ?? "",
+      customerName: r.customerName ?? "",
+      reason: r.reason,
+      title: r.title,
+      description: r.description,
+      evidenceUrls: r.evidenceUrls,
+      status: r.status,
+      adminNote: r.adminNote,
+      priority: "MEDIUM",
+      createdAt: r.createdAt,
+    }));
 
-      setReports(mapped);
-    } catch (error) {
-      console.error("Failed to load reports:", error);
-      toast.error("Failed to load your reports. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    setReports(mapped);
+  } catch (error) {
+    console.error("Failed to load reports:", error);
+    toast.error("Failed to load your reports. Please try again.");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // Load on mount
   useEffect(() => {

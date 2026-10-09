@@ -1,6 +1,8 @@
 /**
- * The API calls this app makes, in one file. Everything goes to the Live API
- * (`lib/core/api-url.ts` decides the address — never a local server).
+ * The API calls this app makes, in one file. Everything goes through
+ * `apiUrl()` (`lib/core/api-url.ts`), which points at the local server in
+ * `next dev` and at the live API in production — `lib/core/env.ts` owns the
+ * addresses.
  *
  * The server runs better-auth and exposes it under two prefixes that share
  * ONE user and session store:
@@ -12,7 +14,7 @@
  *                      flow).
  *
  * LOGIN uses `/api/auth/sign-in/email`. That is what fixes the "wrong
- * password gets an OTP" bug from the frontend's side: the Live API checks the
+ * password gets an OTP" bug from the frontend's side: the API checks the
  * password first and answers a plain 401 when it does not match, so no OTP
  * email is ever sent for a failed login.
  *
@@ -26,8 +28,9 @@ import { apiUrl } from "@/lib/core/api-url";
 import { readApiError } from "@/lib/core/api-error";
 
 /**
- * Always true: the Live API URL is hardcoded in `lib/core/api-url.ts`, so the
- * app is always pointed at it and never needs an environment variable.
+ * Kept for callers that want to know an API origin exists. It always does:
+ * `lib/core/env.ts` resolves one for every environment (local in `next dev`,
+ * the live API in production).
  */
 export function isApiConfigured(): boolean {
   return true;
@@ -48,7 +51,8 @@ export function normalizeEmail(email: string): string {
 
 /**
  * There is no base-URL check inside this file: `apiUrl()` in
- * `lib/core/api-url.ts` always returns the Live API address.
+ * `lib/core/api-url.ts` always returns a usable origin (see
+ * `lib/core/env.ts`).
  */
 
 type Json = Record<string, unknown>;
@@ -57,7 +61,7 @@ async function postJson(path: string, body: Json): Promise<Response> {
   return fetch(apiUrl(path), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    // The session cookie belongs to the Live API's host; `include` sends and
+    // The session cookie belongs to the API's host; `include` sends and
     // stores it on this cross-origin request.
     credentials: "include",
     body: JSON.stringify(body),
@@ -79,7 +83,7 @@ export type LoginResult =
   | { ok: false; status: number; message: string };
 
 /**
- * Signs the user in with email + password against the Live API.
+ * Signs the user in with email + password against the API.
  *
  *   POST /api/auth/sign-in/email
  *
@@ -97,7 +101,7 @@ export async function loginWithPassword(
   email: string,
   password: string,
 ): Promise<LoginResult> {
-  const response = await postJson("/api/auth/sign-in/email", {
+  const response = await postJson("/api/auth/sign-in]/email", {
     email: normalizeEmail(email),
     password,
   });

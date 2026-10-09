@@ -1,171 +1,128 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import type { VerificationRequest } from "@/types/admin";
+import { useState, useEffect, useMemo } from "react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Search } from "lucide-react";
 import { VerificationTable } from "@/components/admin/verification-queue/VerificationTable";
 import { VerificationDetailsModal } from "@/components/admin/verification-queue/VerificationDetailsModal";
+import {
+  fetchVerifications,
+  type IVerificationResponse,
+  type TVerificationStatus,
+} from "@/lib/admin_api/get-verifications";
+import { reviewVerification } from "@/lib/admin_action/verifications_action";
 
-// Dummy Data (6 requests)
-const DUMMY_REQUESTS: VerificationRequest[] = [
-  {
-    id: "v1",
-    businessId: "b1",
-    businessName: "Tech Solutions Ltd.",
-    ownerName: "Aritro Das",
-    ownerEmail: "aritro@tech.com",
-    category: "IT Services",
-    phone: "+8801700000001",
-    location: "Dhaka",
-    tradeLicenseNo: "TRAD-2024-001",
-    trustScore: 85,
-    status: "PENDING",
-    submittedAt: "2026-07-10",
-    documents: [
-      { id: "d1", documentType: "TRADE_LICENSE", fileUrl: "#", uploadedAt: "2026-07-10" },
-      { id: "d2", documentType: "NID", fileUrl: "#", uploadedAt: "2026-07-10" },
-    ],
-  },
-  {
-    id: "v2",
-    businessId: "b2",
-    businessName: "Green Grocery",
-    ownerName: "Shakibul Islam",
-    ownerEmail: "shakib@green.com",
-    category: "Retail",
-    phone: "+8801700000002",
-    location: "Chittagong",
-    tradeLicenseNo: "TRAD-2024-002",
-    trustScore: 60,
-    status: "PENDING",
-    submittedAt: "2026-07-11",
-    documents: [
-      { id: "d3", documentType: "TRADE_LICENSE", fileUrl: "#", uploadedAt: "2026-07-11" },
-    ],
-  },
-  {
-    id: "v3",
-    businessId: "b3",
-    businessName: "Fashion Hub",
-    ownerName: "Saheen Akter",
-    ownerEmail: "saheen@fashion.com",
-    category: "Fashion",
-    phone: "+8801700000003",
-    location: "Sylhet",
-    tradeLicenseNo: "TRAD-2024-003",
-    trustScore: 45,
-    status: "PENDING",
-    submittedAt: "2026-07-12",
-    documents: [
-      { id: "d4", documentType: "TIN", fileUrl: "#", uploadedAt: "2026-07-12" },
-    ],
-  },
-  {
-    id: "v4",
-    businessId: "b4",
-    businessName: "Digital Marketing Agency",
-    ownerName: "Shajida Akter",
-    ownerEmail: "shajida@dma.com",
-    category: "Marketing",
-    phone: "+8801700000004",
-    location: "Dhaka",
-    tradeLicenseNo: "TRAD-2024-004",
-    trustScore: 90,
-    status: "PENDING",
-    submittedAt: "2026-07-13",
-    documents: [
-      { id: "d5", documentType: "TRADE_LICENSE", fileUrl: "#", uploadedAt: "2026-07-13" },
-      { id: "d6", documentType: "NID", fileUrl: "#", uploadedAt: "2026-07-13" },
-      { id: "d7", documentType: "TIN", fileUrl: "#", uploadedAt: "2026-07-13" },
-    ],
-  },
-  {
-    id: "v5",
-    businessId: "b5",
-    businessName: "Rahim Electronics",
-    ownerName: "Rahim Uddin",
-    ownerEmail: "rahim@electronics.com",
-    category: "Electronics",
-    phone: "+8801700000005",
-    location: "Khulna",
-    tradeLicenseNo: "TRAD-2024-005",
-    trustScore: 30,
-    status: "PENDING",
-    submittedAt: "2026-07-14",
-    documents: [
-      { id: "d8", documentType: "TRADE_LICENSE", fileUrl: "#", uploadedAt: "2026-07-14" },
-    ],
-  },
-  {
-    id: "v6",
-    businessId: "b6",
-    businessName: "Karim Foods",
-    ownerName: "Karim Mia",
-    ownerEmail: "karim@foods.com",
-    category: "Food",
-    phone: "+8801700000006",
-    location: "Rajshahi",
-    tradeLicenseNo: "TRAD-2024-006",
-    trustScore: 75,
-    status: "PENDING",
-    submittedAt: "2026-07-15",
-    documents: [
-      { id: "d9", documentType: "TRADE_LICENSE", fileUrl: "#", uploadedAt: "2026-07-15" },
-      { id: "d10", documentType: "NID", fileUrl: "#", uploadedAt: "2026-07-15" },
-    ],
-  },
-];
+// Previous implementation used DUMMY_REQUESTS.
+// Removed — now using live API via fetchVerifications.
+// Updated by: Aritro
 
 const VerificationQueue = () => {
-  // --- States ---
-  const [requests, setRequests] = useState<VerificationRequest[]>(DUMMY_REQUESTS);
+  const [requests, setRequests] = useState<IVerificationResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<VerificationRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] =
+    useState<IVerificationResponse | null>(null);
 
-  // --- Handlers (API calls will go here later) ---
-
-  /**
-   * Handles approving a verification request.
-   * TODO: Replace with API Call (PATCH /admin/verifications/:id/approve)
-   */
-  const handleApprove = (requestId: string) => {
-    setRequests(prev =>
-      prev.map(req => req.id === requestId ? { ...req, status: "VERIFIED" as const } : req)
-    );
-    console.log(`API Call: Approve verification ${requestId}`);
+  const loadVerifications = async () => {
+    setIsLoading(true);
+    try {
+      const data = await fetchVerifications({ limit: 100 });
+      setRequests(data);
+    } catch (error) {
+      console.error("Failed to load verifications:", error);
+      toast.error("Failed to load verifications.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  /**
-   * Handles rejecting a verification request.
-   * TODO: Replace with API Call (PATCH /admin/verifications/:id/reject)
-   */
-  const handleReject = (requestId: string) => {
-    setRequests(prev =>
-      prev.map(req => req.id === requestId ? { ...req, status: "REJECTED" as const } : req)
-    );
-    console.log(`API Call: Reject verification ${requestId}`);
+  useEffect(() => {
+    loadVerifications();
+  }, []);
+
+  const handleApprove = async (requestId: string) => {
+    try {
+      const result = await reviewVerification(requestId, {
+        status: "APPROVED",
+      });
+
+      if (result?.error || result?.success === false) {
+        toast.error("Failed to approve.");
+        return;
+      }
+
+      toast.success("Verification approved!");
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === requestId ? { ...r, status: "APPROVED" as const } : r
+        )
+      );
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Approve error:", error);
+      toast.error("Something went wrong.");
+    }
   };
 
-  /**
-   * Opens the details modal for a specific request.
-   */
-  const openDetailsModal = (request: VerificationRequest) => {
+  const handleReject = async (requestId: string) => {
+    try {
+      const result = await reviewVerification(requestId, {
+        status: "REJECTED",
+      });
+
+      if (result?.error || result?.success === false) {
+        toast.error("Failed to reject.");
+        return;
+      }
+
+      toast.success("Verification rejected.");
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === requestId ? { ...r, status: "REJECTED" as const } : r
+        )
+      );
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Reject error:", error);
+      toast.error("Something went wrong.");
+    }
+  };
+
+  const openDetailsModal = (request: IVerificationResponse) => {
     setSelectedRequest(request);
     setIsModalOpen(true);
   };
 
-  // --- Filtering Logic ---
   const filteredRequests = useMemo(() => {
-    return requests.filter((req) =>
-      req.businessName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      req.ownerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      req.tradeLicenseNo.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [requests, searchTerm]);
+    return requests.filter((req) => {
+      const matchesSearch =
+        (req.businessName || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (req.ownerName || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (req.tradeLicenseNo || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+
+      const matchesStatus =
+        statusFilter === "all" || req.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [requests, searchTerm, statusFilter]);
 
   return (
     <div className="p-6 space-y-6 bg-background min-h-screen">
@@ -177,24 +134,51 @@ const VerificationQueue = () => {
         </p>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by business, owner or license..."
-          className="pl-9"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      {/* Filters Row */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by business, owner or license..."
+            className="pl-9"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v ?? "all")}
+        >
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Filter by Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="PENDING">Pending</SelectItem>
+            <SelectItem value="UNDER_REVIEW">Under Review</SelectItem>
+            <SelectItem value="APPROVED">Approved</SelectItem>
+            <SelectItem value="REJECTED">Rejected</SelectItem>
+            <SelectItem value="SUSPENDED">Suspended</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
-      <VerificationTable
-        requests={filteredRequests}
-        onViewDetails={openDetailsModal}
-        onApprove={handleApprove}
-        onReject={handleReject}
-      />
+      {isLoading ? (
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-16 bg-muted animate-pulse rounded-md" />
+          ))}
+        </div>
+      ) : (
+        <VerificationTable
+          requests={filteredRequests}
+          onViewDetails={openDetailsModal}
+          onApprove={handleApprove}
+          onReject={handleReject}
+        />
+      )}
 
       {/* Details Modal */}
       <VerificationDetailsModal
