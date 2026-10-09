@@ -1,10 +1,11 @@
-import { MoreHorizontal, Eye, CheckCircle, XCircle, Star, StarOff } from "lucide-react";
+"use client";
+
+import { MoreHorizontal, Eye, Trash2, Star, StarOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -21,17 +22,29 @@ import type { Business } from "@/types/admin";
 interface BusinessTableProps {
   businesses: Business[];
   onViewDetails: (business: Business) => void;
-  onToggleFeatured: (businessId: string, isFeatured: boolean) => void;
-  onApprove: (businessId: string) => void;
-  onReject: (businessId: string) => void;
+  onDelete: (business: Business) => void;
 }
 
+
+// Map verification status to Badge variant
+// Backend can return PENDING | UNDER_REVIEW | APPROVED | REJECTED | SUSPENDED | VERIFIED.
+// The frontend type narrows to PENDING | VERIFIED | REJECTED, so we normalize.
+const getStatusVariant = (status: string | undefined) => {
+  switch (String(status || "PENDING").toUpperCase()) {
+    case "VERIFIED":
+    case "APPROVED":
+      return "default";
+    case "REJECTED":
+    case "SUSPENDED":
+      return "destructive";
+    default:
+      return "secondary";
+  }
+};
 export const BusinessTable = ({
   businesses,
   onViewDetails,
-  onToggleFeatured,
-  onApprove,
-  onReject,
+  onDelete,
 }: BusinessTableProps) => {
   return (
     <div className="rounded-md border border-border bg-card">
@@ -51,7 +64,10 @@ export const BusinessTable = ({
         <TableBody>
           {businesses.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+              <TableCell
+                colSpan={8}
+                className="text-center py-8 text-muted-foreground"
+              >
                 No businesses found.
               </TableCell>
             </TableRow>
@@ -61,36 +77,40 @@ export const BusinessTable = ({
                 <TableCell className="font-medium">
                   <div className="flex flex-col">
                     <span>{business.name}</span>
-                    <span className="text-xs text-muted-foreground">{business.tradeLicenseNo}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {business.tradeLicenseNo}
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col">
                     <span>{business.ownerName}</span>
-                    <span className="text-xs text-muted-foreground">{business.ownerEmail}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {business.ownerEmail}
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">{business.category}</Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={
-                    business.trustScore >= 80 ? "default" :
-                    business.trustScore >= 50 ? "secondary" :
-                    "destructive"
-                  }>
+                  <Badge
+                    variant={
+                      business.trustScore >= 80
+                        ? "default"
+                        : business.trustScore >= 50
+                        ? "secondary"
+                        : "destructive"
+                    }
+                  >
                     {business.trustScore}
                   </Badge>
                 </TableCell>
                 <TableCell>{business.productsCount}</TableCell>
                 <TableCell>
-                  <Badge variant={
-                    business.verificationStatus === 'VERIFIED' ? "default" :
-                    business.verificationStatus === 'REJECTED' ? "destructive" :
-                    "secondary"
-                  }>
-                    {business.verificationStatus}
-                  </Badge>
+                  <Badge variant={getStatusVariant(business.verificationStatus as string)}>
+  {String(business.verificationStatus || "PENDING").replace(/_/g, " ")}
+</Badge>
                 </TableCell>
                 <TableCell>
                   {business.isFeatured ? (
@@ -101,53 +121,34 @@ export const BusinessTable = ({
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
-                    <DropdownMenuTrigger render={
-                      <Button variant="ghost" size="icon" className="size-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Open menu</span>
-                      </Button>
-                    } />
-                    <DropdownMenuContent align="end" className="w-[200px]">
-                      {/* Action: View Business Details */}
-                      <DropdownMenuItem onClick={() => onViewDetails(business)}>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Open menu</span>
+                        </Button>
+                      }
+                    />
+                    <DropdownMenuContent align="end" className="w-[180px]">
+                      {/* View Details */}
+                      <DropdownMenuItem
+                        onClick={() => onViewDetails(business)}
+                      >
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
 
-                      {/* Action: Toggle Featured Status */}
-                      <DropdownMenuItem onClick={() => onToggleFeatured(business.id, business.isFeatured)}>
-                        {business.isFeatured ? (
-                          <>
-                            <StarOff className="mr-2 h-4 w-4" />
-                            Remove Featured
-                          </>
-                        ) : (
-                          <>
-                            <Star className="mr-2 h-4 w-4" />
-                            Mark as Featured
-                          </>
-                        )}
-                      </DropdownMenuItem>
-
-                      <DropdownMenuSeparator />
-
-                      {/* Action: Approve Verification */}
-                      <DropdownMenuItem
-                        onClick={() => onApprove(business.id)}
-                        disabled={business.verificationStatus === 'VERIFIED'}
-                      >
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Approve
-                      </DropdownMenuItem>
-
-                      {/* Action: Reject Verification */}
+                      {/* Delete */}
                       <DropdownMenuItem
                         variant="destructive"
-                        onClick={() => onReject(business.id)}
-                        disabled={business.verificationStatus === 'REJECTED'}
+                        onClick={() => onDelete(business)}
                       >
-                        <XCircle className="mr-2 h-4 w-4" />
-                        Reject
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Business
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
