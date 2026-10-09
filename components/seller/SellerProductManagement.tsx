@@ -15,6 +15,7 @@ export interface ProductRecord {
   id: string;
   name: string;
   category: string;
+  categoryId: string;
   price: string;
   stock: number;
   status: "Published" | "Draft";
@@ -25,6 +26,7 @@ const emptyProduct: ProductRecord = {
   id: "",
   name: "",
   category: "",
+  categoryId: "",
   price: "",
   stock: 0,
   status: "Draft",
@@ -34,16 +36,24 @@ const emptyProducts: ProductRecord[] = [];
 
 interface SellerProductManagementProps {
   products?: ProductRecord[];
+  categories?: { id: string; name: string }[];
   isLoading?: boolean;
   error?: string | null;
+  allowCreate?: boolean;
+  allowEdit?: boolean;
+  allowDelete?: boolean;
   onSave?: (product: Omit<ProductRecord, "id">, id?: string) => void | Promise<void>;
   onDelete?: (id: string) => void | Promise<void>;
 }
 
 export default function SellerProductManagement({
   products: incomingProducts,
+  categories = [],
   isLoading = false,
   error,
+  allowCreate = true,
+  allowEdit = true,
+  allowDelete = true,
   onSave,
   onDelete,
 }: SellerProductManagementProps) {
@@ -73,7 +83,7 @@ export default function SellerProductManagement({
   };
 
   const saveDraft = async () => {
-    if (!draft.name.trim() || !draft.category.trim() || !draft.price.trim()) return;
+    if (!draft.name.trim() || !draft.categoryId || !draft.price.trim()) return;
     setIsSaving(true);
     setActionError(null);
     try {
@@ -123,7 +133,7 @@ export default function SellerProductManagement({
               <CardTitle>Products</CardTitle>
               <CardDescription>Manage your catalog and availability.</CardDescription>
             </div>
-            <Button type="button" className="gap-2" onClick={openCreate}>
+            <Button type="button" className="gap-2" onClick={openCreate} disabled={!allowCreate}>
               <Plus className="size-4" />
               Add product
             </Button>
@@ -156,13 +166,17 @@ export default function SellerProductManagement({
                 </div>
                 <p className="font-semibold tabular-nums text-foreground">{product.price}</p>
                 <div className="flex gap-2">
-                  <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => openEdit(product)}>
-                    <PencilLine className="size-4" />
-                    Edit
-                  </Button>
-                  <Button type="button" variant="ghost" size="icon-sm" aria-label={`Delete ${product.name}`} onClick={() => setDeleteTarget(product)}>
-                    <Trash2 className="size-4 text-danger" />
-                  </Button>
+                  {allowEdit && (
+                    <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => openEdit(product)}>
+                      <PencilLine className="size-4" />
+                      Edit
+                    </Button>
+                  )}
+                  {allowDelete && (
+                    <Button type="button" variant="ghost" size="icon-sm" aria-label={`Delete ${product.name}`} onClick={() => setDeleteTarget(product)}>
+                      <Trash2 className="size-4 text-danger" />
+                    </Button>
+                  )}
                 </div>
               </article>
             ))}
@@ -190,7 +204,25 @@ export default function SellerProductManagement({
             </div>
             <div className="space-y-2">
               <Label htmlFor="product-category">Category</Label>
-              <Input id="product-category" value={draft.category} onChange={(event) => setDraft((current) => ({ ...current, category: event.target.value }))} />
+              <select
+                id="product-category"
+                value={draft.categoryId}
+                onChange={(event) => {
+                  const category = categories.find((item) => item.id === event.target.value);
+                  setDraft((current) => ({
+                    ...current,
+                    categoryId: category?.id ?? "",
+                    category: category?.name ?? "",
+                  }));
+                }}
+                className="h-10 w-full rounded-field border border-border bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                required
+              >
+                <option value="">Select a category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>{category.name}</option>
+                ))}
+              </select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="product-price">Price</Label>
@@ -200,13 +232,6 @@ export default function SellerProductManagement({
               <Label htmlFor="product-stock">Stock quantity</Label>
               <Input id="product-stock" type="number" min="0" value={draft.stock} onChange={(event) => setDraft((current) => ({ ...current, stock: Math.max(0, Number(event.target.value)) }))} />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="product-status">Listing status</Label>
-              <select id="product-status" value={draft.status} onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value as ProductRecord["status"] }))} className="h-10 w-full rounded-field border border-border bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus">
-                <option>Draft</option>
-                <option>Published</option>
-              </select>
-            </div>
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="product-description">Description</Label>
               <Textarea id="product-description" value={draft.description} onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))} />
@@ -214,7 +239,7 @@ export default function SellerProductManagement({
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setEditorOpen(false)} disabled={isSaving}>Cancel</Button>
-            <Button type="button" disabled={isSaving || !draft.name.trim() || !draft.category.trim() || !draft.price.trim()} onClick={() => void saveDraft()}>{isSaving ? "Saving…" : "Save product"}</Button>
+            <Button type="button" disabled={isSaving || !draft.name.trim() || !draft.categoryId || !draft.price.trim()} onClick={() => void saveDraft()}>{isSaving ? "Saving…" : "Save product"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
