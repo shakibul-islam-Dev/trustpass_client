@@ -61,6 +61,7 @@ const toInput = (draft: ProductRecord): ProductInput => ({
 const toRecord = (product: ApiProductRecord): ProductRecord => ({
   id: product.id,
   name: product.name,
+  categoryId: product.categoryId ?? "",
   category: product.categoryId ?? "",
   price: String(product.price),
   stock: product.stock,
