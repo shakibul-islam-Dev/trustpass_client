@@ -5,13 +5,11 @@ import type {
   IBusinessResponse,
   IBusinessesResponse,
 } from "@/types/business";
-
-const getBusinessApiBaseUrl = () =>
-  process.env.NEXT_PUBLIC_BASE_URL || "https://trust-pass-server.vercel.app";
+import { apiUrl } from "@/lib/core/api-url";
 
 const fetchBusinessApi = async <T extends { success: boolean }>(url: string): Promise<T> => {
   try {
-    const response = await fetch(`${getBusinessApiBaseUrl()}${url}`, {
+    const response = await fetch(apiUrl(url), {
       method: "GET",
       cache: "no-store",
     });

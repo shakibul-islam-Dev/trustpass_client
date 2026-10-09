@@ -3,6 +3,8 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { ICategory } from '@/types/categories';
+import HeroBackdrop from './HeroBackdrop';
+import { useTilt } from '@/hooks/use-tilt';
 
 type SearchHeroProps = {
   categories: ICategory[];
@@ -13,6 +15,7 @@ export default function SearchHero({ categories }: SearchHeroProps) {
   const [keyword, setKeyword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [minTrustScore, setMinTrustScore] = useState(0);
+  const cardRef = useTilt<HTMLFormElement>({ max: 2 });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,28 +30,36 @@ export default function SearchHero({ categories }: SearchHeroProps) {
   };
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-muted/70 to-background py-16 font-sans sm:py-24">
+    <section className="relative isolate overflow-hidden bg-gradient-to-b from-muted/70 to-background py-16 font-sans sm:py-24">
+      <HeroBackdrop />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Headline & Value Proposition */}
         <div className="mx-auto max-w-3xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-primary"></span>
+          <div className="animate-rise mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary [animation-delay:80ms]">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inset-0 animate-ping-slow rounded-full bg-primary motion-reduce:animate-none" />
+              <span className="relative h-2 w-2 rounded-full bg-primary" />
+            </span>
             Verified Directory & Trust Scoring
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-            Find and Verify Businesses You Can <span className="text-primary">Trust</span>
+          <h1 className="animate-rise text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl [animation-delay:160ms]">
+            Find and Verify Businesses You Can{' '}
+            <span className="animate-shine bg-[linear-gradient(90deg,var(--primary)_0_35%,color-mix(in_oklab,white_90%,transparent)_50%,var(--primary)_65%_100%)] bg-size-[200%_auto] bg-clip-text text-transparent motion-reduce:animate-none motion-reduce:bg-none motion-reduce:text-primary">
+              Trust
+            </span>
           </h1>
-          <p className="mt-4 text-base text-muted-foreground sm:text-lg">
+          <p className="animate-rise mt-4 text-base text-muted-foreground sm:text-lg [animation-delay:260ms]">
             Browse legitimate companies, inspect verified legal documentation, and review transparent Trust Scores before you do business.
           </p>
         </div>
 
         {/* Search & Filter Card */}
-        <div className="mx-auto mt-10 max-w-4xl">
+        <div className="animate-rise mx-auto mt-10 max-w-4xl [animation-delay:360ms]">
           <form
+            ref={cardRef}
             onSubmit={handleSearch}
-            className="rounded-2xl border border-border bg-card p-4 shadow-xl shadow-foreground/10 sm:p-5"
+            className="rounded-2xl border border-border bg-card p-4 shadow-xl shadow-foreground/10 transition-[transform,border-color] duration-500 ease-out will-change-transform hover:border-primary/30 sm:p-5"
           >
             <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-3">
               
@@ -93,7 +104,7 @@ export default function SearchHero({ categories }: SearchHeroProps) {
               <div className="md:col-span-3 flex items-end">
                 <button
                   type="submit"
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-md transition hover:bg-primary/90"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-glow active:translate-y-0"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -113,7 +124,7 @@ export default function SearchHero({ categories }: SearchHeroProps) {
                     key={score}
                     type="button"
                     onClick={() => setMinTrustScore(score)}
-                    className={`px-2.5 py-1 rounded-full border transition ${
+                    className={`px-2.5 py-1 rounded-full border transition duration-300 hover:-translate-y-px ${
                       minTrustScore === score
                         ? 'border-primary bg-primary/10 font-bold text-primary'
                         : 'border-border text-muted-foreground hover:border-primary/50'
@@ -132,7 +143,7 @@ export default function SearchHero({ categories }: SearchHeroProps) {
         </div>
 
         {/* Category Navigation Quick Links */}
-        <div className="mx-auto mt-8 max-w-4xl">
+        <div className="animate-rise mx-auto mt-8 max-w-4xl [animation-delay:460ms]">
           <p className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Popular Categories
           </p>
@@ -141,7 +152,7 @@ export default function SearchHero({ categories }: SearchHeroProps) {
               <button
                 key={category.id}
                 onClick={() => router.push(`/businesses?categoryId=${encodeURIComponent(category.id)}`)}
-                className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-medium text-foreground shadow-sm transition hover:border-primary/50 hover:text-primary"
+                className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-medium text-foreground shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-primary/50 hover:text-primary hover:shadow-md active:translate-y-0"
               >
                 {category.iconUrl ? (
                   <Image

@@ -1,12 +1,6 @@
 "use server";
 
-// ============================================================
-// BASE URL
-// ============================================================
-
-const getBaseUrl = (): string => {
-  return process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000";
-};
+import { apiUrl } from "@/lib/core/api-url";
 
 // ============================================================
 // POST
@@ -20,8 +14,6 @@ export const postMutation = async (
   data?: unknown,
   token?: string
 ) => {
-  const baseUrl = getBaseUrl();
-
   try {
     const headers: HeadersInit = {
       "Content-Type": "application/json",
@@ -31,7 +23,7 @@ export const postMutation = async (
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const res = await fetch(`${baseUrl}${url}`, {
+    const res = await fetch(apiUrl(url), {
       method: "POST",
       headers,
       body: data === undefined ? undefined : JSON.stringify(data),
@@ -65,10 +57,8 @@ export const postMutation = async (
 // ============================================================
 
 export const deleteMutation = async (url: string) => {
-  const baseUrl = getBaseUrl();
-
   try {
-    const res = await fetch(`${baseUrl}${url}`, {
+    const res = await fetch(apiUrl(url), {
       method: "DELETE",
       credentials: "include",
       headers: {
@@ -101,10 +91,8 @@ export const deleteMutation = async (url: string) => {
 // ============================================================
 
 export const patchMutation = async (url: string, data: unknown) => {
-  const baseUrl = getBaseUrl();
-
   try {
-    const res = await fetch(`${baseUrl}${url}`, {
+    const res = await fetch(apiUrl(url), {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -138,8 +126,6 @@ export const patchMutation = async (url: string, data: unknown) => {
 // ============================================================
 
 export const getData = async (url: string, token?: string) => {
-  const baseUrl = getBaseUrl();
-
   try {
     const headers: HeadersInit = {};
 
@@ -147,7 +133,7 @@ export const getData = async (url: string, token?: string) => {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const res = await fetch(`${baseUrl}${url}`, {
+    const res = await fetch(apiUrl(url), {
       method: "GET",
       headers,
       credentials: "include",

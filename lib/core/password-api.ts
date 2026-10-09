@@ -12,7 +12,7 @@
  *
  * "Forgot password?" is the LINK flow:
  *   1. this form posts the email to `/request-password-reset`;
- *   2. the Live API emails a link to this app's reset page,
+ *   2. the API emails a link to this app's reset page,
  *      `/auth/reset-password?token=...`;
  *   3. `ResetPasswordForm` posts that token + the new password to
  *      `/reset-password`.
@@ -51,8 +51,8 @@ export type PasswordApiResult =
 /**
  * The single place every endpoint builds its request from.
  *
- * The Live API address comes from `lib/core/api-url.ts`. `credentials:
- * "include"` is mandatory: the session cookie belongs to the Live API's host,
+ * The API origin comes from `lib/core/env.ts` via `apiUrl()`. `credentials:
+ * "include"` is mandatory: the session cookie belongs to the API's host,
  * and without it `/change-password` always answers 401 even when the user is
  * signed in.
  */
@@ -187,7 +187,7 @@ export async function changePassword(input: {
  * Body (better-auth's schema):
  *   { email: string, redirectTo?: string }
  *
- * Asks the Live API to email a one-time password-reset LINK to the address.
+ * Asks the API to email a one-time password-reset LINK to the address.
  * `redirectTo` is this app's own reset page — the link in the email points
  * there and arrives with `?token=...` (or `?error=...` when the token is bad
  * or expired).

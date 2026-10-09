@@ -26,8 +26,21 @@ export interface BusinessDraft {
   category: string;
   address: string;
   city: string;
+  district: string;
+  division: string;
   postalCode: string;
 }
+
+const DIVISIONS = [
+  "DHAKA",
+  "CHITTAGONG",
+  "RAJSHAHI",
+  "KHULNA",
+  "BARISAL",
+  "SYLHET",
+  "RANGPUR",
+  "MYMENSINGH",
+] as const;
 
 interface BusinessCreationWizardProps {
   onSubmit?: (business: BusinessDraft, documents: Record<string, File>) => void | Promise<void>;
@@ -42,6 +55,8 @@ export default function BusinessCreationWizard({ onSubmit }: BusinessCreationWiz
     category: "",
     address: "",
     city: "",
+    district: "",
+    division: "DHAKA",
     postalCode: "",
   });
   const [categories, setCategories] = useState<ICategory[]>([]);
@@ -88,7 +103,7 @@ export default function BusinessCreationWizard({ onSubmit }: BusinessCreationWiz
       : activeStep === 1
         ? Boolean(draft.category && categories.some((category) => category.id === draft.category))
         : activeStep === 2
-          ? Boolean(draft.address.trim() && draft.city.trim())
+          ? Boolean(draft.address.trim() && draft.city.trim() && draft.district.trim())
           : Object.keys(documents).length === 3;
 
   const handleContinue = async () => {
@@ -180,6 +195,23 @@ export default function BusinessCreationWizard({ onSubmit }: BusinessCreationWiz
               <Input id="business-city" autoComplete="address-level2" placeholder="Dhaka" value={draft.city} onChange={(event) => updateDraft("city", event.target.value)} />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="business-district">District</Label>
+              <Input id="business-district" placeholder="Dhaka" value={draft.district} onChange={(event) => updateDraft("district", event.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="business-division">Division</Label>
+              <select
+                id="business-division"
+                value={draft.division}
+                onChange={(event) => updateDraft("division", event.target.value)}
+                className="h-10 w-full rounded-field border border-border bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              >
+                {DIVISIONS.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="business-postal-code">Postal code <span className="font-normal text-muted-foreground">(optional)</span></Label>
               <Input id="business-postal-code" autoComplete="postal-code" placeholder="1205" value={draft.postalCode} onChange={(event) => updateDraft("postalCode", event.target.value)} />
             </div>

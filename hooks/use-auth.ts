@@ -11,10 +11,11 @@ import { isApiRole, type ApiRole } from "@/lib/core/roles";
 
 export type { ApiRole };
 
-const CONFIG_ERROR = new Error("NEXT_PUBLIC_BASE_URL is not set.");
+const CONFIG_ERROR = new Error("No API server URL is configured.");
 
-// Read once. NEXT_PUBLIC_BASE_URL is inlined at build time, so it cannot change
-// while the app is running — checking per-call would only add a branch.
+// Read once. SERVER_URL (lib/core/env.ts) is inlined at build time, so it
+// cannot change while the app is running — checking per-call would only add a
+// branch.
 const CONFIGURED = isApiConfigured();
 
 /**

@@ -5,6 +5,7 @@ import {
   getBusinessById,
   getBusinessBySlug,
 } from '@/lib/business-api/all-business';
+import { CustomerReportFormModal } from '@/components/customer/report-management/CustomerReportFormModal';
 import type { IBusiness } from '@/types/business';
 
 type BusinessProfileProps = {
@@ -57,10 +58,13 @@ export default async function BusinessProfilePage({ params }: BusinessProfilePro
   return (
     <main className="min-h-screen bg-muted/30 px-4 py-8 text-foreground sm:py-12">
       <div className="mx-auto max-w-6xl">
-        <Link href="/businesses" className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-          <ArrowLeft className="size-4" aria-hidden="true" />
-          Directory
-        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link href="/businesses" className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+            <ArrowLeft className="size-4" aria-hidden="true" />
+            Directory
+          </Link>
+          <CustomerReportFormModal businessId={business.id} businessName={business.name} />
+        </div>
 
         <article className="mt-5 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           <div className="relative h-64 bg-linear-to-br from-emerald-950 via-teal-900 to-slate-900 sm:h-80">

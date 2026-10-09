@@ -1,8 +1,13 @@
-"use server";
+// Browser-side report API.
+//
+// This file must NOT be a "use server" module: POST /api/v1/reports requires
+// the user's session cookie, and the cookie belongs to the API's host
+// (localhost:5000 in dev). Only a fetch running in the browser can attach it
+// via `credentials: "include"` — a server action cannot forward it.
+//
+// API: POST /api/v1/reports  (auth: CUSTOMER, SELLER)
 
-import { postMutation } from "../core/mutations";
-
-
+import { apiUrl } from "@/lib/core/api-url";
 
 // ============================================================
 // BACKEND INTERFACES (match with backend)
@@ -39,7 +44,27 @@ export interface IUpdateReportStatusPayload {
 /**
  * Submits a new report.
  * API: POST /api/v1/reports
+ *
+ * Returns the server envelope on success, or `{ error: true, status }` on
+ * failure — the same shape the report modal already checks.
  */
 export const submitReport = async (payload: ICreateReportPayload) => {
-  return await postMutation("/api/v1/reports", payload);
+  try {
+    const response = await fetch(apiUrl("/api/v1/reports"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      console.error("Report submission failed:", response.status, await response.text());
+      return { error: true, status: response.status };
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Report submission exception:", error);
+    return { error: true };
+  }
 };

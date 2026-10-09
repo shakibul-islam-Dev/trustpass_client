@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
   BadgeCheck,
@@ -18,15 +19,42 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import BuisnessUpdateForm from "@/components/buisness/BuisnessUpdateForm";
 import { useAuth } from "@/hooks/use-auth";
 import { getBusinesses } from "@/lib/business-api/all-business";
+import {
+  createBusiness,
+  getBusinessDocuments,
+  getTrustScoreHistory,
+  uploadBusinessDocument,
+  type BusinessDocument,
+  type BusinessDocumentType,
+  type TrustScoreHistoryEntry,
+} from "@/lib/core/business-api";
 import type { IBusiness, IBusinessesResponse } from "@/types/business";
 import BusinessDocumentStatuses, { type BusinessDocumentStatusItem } from "./BusinessDocumentStatuses";
-import BusinessCreationWizard from "./BusinessCreationWizard";
+import BusinessCreationWizard, { type BusinessDraft } from "./BusinessCreationWizard";
+import { requiredBusinessDocuments } from "./BusinessDocumentManager";
 import SellerBusinessDirectory from "./SellerBusinessDirectory";
 import SellerProductManagement from "./SellerProductManagement";
 import ProfilePhotoPicker from "./ProfilePhotoPicker";
 import TrustScoreBreakdown from "./TrustScoreBreakdown";
+
+/** Wizard document ids -> server document types. */
+const WIZARD_DOCUMENT_TYPES: Record<string, BusinessDocumentType> = {
+  "trade-license": "TRADE_LICENSE",
+  nid: "NID",
+  tin: "TIN_CERTIFICATE",
+};
+
+const toDocumentStatusItem = (document: BusinessDocument): BusinessDocumentStatusItem => ({
+  id: document.id,
+  name: document.documentType.replace(/_/g, " "),
+  status: document.status,
+  updatedAt: document.updatedAt ? new Date(document.updatedAt).toLocaleDateString() : undefined,
+  note: document.rejectionReason || undefined,
+});
 
 const sections = [
   { id: "overview", label: "Overview", icon: ChartNoAxesCombined },
@@ -49,31 +77,19 @@ const verificationPresentation: Record<
   UNVERIFIED: { label: "Not submitted", variant: "outline" },
 };
 
-const toDocumentStatus = (business: IBusiness): BusinessDocumentStatusItem => {
-  const status: BusinessDocumentStatusItem["status"] =
-    business.verificationStatus === "VERIFIED"
-      ? "APPROVED"
-      : business.verificationStatus === "PENDING"
-        ? "PENDING"
-        : business.verificationStatus === "REJECTED" || business.verificationStatus === "SUSPENDED"
-          ? "REJECTED"
-          : "MISSING";
-
-  return {
-    id: business.id,
-    name: "Business verification",
-    status,
-    updatedAt: new Date(business.updatedAt).toLocaleDateString(),
-  };
-};
-
 export default function SellerDashboard() {
   const { user } = useAuth();
+  const router = useRouter();
   const [activeSection, setActiveSection] = useState<SectionId>("overview");
   const [businesses, setBusinesses] = useState<IBusiness[]>([]);
   const [selectedBusinessId, setSelectedBusinessId] = useState("");
   const [businessesLoading, setBusinessesLoading] = useState(true);
   const [businessesError, setBusinessesError] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<BusinessDocument[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [documentsError, setDocumentsError] = useState<string | null>(null);
+  const [trustHistory, setTrustHistory] = useState<TrustScoreHistoryEntry[]>([]);
+  const [dashboardMessage, setDashboardMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -113,11 +129,88 @@ export default function SellerDashboard() {
     };
   }, [user?.id]);
 
+  // Load verification documents + trust score for the selected business.
+  useEffect(() => {
+    if (!selectedBusinessId) {
+      setDocuments([]);
+      setTrustHistory([]);
+      return;
+    }
+    let active = true;
+
+    setDocumentsLoading(true);
+    setDocumentsError(null);
+    void Promise.all([getBusinessDocuments(selectedBusinessId), getTrustScoreHistory(selectedBusinessId)])
+      .then(([documentsResult, trustResult]) => {
+        if (!active) return;
+        if (!documentsResult.ok || !documentsResult.data) {
+          setDocumentsError(documentsResult.message);
+        } else {
+          setDocuments(documentsResult.data);
+        }
+        if (trustResult.ok && trustResult.data) {
+          setTrustHistory(trustResult.data);
+        }
+      })
+      .finally(() => {
+        if (active) setDocumentsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedBusinessId]);
+
+  /**
+   * Submitted by BusinessCreationWizard: create the business, then upload each
+   * selected document (Trade license / NID / TIN) against the new business.
+   * Throws so the wizard can show the error on its own submit button.
+   */
+  const handleBusinessSubmit = async (draft: BusinessDraft, files: Record<string, File>) => {
+    const createdResult = await createBusiness({
+      name: draft.name.trim(),
+      categoryId: draft.category,
+      contactEmail: draft.email.trim(),
+      contactPhone: draft.phone.trim(),
+      address: {
+        addressLine: draft.address.trim(),
+        city: draft.city.trim(),
+        district: draft.district.trim(),
+        division: draft.division,
+        postalCode: draft.postalCode.trim() || "0000",
+        country: "BANGLADESH",
+      },
+    });
+
+    if (!createdResult.ok || !createdResult.data) {
+      throw new Error(createdResult.message);
+    }
+    const created = createdResult.data;
+
+    let uploaded = 0;
+    for (const item of requiredBusinessDocuments) {
+      const file = files[item.id];
+      const documentType = WIZARD_DOCUMENT_TYPES[item.id];
+      if (!file || !documentType) continue;
+      const uploadResult = await uploadBusinessDocument(created.id, documentType, file);
+      if (!uploadResult.ok) {
+        throw new Error(`${item.label} upload failed: ${uploadResult.message}`);
+      }
+      uploaded += 1;
+    }
+
+    setBusinesses((current) => [created, ...current]);
+    setSelectedBusinessId(created.id);
+    setDashboardMessage({
+      tone: "success",
+      text: `Business "${created.name}" created${uploaded ? ` with ${uploaded} document${uploaded === 1 ? "" : "s"} uploaded` : ""}.`,
+    });
+  };
+
   const selectedBusiness = businesses.find((business) => business.id === selectedBusinessId);
   const verification = selectedBusiness
     ? verificationPresentation[selectedBusiness.verificationStatus]
     : null;
-  const documents = selectedBusiness ? [toDocumentStatus(selectedBusiness)] : [];
   const initials = (user?.name || "Seller")
     .split(" ")
     .filter(Boolean)
@@ -210,8 +303,9 @@ export default function SellerDashboard() {
           <OverviewCard
             icon={CircleDollarSign}
             label="Payments"
-            value="Not connected"
-            description="Payment tools are not connected yet"
+            value="View payments"
+            description="Open the fee checkout and payment history"
+            onClick={() => router.push("/dashboard/seller/payments")}
           />
         </div>
 
@@ -268,10 +362,28 @@ export default function SellerDashboard() {
         hidden={activeSection !== "business"}
         className="space-y-5"
       >
+        {dashboardMessage && (
+          <Alert variant={dashboardMessage.tone === "error" ? "destructive" : "default"} className={dashboardMessage.tone === "success" ? "border-success/30 bg-success-soft text-success shadow-surface" : "shadow-surface"}>
+            <AlertDescription>{dashboardMessage.text}</AlertDescription>
+          </Alert>
+        )}
+
+        {businesses.length > 0 && selectedBusiness && (
+          <BuisnessUpdateForm
+            key={selectedBusiness.id}
+            businessId={selectedBusiness.id}
+            onSaved={(saved) =>
+              setBusinesses((current) => current.map((business) => (business.id === saved.id ? saved : business)))
+            }
+          />
+        )}
+
         <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
-          You can prepare your profile and documents here. Business submission is not connected to the server yet, so the final submit action is unavailable.
+          {businesses.length > 0
+            ? "Edit your existing business above, or create another business profile below. Documents are uploaded right after the business is created."
+            : "Create your first business profile. Your details and address are saved to the server, then your documents are uploaded automatically."}
         </div>
-        <BusinessCreationWizard />
+        <BusinessCreationWizard onSubmit={handleBusinessSubmit} />
       </section>
 
       <section
@@ -283,9 +395,17 @@ export default function SellerDashboard() {
       >
         <div>
           <h2 className="text-xl font-semibold tracking-tight text-foreground">Product catalog</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Organize your listings and inventory in one place.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {selectedBusiness ? `Organize listings for "${selectedBusiness.name}".` : "Create a business profile first, then manage its products here."}
+          </p>
         </div>
-        <SellerProductManagement />
+        {selectedBusiness ? (
+          <SellerProductManagement key={selectedBusiness.id} businessId={selectedBusiness.id} />
+        ) : (
+          <div className="rounded-xl border border-dashed border-border bg-background/40 p-8 text-center text-sm text-muted-foreground">
+            Products are linked to a business. Create your business profile to start your catalog.
+          </div>
+        )}
       </section>
 
       <section
@@ -350,23 +470,40 @@ export default function SellerDashboard() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <BusinessDocumentStatuses documents={documents} />
+                {documentsError && (
+                  <p role="alert" className="rounded-lg border border-danger/30 bg-danger/5 p-3 text-sm text-danger">{documentsError}</p>
+                )}
+                {documentsLoading ? (
+                  <p role="status" className="rounded-lg border border-border bg-background/50 p-4 text-sm text-muted-foreground">Loading document statuses…</p>
+                ) : (
+                  <BusinessDocumentStatuses documents={documents.map(toDocumentStatusItem)} />
+                )}
                 <p className="text-xs leading-5 text-muted-foreground">
-                  The business API currently provides an overall verification status, not individual document review results.
+                  Document statuses come from your uploaded Trade license, NID, and TIN files.
                 </p>
               </CardContent>
             </Card>
             <Card className="border-border/80 bg-surface shadow-surface">
               <CardHeader>
                 <CardTitle>Trust score</CardTitle>
-                <CardDescription>Your current score and available breakdown.</CardDescription>
+                <CardDescription>Your current score and score history.</CardDescription>
               </CardHeader>
               <CardContent>
                 <TrustScoreBreakdown
                   score={selectedBusiness.trustScore}
-                  factors={[]}
+                  factors={trustHistory
+                    .slice(0, 10)
+                    .map((entry) => ({
+                      name: entry.reason || "Score change",
+                      detail: entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : "",
+                      score: entry.score ?? 0,
+                      maximum: 100,
+                    }))}
                   businessName={selectedBusiness.name}
                 />
+                <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                  The API exposes the score and its history; a per-factor breakdown is not a separate endpoint yet.
+                </p>
               </CardContent>
             </Card>
           </div>

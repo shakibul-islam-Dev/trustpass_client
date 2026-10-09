@@ -28,6 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
       className={cn(
         "h-full",
@@ -46,7 +47,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           disableTransitionOnChange
         >
           <Navbar />
-          {children}
+          {/* `flex-1` keeps the footer pinned to the bottom of the viewport
+              while the page streams in (and on short pages). Without it the
+              loading shell rendered navbar + footer right next to each other. */}
+          <div className="flex w-full flex-1 flex-col">{children}</div>
           <AppToaster />
           <Footer></Footer>
         </ThemeProvider>

@@ -6,17 +6,14 @@
  * server, and the session lives in the server's own httpOnly cookie — this app
  * never sees or stores the token itself.
  *
- * Why a relative path instead of `NEXT_PUBLIC_BASE_URL` straight from the
- * browser: the cookie is issued by the API server for the API server's host.
- * Fetching that host directly is a CROSS-SITE request, and browsers that block
- * third-party cookies refuse to store the session cookie at all — login then
- * succeeds but every later request is anonymous, so the dashboard bounces the
- * user back to /auth/login. Going through the rewrite keeps the request on
- * this origin, so the cookie is a normal first-party cookie. See
- * `lib/core/api-url.ts`.
+ * Where the calls go: `apiUrl()` in `lib/core/api-url.ts`, which resolves the
+ * API origin for the CURRENT environment — the local server in `next dev`, the
+ * live API in production. The address is defined once in `lib/core/env.ts`.
  *
  * `credentials: "include"` is still required on EVERY call below, including
- * `getSession`.
+ * `getSession` — the cookie is httpOnly and belongs to the API's host, so it
+ * only travels when credentials are included, and `getSession` is what turns
+ * that cookie into the user object this app renders with.
  *
  * Two endpoints matter:
  *   GET  /api/auth/get-session  -> { session, user } | null
@@ -24,9 +21,14 @@
  */
 
 import { apiUrl } from "@/lib/core/api-url";
+import { SERVER_URL } from "@/lib/core/env";
 
 export function isApiConfigured(): boolean {
-  return Boolean(process.env.NEXT_PUBLIC_BASE_URL);
+  // Always true in practice: `lib/core/env.ts` resolves an origin for every
+  // environment (local in `next dev`, the live API in production). The check
+  // survives so callers can still distinguish "no origin" from "server
+  // unreachable" if that ever changes.
+  return Boolean(SERVER_URL);
 }
 
 /** Roles as stored by the API (prisma `user.role`). */
@@ -65,9 +67,8 @@ export async function getSession(): Promise<Session> {
   try {
     response = await fetch(apiUrl("/api/auth/get-session"), {
       method: "GET",
-      // Required. The cookie belongs to the API server's host, so it only
-      // travels when credentials are included — and now it is a first-party
-      // cookie because this request is proxied through this app's origin.
+      // Required: the cookie belongs to the API server's host, so it only
+      // travels when credentials are included.
       credentials: "include",
       headers: { Accept: "application/json" },
       cache: "no-store",
