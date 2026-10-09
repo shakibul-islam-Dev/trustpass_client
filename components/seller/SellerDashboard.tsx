@@ -20,11 +20,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { getBusinesses } from "@/lib/business-api/all-business";
+import { getCategories } from "@/lib/categories-api";
+import { getProductsForBusiness, handleCreateProduct } from "@/lib/products-api/create-products";
 import type { IBusiness, IBusinessesResponse } from "@/types/business";
+import type { ICategory } from "@/types/categories";
 import BusinessDocumentStatuses, { type BusinessDocumentStatusItem } from "./BusinessDocumentStatuses";
 import BusinessCreationWizard from "./BusinessCreationWizard";
 import SellerBusinessDirectory from "./SellerBusinessDirectory";
-import SellerProductManagement from "./SellerProductManagement";
+import SellerProductManagement, { type ProductRecord } from "./SellerProductManagement";
 import ProfilePhotoPicker from "./ProfilePhotoPicker";
 import TrustScoreBreakdown from "./TrustScoreBreakdown";
 
@@ -67,6 +70,34 @@ const toDocumentStatus = (business: IBusiness): BusinessDocumentStatusItem => {
   };
 };
 
+const toProductRecord = (
+  product: {
+    id: string | number;
+    category_id: string;
+    name: string;
+    description?: string | null;
+    price: number | string;
+    currency?: string;
+    stock?: number | null;
+    status?: string;
+  },
+  categories: ICategory[],
+): ProductRecord => {
+  const category = categories.find((item) => item.id === product.category_id);
+  const status = product.status?.toLowerCase();
+
+  return {
+    id: String(product.id),
+    name: product.name,
+    category: category?.name ?? product.category_id,
+    categoryId: product.category_id,
+    price: `${product.currency ?? "BDT"} ${Number(product.price).toLocaleString()}`,
+    stock: product.stock ?? 0,
+    status: status === "active" || status === "published" ? "Published" : "Draft",
+    description: product.description ?? "",
+  };
+};
+
 export default function SellerDashboard() {
   const { user } = useAuth();
   const [activeSection, setActiveSection] = useState<SectionId>("overview");
@@ -74,6 +105,11 @@ export default function SellerDashboard() {
   const [selectedBusinessId, setSelectedBusinessId] = useState("");
   const [businessesLoading, setBusinessesLoading] = useState(true);
   const [businessesError, setBusinessesError] = useState<string | null>(null);
+  const [productCategories, setProductCategories] = useState<ICategory[]>([]);
+  const [productCategoriesError, setProductCategoriesError] = useState<string | null>(null);
+  const [products, setProducts] = useState<ProductRecord[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productsError, setProductsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -112,6 +148,94 @@ export default function SellerDashboard() {
       active = false;
     };
   }, [user?.id]);
+
+  useEffect(() => {
+    let active = true;
+
+    void getCategories()
+      .then((response) => {
+        if (!response.success || !response.data) {
+          throw new Error(response.error || response.message || "Could not load product categories.");
+        }
+        if (active) setProductCategories(response.data);
+      })
+      .catch((error: unknown) => {
+        console.error("Could not load product categories:", error);
+        if (active) setProductCategoriesError(error instanceof Error ? error.message : "Could not load product categories.");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedBusinessId) return;
+
+    let active = true;
+
+    void Promise.resolve().then(async () => {
+      if (!active) return;
+      setProductsLoading(true);
+      setProductsError(null);
+
+      try {
+        const apiProducts = await getProductsForBusiness(selectedBusinessId);
+        if (active) {
+          setProducts(apiProducts.map((product) => toProductRecord(product, productCategories)));
+        }
+      } catch (error) {
+        console.error("Could not load seller products:", error);
+        if (active) {
+          setProducts([]);
+          setProductsError(error instanceof Error ? error.message : "Could not load products.");
+        }
+      } finally {
+        if (active) setProductsLoading(false);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedBusinessId, productCategories]);
+
+  const saveProduct = async (product: Omit<ProductRecord, "id">, id?: string) => {
+    if (id) {
+      throw new Error("Editing existing products is not supported by the product API yet.");
+    }
+    if (!selectedBusinessId) {
+      throw new Error("Create a business profile before adding products.");
+    }
+
+    const price = Number(product.price);
+    if (!Number.isFinite(price) || price < 0) {
+      throw new Error("Enter a valid product price.");
+    }
+
+    await handleCreateProduct({
+      business_id: selectedBusinessId,
+      category_id: product.categoryId,
+      name: product.name.trim(),
+      description: product.description.trim() || undefined,
+      price,
+      currency: "BDT",
+      stock: product.stock,
+    });
+
+    try {
+      const apiProducts = await getProductsForBusiness(selectedBusinessId);
+      setProducts(apiProducts.map((apiProduct) => toProductRecord(apiProduct, productCategories)));
+      setProductsError(null);
+    } catch (error) {
+      console.error("Product was created but the list could not be refreshed:", error);
+      setProductsError(
+        error instanceof Error
+          ? `Product saved, but the list could not refresh: ${error.message}`
+          : "Product saved, but the list could not refresh. Reload to try again.",
+      );
+    }
+  };
 
   const selectedBusiness = businesses.find((business) => business.id === selectedBusinessId);
   const verification = selectedBusiness
@@ -285,7 +409,35 @@ export default function SellerDashboard() {
           <h2 className="text-xl font-semibold tracking-tight text-foreground">Product catalog</h2>
           <p className="mt-1 text-sm text-muted-foreground">Organize your listings and inventory in one place.</p>
         </div>
-        <SellerProductManagement />
+        {businesses.length > 1 && (
+          <label className="block max-w-md space-y-2 text-sm font-medium text-foreground">
+            Add products to
+            <select
+              value={selectedBusinessId}
+              onChange={(event) => setSelectedBusinessId(event.target.value)}
+              className="h-10 w-full rounded-field border border-border bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            >
+              {businesses.map((business) => (
+                <option key={business.id} value={business.id}>{business.name}</option>
+              ))}
+            </select>
+          </label>
+        )}
+        <SellerProductManagement
+          products={selectedBusinessId ? products : []}
+          categories={productCategories}
+          isLoading={productsLoading}
+          error={
+            productsError ??
+            productCategoriesError ??
+            (businessesError ? `Could not load your business profiles: ${businessesError}` : null) ??
+            (!businessesLoading && !selectedBusinessId ? "Create a business profile before adding products." : null)
+          }
+          allowCreate={Boolean(selectedBusinessId) && !businessesLoading && productCategories.length > 0}
+          onSave={saveProduct}
+          allowEdit={false}
+          allowDelete={false}
+        />
       </section>
 
       <section
