@@ -83,6 +83,8 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         href: "/dashboard/moderator/verification-queue",
         icon: Shield,
       },
+      // all perferct
+      
       {
         name: "Reports Review",
         href: "/dashboard/moderator/reports",

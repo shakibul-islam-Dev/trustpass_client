@@ -1,18 +1,17 @@
-// Previous implementation by: Existing Developer
-// Kept for reference because Server Action cannot send cross-origin cookies.
+// Browser-side report API.
 //
-// "use server";
-// import { postMutation } from "../core/mutations";
-// export const submitReport = async (payload) => {
-//   return await postMutation("/api/v1/reports", payload);
-// };
-
-// Updated implementation for: Report Submission (Customer)
-// Backend expects multipart/form-data with a `file` field (see Postman).
-// Client-side fetch — cookie automatic goes via credentials: "include".
-// Developer: Aritro
+// This file must NOT be a "use server" module: POST /api/v1/reports requires
+// the user's session cookie, and the cookie belongs to the API's host
+// (localhost:5000 in dev). Only a fetch running in the browser can attach it
+// via `credentials: "include"` — a server action cannot forward it.
+//
+// API: POST /api/v1/reports  (auth: CUSTOMER, SELLER)
 
 import { apiUrl } from "@/lib/core/api-url";
+
+// ============================================================
+// BACKEND INTERFACES (match with backend)
+// ============================================================
 
 export type TReportReason =
   | "SPAM"
@@ -44,6 +43,13 @@ export interface IUpdateReportStatusPayload {
 // POST /api/v1/reports — Submit report (with optional file)
 // ============================================================
 
+/**
+ * Submits a new report.
+ * API: POST /api/v1/reports
+ *
+ * Returns the server envelope on success, or `{ error: true, status, message }` on
+ * failure — the same shape the report modal checks.
+ */
 export const submitReport = async (payload: ICreateReportPayload) => {
   console.log("🟢 submitReport payload:", {
     businessId: payload.businessId,
@@ -55,9 +61,6 @@ export const submitReport = async (payload: ICreateReportPayload) => {
   });
 
   try {
-    // Build multipart/form-data — this is what the backend expects
-    // (confirmed via Postman: form-data with `file`, `businessId`, `reason`,
-    //  `title`, `description`).
     const formData = new FormData();
     formData.append("businessId", payload.businessId);
     formData.append("reason", payload.reason);
@@ -73,11 +76,9 @@ export const submitReport = async (payload: ICreateReportPayload) => {
 
     const res = await fetch(apiUrl("/api/v1/reports"), {
       method: "POST",
-      body: formData,   // ← NOT JSON.stringify — send FormData directly
+      body: formData,
       credentials: "include",
       cache: "no-store",
-      // ⚠️ Do NOT set Content-Type manually.
-      // Browser will set it with the correct multipart boundary.
     });
 
     console.log("📥 submitReport status:", res.status);

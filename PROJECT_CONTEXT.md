@@ -1,5 +1,14 @@
 # 🚨 MASTER AI DEVELOPMENT CONTEXT
+# ALWAYS READ THIS DOCS FIRTST IMPORTANT
+# dev Rules
+1.shakibul
+2.aritro
+3.shaheen
+if dev === shakibul then you only works and modify this writen code and file only
+if dev === aritro then you only works and modify this writen code and file only
+if dev === shaheen then you only works and modify this writen code and file only
 
+so ask first the dev name then start works:
 ## 📌 Project
 
 This is a team-based software project.

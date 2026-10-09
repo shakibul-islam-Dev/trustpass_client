@@ -25,10 +25,6 @@ import { NextResponse } from "next/server";
  *   2. The API's own `auth()` middleware rejects unauthorised requests. This is
  *      the real boundary.
  */
-export default function proxy() {
+export function proxy() {
   return NextResponse.next();
 }
-
-export const config = {
-  matcher: ["/dashboard/:path*"],
-};

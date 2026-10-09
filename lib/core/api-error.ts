@@ -27,6 +27,12 @@ const USER_FACING: RegExp[] = [
   /must be .{0,60}$/i,
   /is required\.?$/i,
   /^invalid .{0,60}$/i,
+
+  // Shared auth-error list. Added for the Forgot Password flow (Shakibul):
+  // the Auth API answers this exact message when the server has not enabled
+  // the email reset feature — without it the form shows a generic 400 text
+  // ("Please check your details") instead of the real reason.
+  /^reset password isn't enabled\.?$/i,
 ];
 
 /** Fallback text per HTTP status. 5xx never gets a specific message. */
