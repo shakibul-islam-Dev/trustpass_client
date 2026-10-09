@@ -32,12 +32,15 @@ import {
   type BusinessDocumentType,
   type TrustScoreHistoryEntry,
 } from "@/lib/core/business-api";
+import { getCategories } from "@/lib/categories-api";
+import { getProductsForBusiness, handleCreateProduct } from "@/lib/products-api/create-products";
 import type { IBusiness, IBusinessesResponse } from "@/types/business";
+import type { ICategory } from "@/types/categories";
 import BusinessDocumentStatuses, { type BusinessDocumentStatusItem } from "./BusinessDocumentStatuses";
 import BusinessCreationWizard, { type BusinessDraft } from "./BusinessCreationWizard";
 import { requiredBusinessDocuments } from "./BusinessDocumentManager";
 import SellerBusinessDirectory from "./SellerBusinessDirectory";
-import SellerProductManagement from "./SellerProductManagement";
+import SellerProductManagement, { type ProductRecord } from "./SellerProductManagement";
 import ProfilePhotoPicker from "./ProfilePhotoPicker";
 import TrustScoreBreakdown from "./TrustScoreBreakdown";
 
@@ -55,6 +58,34 @@ const toDocumentStatusItem = (document: BusinessDocument): BusinessDocumentStatu
   updatedAt: document.updatedAt ? new Date(document.updatedAt).toLocaleDateString() : undefined,
   note: document.rejectionReason || undefined,
 });
+
+const toProductRecord = (
+  product: {
+    id: string | number;
+    category_id: string;
+    name: string;
+    description?: string | null;
+    price: number | string;
+    currency?: string;
+    stock?: number | null;
+    status?: string;
+  },
+  categories: ICategory[],
+): ProductRecord => {
+  const category = categories.find((item) => item.id === product.category_id);
+  const status = product.status?.toLowerCase();
+
+  return {
+    id: String(product.id),
+    name: product.name,
+    category: category?.name ?? product.category_id,
+    categoryId: product.category_id,
+    price: `${product.currency ?? "BDT"} ${Number(product.price).toLocaleString()}`,
+    stock: product.stock ?? 0,
+    status: status === "active" || status === "published" ? "Published" : "Draft",
+    description: product.description ?? "",
+  };
+};
 
 const sections = [
   { id: "overview", label: "Overview", icon: ChartNoAxesCombined },
@@ -85,11 +116,18 @@ export default function SellerDashboard() {
   const [selectedBusinessId, setSelectedBusinessId] = useState("");
   const [businessesLoading, setBusinessesLoading] = useState(true);
   const [businessesError, setBusinessesError] = useState<string | null>(null);
+
   const [documents, setDocuments] = useState<BusinessDocument[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [documentsError, setDocumentsError] = useState<string | null>(null);
   const [trustHistory, setTrustHistory] = useState<TrustScoreHistoryEntry[]>([]);
   const [dashboardMessage, setDashboardMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+
+  const [productCategories, setProductCategories] = useState<ICategory[]>([]);
+  const [productCategoriesError, setProductCategoriesError] = useState<string | null>(null);
+  const [products, setProducts] = useState<ProductRecord[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productsError, setProductsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -129,7 +167,26 @@ export default function SellerDashboard() {
     };
   }, [user?.id]);
 
-  // Load verification documents + trust score for the selected business.
+  useEffect(() => {
+    let active = true;
+
+    void getCategories()
+      .then((response) => {
+        if (!response.success || !response.data) {
+          throw new Error(response.error || response.message || "Could not load product categories.");
+        }
+        if (active) setProductCategories(response.data);
+      })
+      .catch((error: unknown) => {
+        console.error("Could not load product categories:", error);
+        if (active) setProductCategoriesError(error instanceof Error ? error.message : "Could not load product categories.");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   useEffect(() => {
     if (!selectedBusinessId) {
       setDocuments([]);
@@ -161,11 +218,37 @@ export default function SellerDashboard() {
     };
   }, [selectedBusinessId]);
 
-  /**
-   * Submitted by BusinessCreationWizard: create the business, then upload each
-   * selected document (Trade license / NID / TIN) against the new business.
-   * Throws so the wizard can show the error on its own submit button.
-   */
+  useEffect(() => {
+    if (!selectedBusinessId) return;
+
+    let active = true;
+
+    void Promise.resolve().then(async () => {
+      if (!active) return;
+      setProductsLoading(true);
+      setProductsError(null);
+
+      try {
+        const apiProducts = await getProductsForBusiness(selectedBusinessId);
+        if (active) {
+          setProducts(apiProducts.map((product) => toProductRecord(product, productCategories)));
+        }
+      } catch (error) {
+        console.error("Could not load seller products:", error);
+        if (active) {
+          setProducts([]);
+          setProductsError(error instanceof Error ? error.message : "Could not load products.");
+        }
+      } finally {
+        if (active) setProductsLoading(false);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedBusinessId, productCategories]);
+
   const handleBusinessSubmit = async (draft: BusinessDraft, files: Record<string, File>) => {
     const createdResult = await createBusiness({
       name: draft.name.trim(),
@@ -205,6 +288,43 @@ export default function SellerDashboard() {
       tone: "success",
       text: `Business "${created.name}" created${uploaded ? ` with ${uploaded} document${uploaded === 1 ? "" : "s"} uploaded` : ""}.`,
     });
+  };
+
+  const saveProduct = async (product: Omit<ProductRecord, "id">, id?: string) => {
+    if (id) {
+      throw new Error("Editing existing products is not supported by the product API yet.");
+    }
+    if (!selectedBusinessId) {
+      throw new Error("Create a business profile before adding products.");
+    }
+
+    const price = Number(product.price);
+    if (!Number.isFinite(price) || price < 0) {
+      throw new Error("Enter a valid product price.");
+    }
+
+    await handleCreateProduct({
+      business_id: selectedBusinessId,
+      category_id: product.categoryId,
+      name: product.name.trim(),
+      description: product.description.trim() || undefined,
+      price,
+      currency: "BDT",
+      stock: product.stock,
+    });
+
+    try {
+      const apiProducts = await getProductsForBusiness(selectedBusinessId);
+      setProducts(apiProducts.map((apiProduct) => toProductRecord(apiProduct, productCategories)));
+      setProductsError(null);
+    } catch (error) {
+      console.error("Product was created but the list could not be refreshed:", error);
+      setProductsError(
+        error instanceof Error
+          ? `Product saved, but the list could not refresh: ${error.message}`
+          : "Product saved, but the list could not refresh. Reload to try again.",
+      );
+    }
   };
 
   const selectedBusiness = businesses.find((business) => business.id === selectedBusinessId);
@@ -399,13 +519,37 @@ export default function SellerDashboard() {
             {selectedBusiness ? `Organize listings for "${selectedBusiness.name}".` : "Create a business profile first, then manage its products here."}
           </p>
         </div>
-        {selectedBusiness ? (
-          <SellerProductManagement key={selectedBusiness.id} businessId={selectedBusiness.id} />
-        ) : (
-          <div className="rounded-xl border border-dashed border-border bg-background/40 p-8 text-center text-sm text-muted-foreground">
-            Products are linked to a business. Create your business profile to start your catalog.
-          </div>
+
+        {businesses.length > 1 && (
+          <label className="block max-w-md space-y-2 text-sm font-medium text-foreground">
+            Add products to
+            <select
+              value={selectedBusinessId}
+              onChange={(event) => setSelectedBusinessId(event.target.value)}
+              className="h-10 w-full rounded-field border border-border bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            >
+              {businesses.map((business) => (
+                <option key={business.id} value={business.id}>{business.name}</option>
+              ))}
+            </select>
+          </label>
         )}
+
+        <SellerProductManagement
+          products={selectedBusinessId ? products : []}
+          categories={productCategories}
+          isLoading={productsLoading}
+          error={
+            productsError ??
+            productCategoriesError ??
+            (businessesError ? `Could not load your business profiles: ${businessesError}` : null) ??
+            (!businessesLoading && !selectedBusinessId ? "Create a business profile before adding products." : null)
+          }
+          allowCreate={Boolean(selectedBusinessId) && !businessesLoading && productCategories.length > 0}
+          onSave={saveProduct}
+          allowEdit={false}
+          allowDelete={false}
+        />
       </section>
 
       <section

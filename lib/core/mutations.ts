@@ -6,9 +6,6 @@ import { apiUrl } from "@/lib/core/api-url";
 // POST
 // ============================================================
 
-/**
- * Sends a POST request with JSON body.
- */
 export const postMutation = async (
   url: string,
   data?: unknown,
@@ -69,7 +66,6 @@ export const deleteMutation = async (url: string) => {
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-
       throw new Error(
         errorData.message || `HTTP error! status: ${res.status}`
       );
@@ -104,7 +100,6 @@ export const patchMutation = async (url: string, data: unknown) => {
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-
       throw new Error(
         errorData.message || `HTTP error! status: ${res.status}`
       );
@@ -142,12 +137,10 @@ export const getData = async (url: string, token?: string) => {
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-
       return {
         success: false,
         statusCode: res.status,
-        error:
-          errorData.message || `HTTP error! status: ${res.status}`,
+        error: errorData.message || `HTTP error! status: ${res.status}`,
       };
     }
 

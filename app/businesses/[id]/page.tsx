@@ -259,6 +259,11 @@ export default async function BusinessProfilePage({ params }: BusinessProfilePro
                   <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Verification</dt><dd className="text-right font-medium">{formatLabel(business.verificationStatus)}</dd></div>
                 </dl>
               </section>
+
+              <CustomerReportFormModal
+                businessId={business.id}
+                businessName={business.name}
+              />
             </aside>
           </div>
         </article>
