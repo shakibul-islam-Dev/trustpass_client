@@ -1,3 +1,5 @@
+'use client';
+
 import { MoreHorizontal, Eye, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,11 +18,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { VerificationRequest } from "@/types/admin";
+import type { IVerificationResponse } from "@/lib/admin_api/get-verifications";
 
 interface VerificationTableProps {
-  requests: VerificationRequest[];
-  onViewDetails: (request: VerificationRequest) => void;
+  requests: IVerificationResponse[];
+  onViewDetails: (request: IVerificationResponse) => void;
   onApprove: (requestId: string) => void;
   onReject: (requestId: string) => void;
 }
@@ -70,20 +72,24 @@ export const VerificationTable = ({
                 <TableCell>{req.category}</TableCell>
                 <TableCell>
                   <Badge variant={
-                    req.trustScore >= 80 ? "default" :
-                    req.trustScore >= 50 ? "secondary" :
+                    (req.trustScore ?? 0) >= 80 ? "default" :
+                    (req.trustScore ?? 0) >= 50 ? "secondary" :
                     "destructive"
                   }>
-                    {req.trustScore}
+                    {req.trustScore ?? 0}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={
-                    req.status === 'VERIFIED' ? "default" :
-                    req.status === 'REJECTED' ? "destructive" :
-                    "secondary"
-                  }>
-                    {req.status}
+                  <Badge
+                    variant={
+                      req.status === "APPROVED"
+                        ? "default"
+                        : req.status === "REJECTED" || req.status === "SUSPENDED"
+                        ? "destructive"
+                        : "secondary"
+                    }
+                  >
+                    {req.status.replace("_", " ")}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{req.submittedAt}</TableCell>
@@ -96,7 +102,6 @@ export const VerificationTable = ({
                       </Button>
                     } />
                     <DropdownMenuContent align="end" className="w-[180px]">
-                      {/* Action: View Details (Documents Modal) */}
                       <DropdownMenuItem onClick={() => onViewDetails(req)}>
                         <Eye className="mr-2 h-4 w-4" />
                         View Documents
@@ -104,20 +109,18 @@ export const VerificationTable = ({
 
                       <DropdownMenuSeparator />
 
-                      {/* Action: Approve Verification */}
                       <DropdownMenuItem
                         onClick={() => onApprove(req.id)}
-                        disabled={req.status === 'VERIFIED'}
+                        disabled={req.status === "APPROVED"}
                       >
                         <CheckCircle className="mr-2 h-4 w-4" />
                         Approve
                       </DropdownMenuItem>
 
-                      {/* Action: Reject Verification */}
                       <DropdownMenuItem
                         variant="destructive"
                         onClick={() => onReject(req.id)}
-                        disabled={req.status === 'REJECTED'}
+                        disabled={req.status === "REJECTED"}
                       >
                         <XCircle className="mr-2 h-4 w-4" />
                         Reject
