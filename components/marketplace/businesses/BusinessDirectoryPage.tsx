@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { getBusinesses } from '@/lib/business-api/all-business';
-import type { IBusiness, TBusinessType, TVerificationStatus } from '@/types/business';
+import type { IBusiness, TBusinessType } from '@/types/business';
 import BusinessFilters from './BusinessFilters';
 import BusinessResults from './BusinessResults';
 
@@ -12,20 +12,11 @@ const businessTypes: TBusinessType[] = [
   'OTHER',
 ];
 
-const verificationStatuses: TVerificationStatus[] = [
-  'UNVERIFIED',
-  'PENDING',
-  'VERIFIED',
-  'REJECTED',
-  'SUSPENDED',
-];
-
 type BusinessDirectoryProps = {
   searchParams: Promise<{
     query?: string;
     categoryId?: string;
     businessType?: string;
-    verificationStatus?: string;
     page?: string;
   }>;
 };
@@ -35,13 +26,11 @@ const getPageHref = (
   query: string,
   categoryId?: string,
   businessType?: TBusinessType,
-  verificationStatus?: TVerificationStatus,
 ) => {
   const params = new URLSearchParams();
   if (query) params.set('query', query);
   if (categoryId) params.set('categoryId', categoryId);
   if (businessType) params.set('businessType', businessType);
-  if (verificationStatus) params.set('verificationStatus', verificationStatus);
   params.set('page', String(page));
   return `/businesses?${params.toString()}`;
 };
@@ -53,9 +42,6 @@ export default async function BusinessDirectoryPage({
   const query = params.query?.trim() ?? '';
   const categoryId = params.categoryId?.trim() || undefined;
   const businessType = businessTypes.find((type) => type === params.businessType);
-  const verificationStatus = verificationStatuses.find(
-    (status) => status === params.verificationStatus,
-  );
   const requestedPage = Number(params.page);
   const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const response = await getBusinesses({
@@ -64,7 +50,7 @@ export default async function BusinessDirectoryPage({
     search: query || undefined,
     categoryId,
     businessType,
-    verificationStatus,
+    verificationStatus: 'VERIFIED',
   });
   const businesses: IBusiness[] = response.success && Array.isArray(response.data)
     ? response.data
@@ -91,7 +77,6 @@ export default async function BusinessDirectoryPage({
           query={query}
           categoryId={categoryId}
           businessType={businessType}
-          verificationStatus={verificationStatus}
         />
 
         <BusinessResults
@@ -104,7 +89,7 @@ export default async function BusinessDirectoryPage({
           <nav aria-label="Business pages" className="mt-8 flex items-center justify-between">
             {page > 1 ? (
               <Link
-                href={getPageHref(page - 1, query, categoryId, businessType, verificationStatus)}
+                href={getPageHref(page - 1, query, categoryId, businessType)}
                 className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted"
               >
                 Previous
@@ -113,7 +98,7 @@ export default async function BusinessDirectoryPage({
             <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
             {page < totalPages ? (
               <Link
-                href={getPageHref(page + 1, query, categoryId, businessType, verificationStatus)}
+                href={getPageHref(page + 1, query, categoryId, businessType)}
                 className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted"
               >
                 Next

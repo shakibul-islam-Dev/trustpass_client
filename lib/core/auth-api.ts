@@ -101,7 +101,7 @@ export async function loginWithPassword(
   email: string,
   password: string,
 ): Promise<LoginResult> {
-  const response = await postJson("/api/auth/sign-in]/email", {
+  const response = await postJson("/api/auth/sign-in/email", {
     email: normalizeEmail(email),
     password,
   });

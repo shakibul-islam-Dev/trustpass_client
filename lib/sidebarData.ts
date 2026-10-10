@@ -10,6 +10,8 @@ import {
   BellIcon,
   FolderTree,
   Key,
+  Bell,
+  CreditCard
 } from "lucide-react";
 import type { ApiRole } from "@/lib/core/roles";
 
@@ -63,6 +65,16 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         icon: FolderTree,
       },
       {
+        name: "Notifications",
+        href: "/dashboard/admin/notifications",
+        icon: Bell,
+      },
+      {
+  name: "Payments",
+  href: "/dashboard/admin/payments",
+  icon: CreditCard,
+},
+      {
         name: "Change Password",
         href: "/dashboard/change-password",
         icon: Key,
@@ -84,11 +96,16 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         icon: Shield,
       },
       // all perferct
-      
+
       {
         name: "Reports Review",
         href: "/dashboard/moderator/reports",
         icon: Flag,
+      },
+      {
+        name: "Notifications",
+        href: "/dashboard/moderator/notifications",
+        icon: Bell,
       },
       {
         name: "Change Password",
