@@ -6,6 +6,8 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
+  Copy,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import type { IPaymentResponse } from "@/lib/admin_api/get-payments";
 
 interface PaymentsTableProps {
@@ -47,6 +50,7 @@ export const PaymentsTable = ({
   onViewDetails,
 }: PaymentsTableProps) => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(payments.length / PAGE_SIZE));
   const startIndex = (currentPage - 1) * PAGE_SIZE;
@@ -61,6 +65,22 @@ export const PaymentsTable = ({
     if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
 
+  /**
+   * Copies a user ID to the clipboard.
+   * Used so the admin can paste it into the notification modal.
+   */
+  const handleCopyId = async (id: string) => {
+    try {
+      await navigator.clipboard.writeText(id);
+      setCopiedId(id);
+      toast.success("User ID copied!");
+      setTimeout(() => setCopiedId(null), 1500);
+    } catch (error) {
+      console.error("Copy failed:", error);
+      toast.error("Failed to copy ID.");
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="rounded-md border border-border bg-card">
@@ -70,6 +90,7 @@ export const PaymentsTable = ({
               <TableHead className="w-[60px]">#</TableHead>
               <TableHead>Transaction ID</TableHead>
               <TableHead>Payer</TableHead>
+              <TableHead>User ID</TableHead>
               <TableHead>Business</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Method</TableHead>
@@ -82,80 +103,113 @@ export const PaymentsTable = ({
             {paginated.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={9}
+                  colSpan={10}
                   className="text-center py-8 text-muted-foreground"
                 >
                   No payments found.
                 </TableCell>
               </TableRow>
             ) : (
-              paginated.map((payment, index) => (
-                <TableRow key={payment.id}>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {startIndex + index + 1}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {payment.transactionId
-                      ? payment.transactionId.length > 16
-                        ? `${payment.transactionId.slice(0, 12)}...`
-                        : payment.transactionId
-                      : payment.id.slice(0, 12)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-medium text-sm">
-                        {payment.userName || "-"}
-                      </span>
-                      <span className="text-xs text-muted-foreground truncate max-w-[180px]">
-                        {payment.userEmail || "-"}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {payment.businessName || "-"}
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {payment.currency} {payment.amount.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {payment.method || "-"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusVariant(payment.status)}>
-                      {payment.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {payment.createdAt
-                      ? new Date(payment.createdAt).toLocaleDateString()
-                      : "-"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
+              paginated.map((payment, index) => {
+                const userId = payment.userId || "";
+
+                return (
+                  <TableRow key={payment.id}>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {startIndex + index + 1}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {payment.transactionId
+                        ? payment.transactionId.length > 16
+                          ? `${payment.transactionId.slice(0, 12)}...`
+                          : payment.transactionId
+                        : payment.id.slice(0, 12)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">
+                          {payment.userName || "-"}
+                        </span>
+                        <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                          {payment.userEmail || "-"}
+                        </span>
+                      </div>
+                    </TableCell>
+
+                    {/* User ID with copy button */}
+                    <TableCell>
+                      {userId ? (
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                            {userId.length > 12
+                              ? `${userId.slice(0, 8)}...${userId.slice(-4)}`
+                              : userId}
+                          </code>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-8"
+                            className="h-6 w-6 shrink-0"
+                            onClick={() => handleCopyId(userId)}
+                            title="Copy full user ID"
                           >
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Open menu</span>
+                            {copiedId === userId ? (
+                              <Check className="h-3 w-3 text-green-500" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
                           </Button>
-                        }
-                      />
-                      <DropdownMenuContent align="end" className="w-[160px]">
-                        <DropdownMenuItem
-                          onClick={() => onViewDetails(payment)}
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Details
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="text-sm">
+                      {payment.businessName || "-"}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {payment.currency} {payment.amount.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {payment.method || "-"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusVariant(payment.status)}>
+                        {payment.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {payment.createdAt
+                        ? new Date(payment.createdAt).toLocaleDateString()
+                        : "-"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          }
+                        />
+                        <DropdownMenuContent align="end" className="w-[160px]">
+                          <DropdownMenuItem
+                            onClick={() => onViewDetails(payment)}
+                          >
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Details
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
