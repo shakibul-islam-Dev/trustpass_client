@@ -26,40 +26,48 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import type { IReportResponse } from "@/lib/admin_api/get-reports";
+import type { IPaymentResponse } from "@/lib/admin_api/get-payments";
 
-interface ReportsTableProps {
-  reports: IReportResponse[];
-  onViewDetails: (report: IReportResponse) => void;
+interface PaymentsTableProps {
+  payments: IPaymentResponse[];
+  onViewDetails: (payment: IPaymentResponse) => void;
 }
 
 const PAGE_SIZE = 20;
 
-const STATUS_VARIANT: Record<
-  string,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  PENDING: "secondary",
-  REVIEWED: "outline",
-  RESOLVED: "default",
-  REJECTED: "destructive",
+const getStatusVariant = (
+  status: string
+): "default" | "secondary" | "destructive" | "outline" => {
+  const s = String(status || "").toUpperCase();
+  if (s === "COMPLETED" || s === "SUCCESS" || s === "PAID") return "default";
+  if (s === "FAILED" || s === "CANCELLED") return "destructive";
+  if (s === "PENDING") return "secondary";
+  return "outline";
 };
 
-export const ReportTable = ({
-  reports,
+export const PaymentsTable = ({
+  payments,
   onViewDetails,
-}: ReportsTableProps) => {
+}: PaymentsTableProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const totalPages = Math.max(1, Math.ceil(reports.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(payments.length / PAGE_SIZE));
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const endIndex = startIndex + PAGE_SIZE;
-  const paginated = reports.slice(startIndex, endIndex);
+  const paginated = payments.slice(startIndex, endIndex);
+
+  const handlePrev = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
 
   /**
    * Copies a user ID to the clipboard.
-   * Used so the admin/moderator can paste it into the notification modal.
+   * Used so the admin can paste it into the notification modal.
    */
   const handleCopyId = async (id: string) => {
     try {
@@ -80,10 +88,12 @@ export const ReportTable = ({
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className="w-[60px]">#</TableHead>
-              <TableHead>Business</TableHead>
-              <TableHead>Customer</TableHead>
+              <TableHead>Transaction ID</TableHead>
+              <TableHead>Payer</TableHead>
               <TableHead>User ID</TableHead>
-              <TableHead>Reason</TableHead>
+              <TableHead>Business</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Method</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Date</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -93,45 +103,56 @@ export const ReportTable = ({
             {paginated.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={10}
                   className="text-center py-8 text-muted-foreground"
                 >
-                  No reports found.
+                  No payments found.
                 </TableCell>
               </TableRow>
             ) : (
-              paginated.map((report, index) => {
-                // The reporter's user ID — used for sending notifications
-                const reporterId =
-                  report.customerId || (report as any).reporterId || "";
+              paginated.map((payment, index) => {
+                const userId = payment.userId || "";
 
                 return (
-                  <TableRow key={report.id}>
+                  <TableRow key={payment.id}>
                     <TableCell className="text-muted-foreground text-sm">
                       {startIndex + index + 1}
                     </TableCell>
-                    <TableCell className="font-medium">
-                      {report.businessName || "Unknown"}
+                    <TableCell className="font-mono text-xs">
+                      {payment.transactionId
+                        ? payment.transactionId.length > 16
+                          ? `${payment.transactionId.slice(0, 12)}...`
+                          : payment.transactionId
+                        : payment.id.slice(0, 12)}
                     </TableCell>
-                    <TableCell>{report.customerName || "-"}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">
+                          {payment.userName || "-"}
+                        </span>
+                        <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                          {payment.userEmail || "-"}
+                        </span>
+                      </div>
+                    </TableCell>
 
                     {/* User ID with copy button */}
                     <TableCell>
-                      {reporterId ? (
+                      {userId ? (
                         <div className="flex items-center gap-2">
                           <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
-                            {reporterId.length > 12
-                              ? `${reporterId.slice(0, 8)}...${reporterId.slice(-4)}`
-                              : reporterId}
+                            {userId.length > 12
+                              ? `${userId.slice(0, 8)}...${userId.slice(-4)}`
+                              : userId}
                           </code>
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6 shrink-0"
-                            onClick={() => handleCopyId(reporterId)}
+                            onClick={() => handleCopyId(userId)}
                             title="Copy full user ID"
                           >
-                            {copiedId === reporterId ? (
+                            {copiedId === userId ? (
                               <Check className="h-3 w-3 text-green-500" />
                             ) : (
                               <Copy className="h-3 w-3" />
@@ -143,21 +164,23 @@ export const ReportTable = ({
                       )}
                     </TableCell>
 
-                    <TableCell>
-                      <Badge variant="outline">
-                        {(report.reason || "").replace(/_/g, " ")}
-                      </Badge>
+                    <TableCell className="text-sm">
+                      {payment.businessName || "-"}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {payment.currency} {payment.amount.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {payment.method || "-"}
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={STATUS_VARIANT[report.status] || "outline"}
-                      >
-                        {report.status}
+                      <Badge variant={getStatusVariant(payment.status)}>
+                        {payment.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {report.createdAt
-                        ? new Date(report.createdAt).toLocaleDateString()
+                      {payment.createdAt
+                        ? new Date(payment.createdAt).toLocaleDateString()
                         : "-"}
                     </TableCell>
                     <TableCell className="text-right">
@@ -176,7 +199,7 @@ export const ReportTable = ({
                         />
                         <DropdownMenuContent align="end" className="w-[160px]">
                           <DropdownMenuItem
-                            onClick={() => onViewDetails(report)}
+                            onClick={() => onViewDetails(payment)}
                           >
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
@@ -192,18 +215,18 @@ export const ReportTable = ({
         </Table>
       </div>
 
-      {reports.length > 0 && (
+      {payments.length > 0 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Showing {startIndex + 1}–{Math.min(endIndex, reports.length)} of{" "}
-            {reports.length} reports
+            Showing {startIndex + 1}–{Math.min(endIndex, payments.length)} of{" "}
+            {payments.length} payments
           </div>
 
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              onClick={handlePrev}
               disabled={currentPage === 1}
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
@@ -217,7 +240,7 @@ export const ReportTable = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              onClick={handleNext}
               disabled={currentPage === totalPages}
             >
               Next

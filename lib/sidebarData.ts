@@ -11,6 +11,7 @@ import {
   FolderTree,
   Key,
   Bell,
+  CreditCard
 } from "lucide-react";
 import type { ApiRole } from "@/lib/core/roles";
 
@@ -68,6 +69,11 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         href: "/dashboard/admin/notifications",
         icon: Bell,
       },
+      {
+  name: "Payments",
+  href: "/dashboard/admin/payments",
+  icon: CreditCard,
+},
       {
         name: "Change Password",
         href: "/dashboard/change-password",
