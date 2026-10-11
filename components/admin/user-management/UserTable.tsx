@@ -7,6 +7,8 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  Copy,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "sonner";
 import type { User, UserRole } from "@/types/admin";
 
 interface UserTableProps {
@@ -54,6 +57,7 @@ export const UserTable = ({
   onDeleteClick,
 }: UserTableProps) => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE));
   const startIndex = (currentPage - 1) * PAGE_SIZE;
@@ -68,6 +72,22 @@ export const UserTable = ({
     if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
 
+  /**
+   * Copies the user ID to the clipboard.
+   * Shows a brief check-mark icon + toast.
+   */
+  const handleCopyId = async (id: string) => {
+    try {
+      await navigator.clipboard.writeText(id);
+      setCopiedId(id);
+      toast.success("User ID copied!");
+      setTimeout(() => setCopiedId(null), 1500);
+    } catch (error) {
+      console.error("Copy failed:", error);
+      toast.error("Failed to copy ID.");
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="rounded-md border border-border bg-card">
@@ -77,6 +97,7 @@ export const UserTable = ({
               <TableHead className="w-[60px]">#</TableHead>
               <TableHead>User</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>User ID</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Joined</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -86,7 +107,7 @@ export const UserTable = ({
             {paginatedUsers.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="text-center py-8 text-muted-foreground"
                 >
                   No users found.
@@ -100,10 +121,36 @@ export const UserTable = ({
                   </TableCell>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
+
+                  {/* User ID with copy button */}
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                        {user.id.length > 12
+                          ? `${user.id.slice(0, 8)}...${user.id.slice(-4)}`
+                          : user.id}
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0"
+                        onClick={() => handleCopyId(user.id)}
+                        title="Copy full user ID"
+                      >
+                        {copiedId === user.id ? (
+                          <Check className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <Copy className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
+                  </TableCell>
+
                   <TableCell>
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        ROLE_COLOR[user.role] || "bg-muted text-muted-foreground"
+                        ROLE_COLOR[user.role] ||
+                        "bg-muted text-muted-foreground"
                       }`}
                     >
                       {ROLE_LABEL[user.role] || user.role}

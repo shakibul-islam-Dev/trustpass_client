@@ -6,7 +6,9 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const response = await getCategories();
-  const categories = response.success && Array.isArray(response.data) ? response.data : [];
+  const categories = response.success && Array.isArray(response.data)
+    ? response.data.filter((category) => category.isActive === true)
+    : [];
   const error = response.success ? undefined : response.error;
 
   return (

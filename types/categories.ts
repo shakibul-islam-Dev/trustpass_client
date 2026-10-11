@@ -5,6 +5,7 @@ export interface ICategory {
   description?: string | null;
   icon?: string | null;
   iconUrl?: string | null;
+  isActive?: boolean;
   count?: number;
   businessCount?: number;
   createdAt?: string;
