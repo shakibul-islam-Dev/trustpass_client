@@ -25,7 +25,7 @@ function PaymentResultView() {
 
 export default function PaymentResultPage() {
   return (
-    <div className="p-4 md:p-6 xl:p-8">
+    <div>
       {/* useSearchParams needs a Suspense boundary in the app router. */}
       <Suspense fallback={<p className="text-center text-sm text-muted-foreground">Loading…</p>}>
         <PaymentResultView />

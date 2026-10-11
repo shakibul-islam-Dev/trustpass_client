@@ -44,7 +44,7 @@ export default function SellerPaymentsPage() {
   };
 
   return (
-    <div className="p-4 md:p-6 xl:p-8">
+    <div>
       <SellerPaymentCenter
         amount="৳500"
         purpose="Business verification"
