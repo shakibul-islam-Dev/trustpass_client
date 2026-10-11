@@ -12,6 +12,7 @@
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 import type { UserRole } from "@/types/admin";
 
 // ============================================================
@@ -25,7 +26,7 @@ export const updateUserRole = async (
   console.log("🟢 updateUserRole:", userId, role);
 
   try {
-    const res = await fetch(apiUrl(`/api/v1/users/${userId}/role`), {
+    const res = await apiFetch(apiUrl(`/api/v1/users/${userId}/role`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ role }),   // "CUSTOMER" | "SELLER" | "MODERATOR" | "ADMIN"
@@ -65,7 +66,7 @@ export const deleteUser = async (userId: string) => {
   console.log("🔴 deleteUser:", userId);
 
   try {
-    const res = await fetch(apiUrl(`/api/v1/users/${userId}`), {
+    const res = await apiFetch(apiUrl(`/api/v1/users/${userId}`), {
       method: "DELETE",
       credentials: "include",   // ← Cookie automatic
       cache: "no-store",

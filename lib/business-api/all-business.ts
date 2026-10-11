@@ -6,10 +6,11 @@ import type {
   IBusinessesResponse,
 } from "@/types/business";
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 const fetchBusinessApi = async <T extends { success: boolean }>(url: string): Promise<T> => {
   try {
-    const response = await fetch(apiUrl(url), {
+    const response = await apiFetch(apiUrl(url), {
       method: "GET",
       cache: "no-store",
     });

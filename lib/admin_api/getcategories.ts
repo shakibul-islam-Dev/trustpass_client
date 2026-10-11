@@ -12,6 +12,7 @@
 // cookie automatically — no manual forwarding needed.
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 export interface ICategoryResponse {
   id: string;
@@ -49,7 +50,7 @@ export const fetchCategories = async (
   console.log("🔍 fetchCategories URL:", url);
 
   try {
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: "GET",
       credentials: "include",   // ← Cookie automatic goes (browser)
       cache: "no-store",
@@ -84,7 +85,7 @@ export const fetchCategoryById = async (
   id: string
 ): Promise<ICategoryResponse | null> => {
   try {
-    const response = await fetch(apiUrl(`/api/v1/categories/${id}`), {
+    const response = await apiFetch(apiUrl(`/api/v1/categories/${id}`), {
       method: "GET",
       credentials: "include",
       cache: "no-store",

@@ -1,4 +1,5 @@
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 export interface ICreateProductData {
   business_id: string;
@@ -26,7 +27,7 @@ export interface IApiProduct {
 
 
 export const getProductsForBusiness = async (businessId: string): Promise<IApiProduct[]> => {
-  const response = await fetch(apiUrl(`/api/v1/businesses/${businessId}/products`), {
+  const response = await apiFetch(apiUrl(`/api/v1/businesses/${businessId}/products`), {
     method: "GET",
     credentials: "include",
     cache: "no-store",
@@ -43,7 +44,7 @@ export const getProductsForBusiness = async (businessId: string): Promise<IApiPr
 
 
 export const handleCreateProduct = async (productData: ICreateProductData) => {
-  const response = await fetch(apiUrl("/api/v1/products"), {
+  const response = await apiFetch(apiUrl("/api/v1/products"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

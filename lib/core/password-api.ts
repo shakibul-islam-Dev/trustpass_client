@@ -38,6 +38,7 @@
 
 import { readApiError, safeThrownError } from "@/lib/core/api-error";
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 const RESET_PASSWORD_PATH = "/api/auth/reset-password";
 const CHANGE_PASSWORD_PATH = "/api/auth/change-password";
@@ -65,7 +66,7 @@ async function postJson(
   // Field NAMES only — the values are passwords, they never go to the console.
   console.debug(`[password-api] POST ${path}`, Object.keys(body));
 
-  return fetch(url, {
+  return apiFetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",

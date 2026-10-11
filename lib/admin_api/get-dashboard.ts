@@ -8,6 +8,7 @@
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 export interface IAdminDashboardStats {
   totalUsers: number;
@@ -118,7 +119,7 @@ export const fetchAdminDashboard = async (): Promise<IAdminDashboard> => {
   console.log("🔍 fetchAdminDashboard URL:", url);
 
   try {
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: "GET",
       credentials: "include",
       cache: "no-store",

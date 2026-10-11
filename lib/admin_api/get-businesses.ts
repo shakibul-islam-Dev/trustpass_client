@@ -3,6 +3,7 @@
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 export type TVerificationStatus =
   | "PENDING"
@@ -120,7 +121,7 @@ export const fetchAllBusinesses = async (
   console.log("🔍 fetchAllBusinesses URL:", url);
 
   try {
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: "GET",
       credentials: "include",
       cache: "no-store",
