@@ -11,6 +11,7 @@
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 export interface ICreateCategoryPayload {
   name: string;
@@ -28,7 +29,7 @@ export const createCategory = async (payload: ICreateCategoryPayload) => {
   console.log("🟢 createCategory payload:", payload);
 
   try {
-    const res = await fetch(apiUrl("/api/v1/categories"), {
+    const res = await apiFetch(apiUrl("/api/v1/categories"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -60,7 +61,7 @@ export const updateCategory = async (
   console.log("🟡 updateCategory:", id, payload);
 
   try {
-    const res = await fetch(apiUrl(`/api/v1/categories/${id}`), {
+    const res = await apiFetch(apiUrl(`/api/v1/categories/${id}`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -91,7 +92,7 @@ export const deleteCategory = async (id: string) => {
   console.log("🔴 deleteCategory:", id);
 
   try {
-    const res = await fetch(apiUrl(`/api/v1/categories/${id}`), {
+    const res = await apiFetch(apiUrl(`/api/v1/categories/${id}`), {
       method: "DELETE",
       credentials: "include",
       cache: "no-store",

@@ -5,6 +5,7 @@
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 export type TNotificationType =
   | "REPORT_UPDATE"
@@ -41,7 +42,7 @@ export const fetchMyNotifications = async (
   console.log("🔍 fetchMyNotifications URL:", url);
 
   try {
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: "GET",
       credentials: "include",
       cache: "no-store",
@@ -74,7 +75,7 @@ export const fetchMyNotifications = async (
 
 export const fetchUnreadCount = async (): Promise<number> => {
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       apiUrl("/api/v1/notifications/unread-count"),
       { method: "GET", credentials: "include", cache: "no-store" }
     );

@@ -18,6 +18,7 @@
  */
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 import type { IBusiness } from "@/types/business";
 
 interface ApiEnvelope<T> {
@@ -53,7 +54,7 @@ async function readEnvelope<T>(response: Response): Promise<ApiEnvelope<T> | nul
 
 async function sendJson<T>(method: "GET" | "POST" | "PATCH", path: string, body?: unknown): Promise<ApiResult<T>> {
   try {
-    const response = await fetch(apiUrl(path), {
+    const response = await apiFetch(apiUrl(path), {
       method,
       headers: body === undefined ? undefined : { "Content-Type": "application/json" },
       credentials: "include",
@@ -68,7 +69,7 @@ async function sendJson<T>(method: "GET" | "POST" | "PATCH", path: string, body?
 
 async function sendMultipart<T>(method: "POST", path: string, formData: FormData): Promise<ApiResult<T>> {
   try {
-    const response = await fetch(apiUrl(path), {
+    const response = await apiFetch(apiUrl(path), {
       method,
       credentials: "include",
       // No Content-Type header: the browser sets the multipart boundary itself.

@@ -7,16 +7,20 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  /* Body + headings — mirrors the "New Learning" theme (Roboto Flex) */
+  --font-sans: var(--font-roboto-flex);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-geist-sans);
+  --font-heading: var(--font-roboto-flex);
+
+  /* The theme's heading weight is 580 (a true variable-font "semibold") */
+  --font-weight-semibold: 580;
 
   /* Fluid, responsive typography scale */
   --text-xs-fluid: clamp(0.75rem, 0.7rem + 0.2vw, 0.8125rem);
-  --text-sm-fluid: clamp(0.875rem, 0.85rem + 0.25vw, 0.9375rem);
-  --text-base-fluid: clamp(0.9375rem, 0.9rem + 0.3vw, 1rem);
-  --text-lg-fluid: clamp(1.0625rem, 1rem + 0.4vw, 1.125rem);
-  --text-xl-fluid: clamp(1.1875rem, 1.1rem + 0.5vw, 1.375rem);
+  --text-sm-fluid: clamp(0.8125rem, 0.78rem + 0.25vw, 0.9375rem);
+  --text-base-fluid: clamp(1rem, 0.94rem + 0.3vw, 1.0625rem);
+  --text-lg-fluid: clamp(1.0625rem, 1rem + 0.4vw, 1.1875rem);
+  --text-xl-fluid: clamp(1.25rem, 1.1rem + 0.5vw, 1.375rem);
   --text-2xl-fluid: clamp(1.5rem, 1.3rem + 0.8vw, 1.875rem);
   --text-3xl-fluid: clamp(1.875rem, 1.6rem + 1.2vw, 2.5rem);
   --text-4xl-fluid: clamp(2.25rem, 1.8rem + 1.8vw, 3rem);
@@ -164,6 +168,17 @@
   --background: oklch(0.9702 0 0);
   --foreground: oklch(0.2103 0.0059 285.89);
 
+  /* Typography scale — mirrors the "New Learning" theme:
+     a 17px base with a modular scale (1.19 on desktop, stepped down
+     on smaller screens) driving h6 → h1. */
+  --type-scale: 1.19;
+  --text-h6: 1.0625rem; /* 17px */
+  --text-h5: calc(var(--text-h6) * var(--type-scale));
+  --text-h4: calc(var(--text-h5) * var(--type-scale));
+  --text-h3: calc(var(--text-h4) * var(--type-scale));
+  --text-h2: calc(var(--text-h3) * var(--type-scale));
+  --text-h1: calc(var(--text-h2) * var(--type-scale));
+
   /* HeroUI surface elevation (light) */
   --surface: oklch(1 0 0);
   --surface-secondary: oklch(0.9524 0.0013 286.37);
@@ -224,6 +239,26 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.6204 0.195 253.83);
+}
+
+/* Step the heading scale down on smaller screens, exactly like the theme
+   (1.19 → 1.16 → 1.15 → 1.10). */
+@media (max-width: 991.98px) {
+  :root {
+    --type-scale: 1.16;
+  }
+}
+
+@media (max-width: 767.98px) {
+  :root {
+    --type-scale: 1.15;
+  }
+}
+
+@media (max-width: 575.98px) {
+  :root {
+    --type-scale: 1.1;
+  }
 }
 
 .dark {
@@ -300,17 +335,23 @@
     scroll-behavior: smooth;
     text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.64; /* body copy, matches the "New Learning" theme */
+    font-variant-ligatures: none;
+    text-rendering: optimizeLegibility;
+    text-shadow: rgb(0 0 0 / 0.01) 0 0 1px;
   }
 
   body {
     @apply bg-background text-foreground;
     margin: 0;
-    font-optical-sizing: auto;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-feature-settings: normal;
     text-rendering: optimizeLegibility;
   }
 
-  /* Simple, gorgeous heading typography */
+  /* Heading typography, matching the "New Learning" theme:
+     580 weight, 1.2 line-height, normal letter-spacing and a
+     17px / 1.19 modular scale (h6 → h1). */
   h1,
   h2,
   h3,
@@ -319,39 +360,34 @@
   h6 {
     @apply font-heading;
     margin: 0;
-    letter-spacing: -0.02em;
-    line-height: 1.15;
+    font-weight: 580;
+    letter-spacing: normal;
+    line-height: 1.2;
     text-wrap: balance;
   }
 
   h1 {
-    font-size: var(--text-4xl-fluid);
-    font-weight: 800;
+    font-size: var(--text-h1);
   }
 
   h2 {
-    font-size: var(--text-3xl-fluid);
-    font-weight: 700;
+    font-size: var(--text-h2);
   }
 
   h3 {
-    font-size: var(--text-2xl-fluid);
-    font-weight: 700;
+    font-size: var(--text-h3);
   }
 
   h4 {
-    font-size: var(--text-xl-fluid);
-    font-weight: 600;
+    font-size: var(--text-h4);
   }
 
   h5 {
-    font-size: var(--text-base-fluid);
-    font-weight: 600;
+    font-size: var(--text-h5);
   }
 
   h6 {
-    font-size: var(--text-sm-fluid);
-    font-weight: 600;
+    font-size: var(--text-h6);
   }
 
   p {

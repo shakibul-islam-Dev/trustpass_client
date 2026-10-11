@@ -12,6 +12,7 @@
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 import { TTrustRuleStatus } from "../admin_api/get-trust-rules";
 
 export interface ICreateTrustRulePayload {
@@ -37,7 +38,7 @@ export const createTrustRule = async (payload: ICreateTrustRulePayload) => {
   console.log("🟢 createTrustRule payload:", payload);
 
   try {
-    const res = await fetch(apiUrl("/api/v1/trust-rules"), {
+    const res = await apiFetch(apiUrl("/api/v1/trust-rules"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -73,7 +74,7 @@ export const updateTrustRule = async (
   console.log("🟡 updateTrustRule:", id, payload);
 
   try {
-    const res = await fetch(apiUrl(`/api/v1/trust-rules/${id}`), {
+    const res = await apiFetch(apiUrl(`/api/v1/trust-rules/${id}`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -108,7 +109,7 @@ export const deleteTrustRule = async (id: string) => {
   console.log("🔴 deleteTrustRule:", id);
 
   try {
-    const res = await fetch(apiUrl(`/api/v1/trust-rules/${id}`), {
+    const res = await apiFetch(apiUrl(`/api/v1/trust-rules/${id}`), {
       method: "DELETE",
       credentials: "include",
       cache: "no-store",

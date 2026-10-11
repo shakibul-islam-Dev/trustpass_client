@@ -3,6 +3,7 @@
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 export interface IReviewVerificationPayload {
   status: "APPROVED" | "REJECTED" | "UNDER_REVIEW";
@@ -20,7 +21,7 @@ export const reviewVerification = async (
   console.log("🟡 reviewVerification:", id, payload);
 
   try {
-    const res = await fetch(apiUrl(`/api/v1/verifications/${id}/review`), {
+    const res = await apiFetch(apiUrl(`/api/v1/verifications/${id}/review`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

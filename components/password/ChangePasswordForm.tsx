@@ -108,7 +108,7 @@ export default function ChangePasswordForm() {
   };
 
   return (
-    <div className="flex min-h-[70vh] items-center justify-center p-4">
+    <div className="flex min-h-[70vh] items-center justify-center">
       <Card className="w-full max-w-md shadow-overlay">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold tracking-tight sm:text-3xl">

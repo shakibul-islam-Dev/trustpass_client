@@ -13,6 +13,7 @@
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 export interface IUserResponse {
   id: string;
@@ -49,7 +50,7 @@ export const fetchUsers = async (
   console.log("🔍 fetchUsers URL:", url);
 
   try {
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: "GET",
       credentials: "include",   // ← Cookie automatic (browser)
       cache: "no-store",

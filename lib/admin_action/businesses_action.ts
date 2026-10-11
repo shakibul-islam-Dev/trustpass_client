@@ -3,6 +3,7 @@
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 // ============================================================
 // PATCH /api/v1/businesses/:id — Update business (e.g. featured)
@@ -15,7 +16,7 @@ export const updateBusiness = async (
   console.log("🟡 updateBusiness:", businessId, payload);
 
   try {
-    const res = await fetch(apiUrl(`/api/v1/businesses/${businessId}`), {
+    const res = await apiFetch(apiUrl(`/api/v1/businesses/${businessId}`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -53,7 +54,7 @@ export const deleteBusiness = async (businessId: string) => {
   console.log("🔴 deleteBusiness:", businessId);
 
   try {
-    const res = await fetch(apiUrl(`/api/v1/businesses/${businessId}`), {
+    const res = await apiFetch(apiUrl(`/api/v1/businesses/${businessId}`), {
       method: "DELETE",
       credentials: "include",
       cache: "no-store",

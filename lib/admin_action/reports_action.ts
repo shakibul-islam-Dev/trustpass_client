@@ -3,6 +3,7 @@
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 import type { TReportStatus } from "../admin_api/get-reports";
 
 export interface IUpdateReportStatusPayload {
@@ -23,7 +24,7 @@ export const updateReportStatus = async (
   console.log("🟡 updateReportStatus:", reportId, payload);
 
   try {
-    const res = await fetch(
+    const res = await apiFetch(
       apiUrl(`/api/v1/reports/${reportId}/status`),
       {
         method: "PATCH",
