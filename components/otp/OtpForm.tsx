@@ -146,7 +146,7 @@ export default function OtpForm({
       noValidate
     >
       {/* 6 individual digit boxes */}
-      <div role="group" aria-label="6-digit code" className="flex justify-between gap-2">
+      <div role="group" aria-label="6-digit code" className="flex justify-between gap-1.5 sm:gap-2">
         {Array.from({ length: OTP_LENGTH }).map((_, index) => (
           <input
             key={index}
@@ -159,7 +159,7 @@ export default function OtpForm({
             aria-label={`Digit ${index + 1}`}
             placeholder="•"
             disabled={isVerifying}
-            className="h-12 w-10 rounded-xl border border-border/80 bg-background/70 text-center text-xl font-bold text-foreground shadow-sm outline-none transition-[border-color,box-shadow] duration-(--duration-base) placeholder:text-muted-foreground/35 focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-50 sm:h-14 sm:w-12 md:text-2xl"
+            className="h-12 w-full min-w-0 max-w-12 rounded-xl border border-border/80 bg-background/70 text-center text-xl font-bold text-foreground shadow-sm outline-none transition-[border-color,box-shadow] duration-(--duration-base) placeholder:text-muted-foreground/35 focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-50 sm:h-14 sm:max-w-14 md:text-2xl"
           />
         ))}
       </div>

@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Geist_Mono, Roboto_Flex } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import Footer from "@/components/shared/Footer";
 import Navbar from "@/components/shared/navbar/Navbar";
 import AppToaster from "@/components/shared/AppToaster";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Body + headings. The "New Learning" theme uses "Google Sans Flex",
+// which is self-hosted as the Roboto Flex variable font — so we load the
+// same font here to match it (weight axis 100–1000, no extra axes needed).
+const robotoFlex = Roboto_Flex({
   subsets: ["latin"],
+  variable: "--font-roboto-flex",
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -32,10 +34,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={cn(
         "h-full",
         "antialiased",
-        geistSans.variable,
         geistMono.variable,
         "font-sans",
-        inter.variable,
+        robotoFlex.variable,
       )}
     >
       <body className="min-h-full flex flex-col">

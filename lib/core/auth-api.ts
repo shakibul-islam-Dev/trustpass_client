@@ -25,6 +25,7 @@
  */
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 import { readApiError } from "@/lib/core/api-error";
 
 /**
@@ -58,7 +59,7 @@ export function normalizeEmail(email: string): string {
 type Json = Record<string, unknown>;
 
 async function postJson(path: string, body: Json): Promise<Response> {
-  return fetch(apiUrl(path), {
+  return apiFetch(apiUrl(path), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     // The session cookie belongs to the API's host; `include` sends and

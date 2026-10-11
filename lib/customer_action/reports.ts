@@ -8,6 +8,7 @@
 // API: POST /api/v1/reports  (auth: CUSTOMER, SELLER)
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 // ============================================================
 // BACKEND INTERFACES (match with backend)
@@ -74,7 +75,7 @@ export const submitReport = async (payload: ICreateReportPayload) => {
       formData.append("file", payload.file);
     }
 
-    const res = await fetch(apiUrl("/api/v1/reports"), {
+    const res = await apiFetch(apiUrl("/api/v1/reports"), {
       method: "POST",
       body: formData,
       credentials: "include",

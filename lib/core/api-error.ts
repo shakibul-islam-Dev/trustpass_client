@@ -2,7 +2,7 @@
 const INTERNAL_MARKERS =
   /prisma|invocation|ECONN|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|postgres|postgresql|mysql|sqlite|node_modules|\/api\/|\/src\/|\.ts:\d+|\.js:\d+|\.tsx:\d+|Error:|TypeError:|ReferenceError:|SyntaxError:|stack|SELECT\s|INSERT\s|UPDATE\s|DELETE\s|Cannot read|Cannot access|undefined|null|NaN|timeout|socket|ECONNRESET|at\s+[A-Za-z_$][\w$]*\s*\(|getaddrinfo|query_engine|adapter|unexpected token|failed to fetch|load failed/i;
 
-/** Messages we deliberately allow through, matched against the whole string. */
+
 const USER_FACING: RegExp[] = [
   /^invalid email or password\.?$/i,
   /^an account with this email already exists\.?$/i,
@@ -27,15 +27,10 @@ const USER_FACING: RegExp[] = [
   /must be .{0,60}$/i,
   /is required\.?$/i,
   /^invalid .{0,60}$/i,
-
-  // Shared auth-error list. Added for the Forgot Password flow (Shakibul):
-  // the Auth API answers this exact message when the server has not enabled
-  // the email reset feature — without it the form shows a generic 400 text
-  // ("Please check your details") instead of the real reason.
   /^reset password isn't enabled\.?$/i,
 ];
 
-/** Fallback text per HTTP status. 5xx never gets a specific message. */
+
 const BY_STATUS: Record<number, string> = {
   400: "That request could not be processed. Please check your details.",
   401: "Your email or password is incorrect.",
@@ -50,7 +45,7 @@ const BY_STATUS: Record<number, string> = {
   504: "The server took too long to respond. Please try again.",
 };
 
-/** How a field is named when the message has to be rebuilt from scratch. */
+
 const FIELD_LABEL: Record<string, string> = {
   name: "Name",
   email: "Email",
@@ -62,22 +57,6 @@ const FIELD_LABEL: Record<string, string> = {
   image: "Image",
 };
 
-/**
- * The server validates with zod and, on failure, answers:
- *
- *   { message: "Validation Error",
- *     errorSources: [{ path: "email", message: "Invalid email address" }, ...] }
- *
- * `"Validation Error"` on its own tells the user nothing, so this form is where
- * the real messages live. They still go through the same internal-leak filter as
- * any other server text.
- *
- * Some of zod's default wording is developer-facing ("Too small: expected
- * string to have >=2 characters"), so it is rewritten into something a person
- * can act on. Unrecognised wording is passed through unchanged rather than
- * replaced — the server's own custom messages are better than anything invented
- * here.
- */
 function humanizeZodDefault(message: string): string | null {
   const text = message.trim();
 
@@ -100,12 +79,7 @@ function humanizeZodDefault(message: string): string | null {
   return null;
 }
 
-/**
- * Builds one readable sentence from the server's per-field errors.
- *
- * Up to three are joined, since a fresh form often has more than one thing
- * wrong and fixing them one round-trip at a time is miserable.
- */
+
 function messageFromErrorSources(
   sources: { path: string; message: string }[],
 ): string | null {
@@ -125,8 +99,6 @@ function messageFromErrorSources(
 
     if (!candidate) continue;
 
-    // Only prefix the field name when the message does not already name it,
-    // otherwise it reads as "Email Invalid email address".
     const label = FIELD_LABEL[source.path] ?? source.path;
     const alreadyNamed = new RegExp(`\\b${label}\\b`, "i").test(candidate);
     const sentence = alreadyNamed
@@ -182,14 +154,13 @@ export function safeApiMessage({
   return fallback ?? DEFAULT_API_ERROR;
 }
 
-/** Logs the untouched server/network error. Safe to call in production. */
+
 export function logInternalError(
   context: string,
   error: unknown,
   extra?: Record<string, unknown>,
 ): void {
   if (process.env.NODE_ENV === "production") {
-    // Keep production logs useful without dumping the whole payload.
     console.error(`[api] ${context}`, extra ?? "");
     return;
   }

@@ -4,11 +4,12 @@
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 export const markNotificationAsRead = async (notificationId: string) => {
   console.log("🟡 markNotificationAsRead:", notificationId);
   try {
-    const res = await fetch(
+    const res = await apiFetch(
       apiUrl(`/api/v1/notifications/${notificationId}/read`),
       {
         method: "PATCH",
@@ -30,7 +31,7 @@ export const markNotificationAsRead = async (notificationId: string) => {
 export const markAllNotificationsAsRead = async () => {
   console.log("🟡 markAllNotificationsAsRead");
   try {
-    const res = await fetch(apiUrl("/api/v1/notifications/read-all"), {
+    const res = await apiFetch(apiUrl("/api/v1/notifications/read-all"), {
       method: "PATCH",
       credentials: "include",
       cache: "no-store",
@@ -49,7 +50,7 @@ export const markAllNotificationsAsRead = async () => {
 export const deleteNotification = async (notificationId: string) => {
   console.log("🔴 deleteNotification:", notificationId);
   try {
-    const res = await fetch(
+    const res = await apiFetch(
       apiUrl(`/api/v1/notifications/${notificationId}`),
       {
         method: "DELETE",

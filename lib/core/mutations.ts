@@ -1,6 +1,7 @@
 "use server";
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 // ============================================================
 // POST
@@ -20,7 +21,7 @@ export const postMutation = async (
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const res = await fetch(apiUrl(url), {
+    const res = await apiFetch(apiUrl(url), {
       method: "POST",
       headers,
       body: data === undefined ? undefined : JSON.stringify(data),
@@ -55,7 +56,7 @@ export const postMutation = async (
 
 export const deleteMutation = async (url: string) => {
   try {
-    const res = await fetch(apiUrl(url), {
+    const res = await apiFetch(apiUrl(url), {
       method: "DELETE",
       credentials: "include",
       headers: {
@@ -88,7 +89,7 @@ export const deleteMutation = async (url: string) => {
 
 export const patchMutation = async (url: string, data: unknown) => {
   try {
-    const res = await fetch(apiUrl(url), {
+    const res = await apiFetch(apiUrl(url), {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -128,7 +129,7 @@ export const getData = async (url: string, token?: string) => {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const res = await fetch(apiUrl(url), {
+    const res = await apiFetch(apiUrl(url), {
       method: "GET",
       headers,
       credentials: "include",

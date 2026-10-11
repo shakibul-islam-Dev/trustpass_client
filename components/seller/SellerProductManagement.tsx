@@ -42,6 +42,7 @@ const emptyProduct: ProductRecord = {
   description: "",
 };
 const emptyProducts: ProductRecord[] = [];
+const emptyCategories: { id: string; name: string }[] = [];
 
 /** Looks like a UUID — the server's categoryId column is a UUID. */
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -58,11 +59,17 @@ const toInput = (draft: ProductRecord): ProductInput => ({
   status: toApiStatus(draft.status),
 });
 
-const toRecord = (product: ApiProductRecord): ProductRecord => ({
+const toRecord = (
+  product: ApiProductRecord,
+  categories: { id: string; name: string }[],
+): ProductRecord => ({
   id: product.id,
   name: product.name,
   categoryId: product.categoryId ?? "",
-  category: product.categoryId ?? "",
+  category:
+    categories.find((item) => item.id === product.categoryId)?.name ??
+    product.categoryId ??
+    "",
   price: String(product.price),
   stock: product.stock,
   status: product.status === "ACTIVE" ? "Published" : product.status === "DRAFT" ? "Draft" : "Draft",
@@ -86,7 +93,7 @@ interface SellerProductManagementProps {
 export default function SellerProductManagement({
   businessId,
   products: incomingProducts,
-  categories = [],
+  categories = emptyCategories,
   isLoading = false,
   error,
   allowCreate = true,
@@ -114,7 +121,7 @@ export default function SellerProductManagement({
           setLoadError(result.message);
           return;
         }
-        setServerProducts(result.data.map(toRecord));
+        setServerProducts(result.data.map((product) => toRecord(product, categories)));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -123,7 +130,7 @@ export default function SellerProductManagement({
     return () => {
       active = false;
     };
-  }, [businessId, reloadKey]);
+  }, [businessId, reloadKey, categories]);
 
   const [localProducts, setLocalProducts] = useState<ProductRecord[] | null>(null);
   const products =

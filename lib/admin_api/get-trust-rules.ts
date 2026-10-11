@@ -13,6 +13,7 @@
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 
 export type TTrustRuleStatus = "ACTIVE" | "INACTIVE";
@@ -54,7 +55,7 @@ export const fetchTrustRules = async (
   console.log("🔍 fetchTrustRules URL:", url);
 
   try {
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: "GET",
       credentials: "include",   // ← Cookie automatic (browser)
       cache: "no-store",

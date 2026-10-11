@@ -124,15 +124,15 @@ export default function ProfileManagement() {
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-6 xl:p-8">
+    <div className="mx-auto w-full max-w-4xl space-y-6">
       <Card className="overflow-hidden border-border/80 bg-surface shadow-surface">
         <CardContent className="p-0">
           <div className="flex flex-col gap-6 border-b border-border/80 bg-gradient-to-r from-primary/5 via-background to-surface p-6 md:flex-row md:items-start md:justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex min-w-0 items-center gap-4">
               <ProfilePhotoPicker name={user?.name || "Your profile photo"} />
-              <div>
-                <p className="text-lg font-semibold text-foreground">{user?.name || "Your account"}</p>
-                <p className="text-sm text-muted-foreground">{user?.email}</p>
+              <div className="min-w-0">
+                <p className="truncate text-lg font-semibold text-foreground">{user?.name || "Your account"}</p>
+                <p className="truncate text-sm text-muted-foreground">{user?.email}</p>
                 {user?.role && (
                   <Badge variant="outline" className="mt-2 border-primary/20 bg-primary/5 text-primary">
                     {user.role}

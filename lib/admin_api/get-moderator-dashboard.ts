@@ -4,6 +4,7 @@
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 export interface IModeratorStats {
   totalVerifications: number;
@@ -78,13 +79,13 @@ const EMPTY: IModeratorDashboard = {
 export const fetchModeratorDashboard = async (): Promise<IModeratorDashboard> => {
   try {
     const [verificationsRes, reportsRes] = await Promise.all([
-      fetch(apiUrl("/api/v1/verifications?limit=200"), {
+      apiFetch(apiUrl("/api/v1/verifications?limit=200"), {
         method: "GET",
         credentials: "include",
         cache: "no-store",
         headers: { Accept: "application/json" },
       }),
-      fetch(apiUrl("/api/v1/reports?limit=200"), {
+      apiFetch(apiUrl("/api/v1/reports?limit=200"), {
         method: "GET",
         credentials: "include",
         cache: "no-store",

@@ -14,6 +14,7 @@
  */
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 interface ApiEnvelope<T> {
   success: boolean;
@@ -81,7 +82,7 @@ async function sendJson<T>(
   body?: unknown,
 ): Promise<ApiResult<T>> {
   try {
-    const response = await fetch(apiUrl(path), {
+    const response = await apiFetch(apiUrl(path), {
       method,
       headers: body === undefined ? undefined : { "Content-Type": "application/json" },
       credentials: "include",

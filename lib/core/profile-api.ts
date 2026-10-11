@@ -17,6 +17,7 @@
  */
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 export interface ApiUser {
   id: string;
@@ -63,7 +64,7 @@ async function readEnvelope<T>(response: Response): Promise<ApiEnvelope<T> | nul
 /** POST/PATCH with a JSON body and the session cookie. */
 async function sendJson<T>(method: "GET" | "PATCH", path: string, body?: unknown): Promise<ApiResult<T>> {
   try {
-    const response = await fetch(apiUrl(path), {
+    const response = await apiFetch(apiUrl(path), {
       method,
       headers: body === undefined ? undefined : { "Content-Type": "application/json" },
       credentials: "include",
@@ -136,7 +137,7 @@ export async function uploadProfilePhoto(file: File): Promise<ApiResult<{ image?
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch(apiUrl("/api/v1/profile/me/photo"), {
+    const response = await apiFetch(apiUrl("/api/v1/profile/me/photo"), {
       method: "POST",
       credentials: "include",
       body: formData,

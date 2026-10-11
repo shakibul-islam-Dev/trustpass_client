@@ -15,6 +15,7 @@
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 export type TReportStatus = "PENDING" | "REVIEWED" | "RESOLVED" | "REJECTED";
 export type TReportReason =
@@ -105,7 +106,7 @@ export const fetchReports = async (
   console.log("🔍 fetchReports URL:", url);
 
   try {
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: "GET",
       credentials: "include",
       cache: "no-store",
@@ -153,7 +154,7 @@ export const fetchReportById = async (
   id: string
 ): Promise<IReportResponse | null> => {
   try {
-    const response = await fetch(apiUrl(`/api/v1/reports/${id}`), {
+    const response = await apiFetch(apiUrl(`/api/v1/reports/${id}`), {
       method: "GET",
       credentials: "include",
       cache: "no-store",

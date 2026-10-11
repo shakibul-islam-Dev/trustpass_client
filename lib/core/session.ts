@@ -21,6 +21,7 @@
  */
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 import { SERVER_URL } from "@/lib/core/env";
 
 export function isApiConfigured(): boolean {
@@ -65,7 +66,7 @@ export async function getSession(): Promise<Session> {
   let response: Response;
 
   try {
-    response = await fetch(apiUrl("/api/auth/get-session"), {
+    response = await apiFetch(apiUrl("/api/auth/get-session"), {
       method: "GET",
       // Required: the cookie belongs to the API server's host, so it only
       // travels when credentials are included.
@@ -99,7 +100,7 @@ export async function getSession(): Promise<Session> {
  */
 export async function signOut(): Promise<boolean> {
   try {
-    const response = await fetch(apiUrl("/api/v1/auth/logout"), {
+    const response = await apiFetch(apiUrl("/api/v1/auth/logout"), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -126,7 +127,7 @@ export async function getSocialAuthUrl(
   callbackURL = "/",
 ): Promise<string | null> {
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       apiUrl("/api/auth/sign-in/social"),
       {
         method: "POST",

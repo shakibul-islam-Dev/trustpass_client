@@ -3,6 +3,7 @@
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
+import { apiFetch } from "@/lib/core/api-fetch";
 
 export type TVerificationStatus =
   | "PENDING"
@@ -129,7 +130,7 @@ export const fetchVerifications = async (
   console.log("🔍 fetchVerifications URL:", url);
 
   try {
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: "GET",
       credentials: "include",
       cache: "no-store",
@@ -170,7 +171,7 @@ export const fetchVerificationById = async (
   id: string
 ): Promise<IVerificationResponse | null> => {
   try {
-    const response = await fetch(apiUrl(`/api/v1/verifications/${id}`), {
+    const response = await apiFetch(apiUrl(`/api/v1/verifications/${id}`), {
       method: "GET",
       credentials: "include",
       cache: "no-store",
@@ -198,7 +199,7 @@ export const fetchBusinessDocuments = async (
   businessId: string
 ): Promise<IVerificationDocument[]> => {
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       apiUrl(`/api/v1/businesses/${businessId}/documents`),
       {
         method: "GET",
