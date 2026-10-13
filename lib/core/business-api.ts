@@ -67,7 +67,7 @@ async function sendJson<T>(method: "GET" | "POST" | "PATCH", path: string, body?
   }
 }
 
-async function sendMultipart<T>(method: "POST", path: string, formData: FormData): Promise<ApiResult<T>> {
+async function sendMultipart<T>(method: "POST" | "PATCH", path: string, formData: FormData): Promise<ApiResult<T>> {
   try {
     const response = await apiFetch(apiUrl(path), {
       method,
@@ -132,19 +132,61 @@ export async function createBusiness(payload: CreateBusinessPayload): Promise<Ap
 // PATCH /api/v1/businesses/:id
 // ---------------------------------------------------------------------------
 
+/** Optional files for PATCH — multer fields "logo" (single) and "cover" (single). */
+export interface BusinessImageFiles {
+  logo?: File;
+  cover?: File;
+}
+
 export interface UpdateBusinessPayload {
   name?: string;
   description?: string;
+  categoryId?: string;
+  businessType?: "INDIVIDUAL" | "COMPANY" | "NGO" | "GOVERNMENT" | "OTHER";
   websiteUrl?: string;
   instaUrl?: string;
   tiktokUrl?: string;
   contactEmail?: string;
   contactPhone?: string;
-  businessType?: "INDIVIDUAL" | "COMPANY" | "NGO" | "GOVERNMENT" | "OTHER";
 }
 
-export async function updateBusiness(id: string, payload: UpdateBusinessPayload): Promise<ApiResult<IBusiness>> {
-  return sendJson<IBusiness>("PATCH", `/api/v1/businesses/${encodeURIComponent(id)}`, payload);
+/**
+ * PATCH /api/v1/businesses/:id
+ *
+ * The route runs the `uploadBusinessImages` multer middleware, so when any file
+ * is included the request must be multipart/form-data. JSON is used when there
+ * are no files. Only non-empty scalars are sent, because the server's zod
+ * `updateBusinessSchema` rejects "" for URL/enum/uuid/email/phone fields;
+ * `description` is always sent so it can be cleared.
+ */
+export async function updateBusiness(
+  id: string,
+  payload: UpdateBusinessPayload,
+  files?: BusinessImageFiles,
+): Promise<ApiResult<IBusiness>> {
+  const hasFiles = Boolean(files?.logo || files?.cover);
+  if (!hasFiles) {
+    return sendJson<IBusiness>("PATCH", `/api/v1/businesses/${encodeURIComponent(id)}`, payload);
+  }
+
+  const formData = new FormData();
+  if (payload.name) formData.append("name", payload.name);
+  if (payload.description !== undefined) formData.append("description", payload.description);
+  if (payload.categoryId) formData.append("categoryId", payload.categoryId);
+  if (payload.businessType) formData.append("businessType", payload.businessType);
+  if (payload.websiteUrl) formData.append("websiteUrl", payload.websiteUrl);
+  if (payload.instaUrl) formData.append("instaUrl", payload.instaUrl);
+  if (payload.tiktokUrl) formData.append("tiktokUrl", payload.tiktokUrl);
+  if (payload.contactEmail) formData.append("contactEmail", payload.contactEmail);
+  if (payload.contactPhone) formData.append("contactPhone", payload.contactPhone);
+  if (files?.logo) formData.append("logo", files.logo);
+  if (files?.cover) formData.append("cover", files.cover);
+
+  return sendMultipart<IBusiness>(
+    "PATCH",
+    `/api/v1/businesses/${encodeURIComponent(id)}`,
+    formData,
+  );
 }
 
 // ---------------------------------------------------------------------------

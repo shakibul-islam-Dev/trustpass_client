@@ -5,9 +5,10 @@
  * cookie via `credentials: "include"` (same rule as profile-api / business-api).
  *
  * Endpoints used:
+ *   GET   /api/v1/products/:id            - get one product
  *   GET   /api/v1/businesses/:id/products - products of one business
- *   POST  /api/v1/products                - create a product
- *   PATCH /api/v1/products/:id            - update a product
+ *   POST  /api/v1/products                - create a product (multipart)
+ *   PATCH /api/v1/products/:id            - update a product (multipart)
  *   DELETE /api/v1/products/:id           - delete a product
  *
  * Every call returns `{ ok, message, data }`; errors never throw.
@@ -47,17 +48,24 @@ async function readEnvelope<T>(response: Response): Promise<ApiEnvelope<T> | nul
   }
 }
 
+/** One image stored on a product. The server stores these as `[{ url, publicId }]`. */
+export interface ProductImage {
+  url: string;
+  publicId: string;
+}
+
 /** A product exactly as the server stores/returns it. */
 export interface ProductRecord {
   id: string;
   businessId: string;
   categoryId: string | null;
   name: string;
+  slug?: string;
   description: string | null;
   price: number;
   currency: string;
   stock: number;
-  images: string[];
+  images: ProductImage[];
   status: "DRAFT" | "ACTIVE" | "INACTIVE" | "DELETED";
   createdAt?: string;
   updatedAt?: string;
@@ -72,8 +80,20 @@ export interface ProductInput {
   price?: number;
   currency?: string;
   stock?: number;
-  images?: string[];
   status?: "DRAFT" | "ACTIVE" | "INACTIVE" | "DELETED";
+}
+
+/**
+ * Image changes for updateProduct. The server matches images by `publicId`:
+ * - every publicId listed in `retainImagePublicIds` is kept
+ * - anything not listed is removed (and deleted from Cloudinary)
+ * - `newImages` are uploaded as multipart files under the `images` field
+ *
+ * Omit `retainImagePublicIds` to keep every current image untouched.
+ */
+export interface ProductImageChange {
+  retainImagePublicIds?: string[];
+  newImages?: File[];
 }
 
 async function sendJson<T>(
@@ -93,6 +113,14 @@ async function sendJson<T>(
     console.error("Product API request failed:", error);
     return { ok: false, message: "Could not reach the server. Please try again.", data: null };
   }
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/products/:id
+// ---------------------------------------------------------------------------
+
+export async function getProduct(id: string): Promise<ApiResult<ProductRecord>> {
+  return sendJson<ProductRecord>("GET", `/api/v1/products/${encodeURIComponent(id)}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -122,29 +150,46 @@ export async function createProduct(
     price: input.price ?? Number(input.priceString ?? 0),
     currency: input.currency || "BDT",
     stock: input.stock ?? 0,
-    images: input.images ?? [],
     status: input.status ?? "DRAFT",
   });
 }
 
 // ---------------------------------------------------------------------------
-// PATCH /api/v1/products/:id
+// PATCH /api/v1/products/:id   (multipart/form-data)
 // ---------------------------------------------------------------------------
 
 export async function updateProduct(
   id: string,
   input: ProductInput,
+  imageChange: ProductImageChange = {},
 ): Promise<ApiResult<ProductRecord>> {
-  return sendJson<ProductRecord>("PATCH", `/api/v1/products/${encodeURIComponent(id)}`, {
-    name: input.name,
-    categoryId: input.categoryId || undefined,
-    description: input.description || undefined,
-    price: input.price ?? (input.priceString ? Number(input.priceString) : undefined),
-    currency: input.currency || undefined,
-    stock: input.stock,
-    images: input.images,
-    status: input.status,
-  });
+  try {
+    const formData = new FormData();
+    if (input.name !== undefined && input.name !== "") formData.set("name", input.name);
+    if (input.categoryId) formData.set("categoryId", input.categoryId);
+    if (input.description !== undefined) formData.set("description", input.description);
+    const price = input.price ?? (input.priceString ? Number(input.priceString) : undefined);
+    if (price !== undefined && !Number.isNaN(price)) formData.set("price", String(price));
+    if (input.currency) formData.set("currency", input.currency);
+    if (input.stock !== undefined) formData.set("stock", String(input.stock));
+    if (input.status) formData.set("status", input.status);
+    if (imageChange.retainImagePublicIds && imageChange.retainImagePublicIds.length > 0) {
+      formData.set("retainImagePublicIds", imageChange.retainImagePublicIds.join(","));
+    }
+    for (const file of imageChange.newImages ?? []) {
+      formData.append("images", file);
+    }
+
+    const response = await apiFetch(apiUrl(`/api/v1/products/${encodeURIComponent(id)}`), {
+      method: "PATCH",
+      credentials: "include",
+      body: formData,
+    });
+    return toResult<ProductRecord>(await readEnvelope(response), `Update failed (${response.status}).`);
+  } catch (error) {
+    console.error("Product update failed:", error);
+    return { ok: false, message: "Could not reach the server. Please try again.", data: null };
+  }
 }
 
 // ---------------------------------------------------------------------------
