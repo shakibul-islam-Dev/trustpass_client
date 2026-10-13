@@ -164,7 +164,15 @@ export function logInternalError(
     console.error(`[api] ${context}`, extra ?? "");
     return;
   }
-  console.error(`[api] ${context}`, error, extra ?? "");
+  // Next's browser console can render logged objects as `{}`. Serialize
+  // response details in development so status codes and API error bodies are
+  // visible when diagnosing a failed request.
+  const printableError =
+    error !== null && typeof error === "object"
+      ? JSON.stringify(error)
+      : error;
+  const printableExtra = extra ? JSON.stringify(extra) : "";
+  console.error(`[api] ${context}`, printableError, printableExtra);
 }
 
 
@@ -204,7 +212,11 @@ export async function readApiError(
   const serverMessage =
     typeof envelope?.message === "string" ? envelope.message : null;
 
-  logInternalError(`${context}: server responded`, body, { status: response.status });
+  logInternalError(`${context}: server responded`, body, {
+    status: response.status,
+    url: response.url,
+    contentType: response.headers.get("content-type"),
+  });
 
   // Per-field detail beats the generic envelope message. The forms send every
   // value unvalidated, so this is normally the only specific feedback there is.

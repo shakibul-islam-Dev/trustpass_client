@@ -2,9 +2,7 @@ import type { NextConfig } from "next";
 
 const apiServerUrl = (
   process.env.NEXT_PUBLIC_SERVER_URL ||
-  (process.env.NODE_ENV === "production"
-    ? "https://trust-pass-server.vercel.app"
-    : "http://localhost:5000")
+  "https://trust-pass-server.vercel.app"
 ).replace(/\/$/, "");
 
 const nextConfig: NextConfig = {
