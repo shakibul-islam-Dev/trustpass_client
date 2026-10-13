@@ -13,6 +13,7 @@ export default async function Home() {
 
   return (
     <div>
+
       <SearchHero categories={categories} />
       <Categories categories={categories} error={error} />
     </div>

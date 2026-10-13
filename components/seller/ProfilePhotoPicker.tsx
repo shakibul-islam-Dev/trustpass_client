@@ -53,7 +53,7 @@ export default function ProfilePhotoPicker({ name = "Your profile photo", onSele
     }
 
     // Replace the temp preview with the server-hosted photo.
-    const uploadedUrl = result.data?.image;
+    const uploadedUrl = result.data?.photoUrl;
     if (uploadedUrl) setPreviewUrl(uploadedUrl);
     setStatus("success");
   };

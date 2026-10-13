@@ -357,7 +357,7 @@ real frontend origins.
 |---|---|
 | `getSession()` | `GET /api/auth/get-session`. Returns `{ session, user }`. Never throws — a network failure resolves to "signed out" rather than crashing the page. |
 | `signOut()` | `POST /api/v1/auth/logout`. Deletes the session on the server. |
-| `signInWithSocial(provider, callbackURL)` | Asks the server for the Google/Facebook authorize URL and sends the browser there. |
+| `signInWithSocial(provider, callbackURL)` | Asks the server for the Google authorize URL and sends the browser there. |
 
 ### Client — `lib/core/roles.ts`
 

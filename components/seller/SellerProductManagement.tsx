@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, ImagePlus, PencilLine, Plus, Search, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { AlertCircle, Eye, ImagePlus, PencilLine, Plus, Search, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -88,6 +89,13 @@ interface SellerProductManagementProps {
   allowDelete?: boolean;
   onSave?: (product: Omit<ProductRecord, "id">, id?: string) => void | Promise<void>;
   onDelete?: (id: string) => void | Promise<void>;
+  /**
+   * Called with the currently displayed products whenever they change.
+   * Pass a stable setter (e.g. `setProducts`) so a parent can show stats.
+   */
+  onProductsChange?: (products: ProductRecord[]) => void;
+  /** When set, each product row also links to its detail page. */
+  detailHref?: (product: ProductRecord) => string;
 }
 
 export default function SellerProductManagement({
@@ -101,6 +109,8 @@ export default function SellerProductManagement({
   allowDelete = true,
   onSave,
   onDelete,
+  onProductsChange,
+  detailHref,
 }: SellerProductManagementProps) {
   const [serverProducts, setServerProducts] = useState<ProductRecord[] | null>(null);
   const [loading, setLoading] = useState(isLoading);
@@ -112,8 +122,14 @@ export default function SellerProductManagement({
     if (!businessId) return;
     let active = true;
 
-    setLoading(true);
-    setLoadError(null);
+    // Reset the loading state before the fetch. Done in a microtask so the
+    // setState calls don't run synchronously inside the effect.
+    void Promise.resolve().then(() => {
+      if (!active) return;
+      setLoading(true);
+      setLoadError(null);
+    });
+
     void getBusinessProducts(businessId)
       .then((result) => {
         if (!active) return;
@@ -135,6 +151,11 @@ export default function SellerProductManagement({
   const [localProducts, setLocalProducts] = useState<ProductRecord[] | null>(null);
   const products =
     (businessId ? serverProducts : localProducts) ?? incomingProducts ?? emptyProducts;
+
+  // Let a parent page show stats without fetching the products a second time.
+  useEffect(() => {
+    onProductsChange?.(products);
+  }, [products, onProductsChange]);
   const [query, setQuery] = useState("");
   const [editorOpen, setEditorOpen] = useState(false);
   const [draft, setDraft] = useState<ProductRecord>(emptyProduct);
@@ -299,6 +320,15 @@ export default function SellerProductManagement({
                 </div>
                 <p className="font-semibold tabular-nums text-foreground">{product.price}</p>
                 <div className="flex gap-2">
+                  {detailHref && (
+                    <Link
+                      href={detailHref(product)}
+                      className={buttonVariants({ variant: "outline", size: "sm" })}
+                    >
+                      <Eye className="size-4" />
+                      Details
+                    </Link>
+                  )}
                   {allowEdit && (
                     <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => openEdit(product)}>
                       <PencilLine className="size-4" />

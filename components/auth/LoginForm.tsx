@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { GoogleIcon, FacebookIcon } from "@/components/auth/social-icons";
+import { GoogleIcon } from "@/components/auth/social-icons";
 import { safeApiMessage, safeThrownError } from "@/lib/core/api-error";
 import { isApiConfigured, loginWithPassword } from "@/lib/core/auth-api";
 import {
@@ -89,7 +89,7 @@ export default function LoginForm() {
   // SOCIAL LOGIN  ->  handled by the Live API
   // ==========================================
 
-  const handleSocialLogin = async (provider: "google" | "facebook") => {
+  const handleSocialLogin = async (provider: "google") => {
     setErrorMessage(null);
     setSuccessMessage(null);
 
@@ -212,7 +212,7 @@ export default function LoginForm() {
       </div>
 
       {/* Social Login */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3">
         <Button
           type="button"
           variant="outline"
@@ -221,16 +221,6 @@ export default function LoginForm() {
         >
           <GoogleIcon className="size-4.5 shrink-0" />
           Google
-        </Button>
-
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => handleSocialLogin("facebook")}
-          className="h-12 w-full gap-2.5 rounded-xl border-border/80 bg-background/70 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:bg-surface-secondary"
-        >
-          <FacebookIcon className="size-4.5 shrink-0" />
-          Facebook
         </Button>
       </div>
     </AuthShell>
