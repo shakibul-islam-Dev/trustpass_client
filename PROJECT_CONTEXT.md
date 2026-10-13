@@ -501,7 +501,7 @@ Within Shakibul's scope, authentication work includes login, registration, passw
 ### Live API
 
 ```text
-POST https://trust-pass-server.vercel.app/api/auth/sign-in/email
+POST https://trust-pass-server.vercel.app/api/v1/auth/login
 ```
 
 ### Required behavior

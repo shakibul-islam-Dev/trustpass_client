@@ -7,16 +7,13 @@
  * The server runs better-auth and exposes it under two prefixes that share
  * ONE user and session store:
  *
- * - `/api/auth/*`    — better-auth's own routes: sign-in/email (login),
- *                      get-session, social sign-in.
+ * - `/api/auth/*`    — better-auth's own routes: get-session, social sign-in.
  * - `/api/v1/auth/*` — the hand-written REST routes: register, resend-otp,
- *                      verify-otp (the registration / email-verification
- *                      flow).
+ *                      verify-otp, and login.
  *
- * LOGIN uses `/api/auth/sign-in/email`. That is what fixes the "wrong
- * password gets an OTP" bug from the frontend's side: the API checks the
- * password first and answers a plain 401 when it does not match, so no OTP
- * email is ever sent for a failed login.
+ * Login uses the server's `/api/v1/auth/login` wrapper so account verification
+ * and status checks run in addition to password validation. The server checks
+ * the password first, so an incorrect password cannot trigger an OTP email.
  *
  * The server runs `requireEmailVerification: true`, so a new account has to
  * verify its address before it can sign in — that is why registration ends in
@@ -27,6 +24,7 @@
 import { apiUrl } from "@/lib/core/api-url";
 import { apiFetch } from "@/lib/core/api-fetch";
 import { readApiError } from "@/lib/core/api-error";
+import { getSession } from "@/lib/core/session";
 
 /**
  * Kept for callers that want to know an API origin exists. It always does:
@@ -86,7 +84,7 @@ export type LoginResult =
 /**
  * Signs the user in with email + password against the API.
  *
- *   POST /api/auth/sign-in/email
+ *   POST /api/v1/auth/login
  *
  * The server checks the password first and answers
  * `401 "Invalid email or password"` when it does not match. A wrong password
@@ -102,12 +100,22 @@ export async function loginWithPassword(
   email: string,
   password: string,
 ): Promise<LoginResult> {
-  const response = await postJson("/api/auth/sign-in/email", {
+  const response = await postJson("/api/v1/auth/login", {
     email: normalizeEmail(email),
     password,
   });
 
   if (response.ok) {
+    const session = await getSession();
+    if (!session.user) {
+      return {
+        ok: false,
+        status: response.status,
+        message:
+          "The server accepted your login but did not establish a session. Please try again.",
+      };
+    }
+
     return { ok: true };
   }
 
@@ -122,15 +130,7 @@ export async function loginWithPassword(
   };
 }
 
-/* ---------------------------------------------------------------------------
- * OTP ENDPOINTS
- * ---------------------------------------------------------------------------
- * Both are live on the server and part of the register flow, because the server
- * enforces `requireEmailVerification: true`. Without them a new account exists
- * but can never sign in.
- * ------------------------------------------------------------------------- */
 
-/** Issues a fresh code. Answers 200 with a deliberately vague message. */
 export async function resendOtp(email: string): Promise<Response> {
   return postJson("/api/v1/auth/resend-otp", {
     email: normalizeEmail(email),
@@ -142,28 +142,15 @@ export type VerifyOtpResult =
   | {
       ok: false;
       status: number;
-      /** Raw `message` from the body, for the safe-message layer to vet. */
+
       serverMessage: string | null;
-      /**
-       * 400 from the server, which means either a wrong/expired code or an
-       * address that is already verified. The two are indistinguishable here.
-       */
+
       invalidCode: boolean;
-      /** The original response, unread. See `LoginResult.response`. */
+
       response: Response;
     };
 
-/**
- * Verifies the 6-digit code. On success the address is marked verified and the
- * user is signed in at the same time — the server sets the session cookie and
- * sends the user back in the body.
- *
- * The returned `user` is what tells the caller where to send people next, since
- * the role decides the dashboard. This function does NOT try to read the
- * Set-Cookie header to check whether sign-in happened: browsers block scripts
- * from reading that header, so the check always reported "no session" and
- * kicked a correctly verified user back to the password screen.
- */
+
 export async function verifyOtp(
   email: string,
   otp: string,
@@ -189,19 +176,7 @@ export async function verifyOtp(
   };
 }
 
-/**
- * Creates the account. The server answers `{success:true, data:{email}}`.
- *
- * The message it returns says a code was sent. Whether mail actually went out
- * is the server's business, so this function treats a 201 as "the account
- * exists" and nothing more — the caller moves to the OTP screen either way.
- *
- * `role` is restricted to the two self-service roles. The server's validation
- * schema also accepts MODERATOR and ADMIN, so a caller could otherwise make an
- * ADMIN or MODERATOR account for itself. Server-side that is a privilege
- * escalation; it is blocked here as well so the mistake cannot be made from
- * this UI.
- */
+
 export async function registerAccount(body: {
   name: string;
   email: string;

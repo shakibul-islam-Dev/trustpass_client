@@ -21,9 +21,8 @@ import {
  * The sign-in screen (renders at /auth/login).
  *
  * One step, no OTP: the Live API checks the email + password via
- * `POST /api/auth/sign-in/email` and answers a plain 401 when the password is
- * wrong — no OTP email is sent, so there is no "verify email" screen to fall
- * into after a failed login.
+ * `POST /api/v1/auth/login`. The server checks the password before email
+ * verification status, so a wrong password cannot trigger an OTP email.
  *
  * Plain `useState` and `fetch` (through `loginWithPassword`) — readable top
  * to bottom.
@@ -39,7 +38,7 @@ export default function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ==========================================
-  // SIGN IN  ->  POST /api/auth/sign-in/email
+  // SIGN IN  ->  POST /api/v1/auth/login
   // ==========================================
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
