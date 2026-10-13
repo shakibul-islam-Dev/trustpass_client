@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { roleSidebars } from "@/lib/sidebarData";
 import { roleLabel, type ApiRole } from "@/lib/core/roles";
 import { signOut } from "@/lib/core/session";
+import { useUnreadNotifications } from "@/hooks/use-unread-notifications";
 import {
   Sidebar,
   SidebarContent,
@@ -32,6 +33,7 @@ export default function DashboardSideBar({ role, name }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { setOpenMobile, isMobile } = useSidebar();
+  const unreadNotifications = useUnreadNotifications();
 
   // `roleSidebars` covers every ApiRole, so this is a total lookup. The fallback
   // is defensive only — an unknown role was already narrowed to CUSTOMER by
@@ -91,6 +93,7 @@ export default function DashboardSideBar({ role, name }: SidebarProps) {
               {currentSidebar.items.map((item) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
+                const isNotifications = item.href.endsWith("/notifications");
 
                 return (
                   <SidebarMenuItem key={item.href}>
@@ -115,6 +118,12 @@ export default function DashboardSideBar({ role, name }: SidebarProps) {
                           }`}
                         />
                         <span className="flex-1 text-left">{item.name}</span>
+
+                        {isNotifications && unreadNotifications > 0 && (
+                          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-[10px] font-semibold text-white dark:bg-indigo-500">
+                            {unreadNotifications > 99 ? "99+" : unreadNotifications}
+                          </span>
+                        )}
 
                         {isActive && (
                           <div className="ml-auto w-1.5 h-4 bg-indigo-600 dark:bg-indigo-400 rounded-full" />

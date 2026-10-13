@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, Building2, Check, MapPin, Paperclip } from "lucide-react";
+import { ArrowLeft, ArrowRight, Building2, Check, Globe, MapPin, Paperclip } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +23,9 @@ export interface BusinessDraft {
   name: string;
   email: string;
   phone: string;
+  websiteUrl: string;
+  instaUrl: string;
+  tiktokUrl: string;
   category: string;
   address: string;
   city: string;
@@ -52,6 +55,9 @@ export default function BusinessCreationWizard({ onSubmit }: BusinessCreationWiz
     name: "",
     email: "",
     phone: "",
+    websiteUrl: "",
+    instaUrl: "",
+    tiktokUrl: "",
     category: "",
     address: "",
     city: "",
@@ -165,6 +171,25 @@ export default function BusinessCreationWizard({ onSubmit }: BusinessCreationWiz
             <div className="space-y-2">
               <Label htmlFor="new-business-phone">Phone number</Label>
               <Input id="new-business-phone" type="tel" autoComplete="tel" placeholder="+880 1XXX-XXXXXX" value={draft.phone} onChange={(event) => updateDraft("phone", event.target.value)} />
+            </div>
+            <div className="space-y-1 border-t border-border pt-4 sm:col-span-2">
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                <Globe className="size-4 text-primary" />
+                Online presence <span className="font-normal text-muted-foreground">(optional)</span>
+              </p>
+              <p className="text-xs text-muted-foreground">Share your website and social pages so customers can find and trust you.</p>
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="new-business-website">Website</Label>
+              <Input id="new-business-website" type="url" inputMode="url" placeholder="https://example.com" value={draft.websiteUrl} onChange={(event) => updateDraft("websiteUrl", event.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-business-insta">Instagram</Label>
+              <Input id="new-business-insta" type="url" inputMode="url" placeholder="https://instagram.com/…" value={draft.instaUrl} onChange={(event) => updateDraft("instaUrl", event.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-business-tiktok">TikTok</Label>
+              <Input id="new-business-tiktok" type="url" inputMode="url" placeholder="https://tiktok.com/…" value={draft.tiktokUrl} onChange={(event) => updateDraft("tiktokUrl", event.target.value)} />
             </div>
           </div>
         )}

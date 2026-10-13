@@ -8,7 +8,7 @@
  * Endpoints used:
  *   GET   /api/v1/users/me        - current user
  *   PATCH /api/v1/users/me        - update name / phone / gender
- *   GET   /api/v1/profile/me      - current profile (about/links)
+ *   GET   /api/v1/profile/me      - current profile (links)
  *   PATCH /api/v1/profile/me      - update profile (links)
  *   POST  /api/v1/profile/me/photo- upload a profile photo (multipart, field "file")
  *
@@ -105,10 +105,9 @@ export async function updateMe(payload: UpdateMePayload): Promise<ApiResult<ApiU
 
 export interface ApiProfile {
   id?: string;
-  userId?: string;
-  about?: string | null;
+  user_id?: string;
+  profile_photo?: string | null;
   links?: string[] | null;
-  image?: string | null;
 }
 
 export async function getMyProfile(): Promise<ApiResult<ApiProfile>> {
@@ -120,7 +119,6 @@ export async function getMyProfile(): Promise<ApiResult<ApiProfile>> {
 // ---------------------------------------------------------------------------
 
 export interface UpdateProfilePayload {
-  about?: string;
   links?: string[];
 }
 
@@ -132,7 +130,11 @@ export async function updateMyProfile(payload: UpdateProfilePayload): Promise<Ap
 // POST /api/v1/profile/me/photo  (multipart, field "file")
 // ---------------------------------------------------------------------------
 
-export async function uploadProfilePhoto(file: File): Promise<ApiResult<{ image?: string; publicId?: string }>> {
+export interface UploadedPhoto {
+  photoUrl?: string;
+}
+
+export async function uploadProfilePhoto(file: File): Promise<ApiResult<UploadedPhoto>> {
   try {
     const formData = new FormData();
     formData.append("file", file);
@@ -143,7 +145,7 @@ export async function uploadProfilePhoto(file: File): Promise<ApiResult<{ image?
       body: formData,
     });
 
-    return toResult<{ image?: string; publicId?: string }>(
+    return toResult<UploadedPhoto>(
       await readEnvelope(response),
       `Upload failed (${response.status}).`,
     );

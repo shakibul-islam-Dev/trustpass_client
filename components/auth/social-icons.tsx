@@ -27,15 +27,3 @@ export function GoogleIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-
-export function FacebookIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
-      <circle cx="12" cy="12" r="11.5" fill="#1877F2" />
-      <path
-        fill="#fff"
-        d="M15.7 8.5h-1.9c-.4 0-.8.3-.8.9v1.5h2.6l-.3 2.6h-2.3v6.6h-2.8v-6.6H7.7V10.9h2.5V9.2c0-1.9 1.3-3.4 3.4-3.4h2.1v2.7z"
-      />
-    </svg>
-  );
-}

@@ -1,747 +1,100 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
-  ArrowUpRight,
-  BadgeCheck,
-  Building2,
-  ChartNoAxesCombined,
   CircleDollarSign,
-  ClipboardCheck,
-  Compass,
+  ClipboardList,
   Package,
-  ShieldCheck,
-  Store,
+  ShoppingBag,
+  type LucideIcon,
 } from "lucide-react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import BuisnessUpdateForm from "@/components/buisness/BuisnessUpdateForm";
-import { useAuth } from "@/hooks/use-auth";
-import { getBusinesses } from "@/lib/business-api/all-business";
-import {
-  createBusiness,
-  getBusinessDocuments,
-  getTrustScoreHistory,
-  uploadBusinessDocument,
-  type BusinessDocument,
-  type BusinessDocumentType,
-  type TrustScoreHistoryEntry,
-} from "@/lib/core/business-api";
-import { getCategories } from "@/lib/categories-api";
-import { getProductsForBusiness, handleCreateProduct } from "@/lib/products-api/create-products";
-import type { IBusiness, IBusinessesResponse } from "@/types/business";
-import type { ICategory } from "@/types/categories";
-import BusinessDocumentStatuses, { type BusinessDocumentStatusItem } from "./BusinessDocumentStatuses";
-import BusinessCreationWizard, { type BusinessDraft } from "./BusinessCreationWizard";
-import { requiredBusinessDocuments } from "./BusinessDocumentManager";
-import SellerBusinessDirectory from "./SellerBusinessDirectory";
-import SellerProductManagement, { type ProductRecord } from "./SellerProductManagement";
-import ProfilePhotoPicker from "./ProfilePhotoPicker";
-import TrustScoreBreakdown from "./TrustScoreBreakdown";
+import StatCards, { type StatItem } from "../dashboard/StatCard";
+import ReportsChart from "../dashboard/ReportsChart";
+import AnalyticsChart from "../dashboard/AnalyticsChart";
+import RecentOrders from "../dashboard/RecentOrders";
+import TopSellingProducts from "../dashboard/TopSellingProducts";
+import { useSellerDashboardData } from "@/hooks/use-seller-dashboard";
 
-/** Wizard document ids -> server document types. */
-const WIZARD_DOCUMENT_TYPES: Record<string, BusinessDocumentType> = {
-  "trade-license": "TRADE_LICENSE",
-  nid: "NID",
-  tin: "TIN_CERTIFICATE",
-};
+/** Explains a metric that the backend cannot provide yet. */
+const PENDING = "Awaiting the orders API";
 
-const toDocumentStatusItem = (document: BusinessDocument): BusinessDocumentStatusItem => ({
-  id: document.id,
-  name: document.documentType.replace(/_/g, " "),
-  status: document.status,
-  updatedAt: document.updatedAt ? new Date(document.updatedAt).toLocaleDateString() : undefined,
-  note: document.rejectionReason || undefined,
+/** Shown by the order/sales cards until the backend has order data. */
+const ORDERS_PENDING_MESSAGE =
+  "Order and sales data is not available yet — the backend has no orders API. This card fills in automatically once it ships.";
+
+const pendingStat = (
+  id: string,
+  label: string,
+  icon: LucideIcon,
+): StatItem => ({
+  id,
+  value: "—",
+  label,
+  icon,
+  iconColor: "text-muted-foreground",
+  bgColor: "bg-surface-secondary",
+  caption: PENDING,
 });
 
-const toProductRecord = (
-  product: {
-    id: string | number;
-    category_id: string;
-    name: string;
-    description?: string | null;
-    price: number | string;
-    currency?: string;
-    stock?: number | null;
-    status?: string;
-  },
-  categories: ICategory[],
-): ProductRecord => {
-  const category = categories.find((item) => item.id === product.category_id);
-  const status = product.status?.toLowerCase();
-
-  return {
-    id: String(product.id),
-    name: product.name,
-    category: category?.name ?? product.category_id,
-    categoryId: product.category_id,
-    price: `${product.currency ?? "BDT"} ${Number(product.price).toLocaleString()}`,
-    stock: product.stock ?? 0,
-    status: status === "active" || status === "published" ? "Published" : "Draft",
-    description: product.description ?? "",
-  };
-};
-
-const sections = [
-  { id: "overview", label: "Overview", icon: ChartNoAxesCombined },
-  { id: "business", label: "Business setup", icon: Building2 },
-  { id: "products", label: "Products", icon: Package },
-  { id: "directory", label: "Marketplace", icon: Compass },
-  { id: "verification", label: "Verification", icon: ShieldCheck },
-] as const;
-
-type SectionId = (typeof sections)[number]["id"];
-
-const verificationPresentation: Record<
-  IBusiness["verificationStatus"],
-  { label: string; variant: "success" | "warning" | "danger" | "outline" }
-> = {
-  VERIFIED: { label: "Verified", variant: "success" },
-  PENDING: { label: "Under review", variant: "warning" },
-  REJECTED: { label: "Action required", variant: "danger" },
-  SUSPENDED: { label: "Suspended", variant: "danger" },
-  UNVERIFIED: { label: "Not submitted", variant: "outline" },
-};
-
 export default function SellerDashboard() {
-  const { user } = useAuth();
-  const router = useRouter();
-  const [activeSection, setActiveSection] = useState<SectionId>("overview");
-  const [businesses, setBusinesses] = useState<IBusiness[]>([]);
-  const [selectedBusinessId, setSelectedBusinessId] = useState("");
-  const [businessesLoading, setBusinessesLoading] = useState(true);
-  const [businessesError, setBusinessesError] = useState<string | null>(null);
+  const { stats, productStatusSegments, publishedPercentage, isLoading, error } =
+    useSellerDashboardData();
 
-  const [documents, setDocuments] = useState<BusinessDocument[]>([]);
-  const [documentsLoading, setDocumentsLoading] = useState(false);
-  const [documentsError, setDocumentsError] = useState<string | null>(null);
-  const [trustHistory, setTrustHistory] = useState<TrustScoreHistoryEntry[]>([]);
-  const [dashboardMessage, setDashboardMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
-
-  const [productCategories, setProductCategories] = useState<ICategory[]>([]);
-  const [productCategoriesError, setProductCategoriesError] = useState<string | null>(null);
-  const [products, setProducts] = useState<ProductRecord[]>([]);
-  const [productsLoading, setProductsLoading] = useState(false);
-  const [productsError, setProductsError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    let active = true;
-
-    const loadBusinesses = async () => {
-      setBusinessesLoading(true);
-      try {
-        const response: IBusinessesResponse = await getBusinesses({ page: 1, limit: 100 });
-        if (!response.success || !response.data) {
-          throw new Error(response.error || response.message || "Could not load your business profiles.");
-        }
-
-        const ownedBusinesses = response.data.filter((business) => business.ownerId === user.id);
-        if (active) {
-          setBusinesses(ownedBusinesses);
-          setSelectedBusinessId((current) =>
-            ownedBusinesses.some((business) => business.id === current)
-              ? current
-              : ownedBusinesses[0]?.id ?? "",
-          );
-          setBusinessesError(null);
-        }
-      } catch (error) {
-        console.error("Could not load seller businesses:", error);
-        if (active) {
-          setBusinessesError(error instanceof Error ? error.message : "Could not load your business profiles.");
-        }
-      } finally {
-        if (active) setBusinessesLoading(false);
-      }
-    };
-
-    void loadBusinesses();
-    return () => {
-      active = false;
-    };
-  }, [user?.id]);
-
-  useEffect(() => {
-    let active = true;
-
-    void getCategories()
-      .then((response) => {
-        if (!response.success || !response.data) {
-          throw new Error(response.error || response.message || "Could not load product categories.");
-        }
-        if (active) setProductCategories(response.data);
-      })
-      .catch((error: unknown) => {
-        console.error("Could not load product categories:", error);
-        if (active) setProductCategoriesError(error instanceof Error ? error.message : "Could not load product categories.");
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!selectedBusinessId) {
-      setDocuments([]);
-      setTrustHistory([]);
-      return;
-    }
-    let active = true;
-
-    setDocumentsLoading(true);
-    setDocumentsError(null);
-    void Promise.all([getBusinessDocuments(selectedBusinessId), getTrustScoreHistory(selectedBusinessId)])
-      .then(([documentsResult, trustResult]) => {
-        if (!active) return;
-        if (!documentsResult.ok || !documentsResult.data) {
-          setDocumentsError(documentsResult.message);
-        } else {
-          setDocuments(documentsResult.data);
-        }
-        if (trustResult.ok && trustResult.data) {
-          setTrustHistory(trustResult.data);
-        }
-      })
-      .finally(() => {
-        if (active) setDocumentsLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [selectedBusinessId]);
-
-  useEffect(() => {
-    if (!selectedBusinessId) return;
-
-    let active = true;
-
-    void Promise.resolve().then(async () => {
-      if (!active) return;
-      setProductsLoading(true);
-      setProductsError(null);
-
-      try {
-        const apiProducts = await getProductsForBusiness(selectedBusinessId);
-        if (active) {
-          setProducts(apiProducts.map((product) => toProductRecord(product, productCategories)));
-        }
-      } catch (error) {
-        console.error("Could not load seller products:", error);
-        if (active) {
-          setProducts([]);
-          setProductsError(error instanceof Error ? error.message : "Could not load products.");
-        }
-      } finally {
-        if (active) setProductsLoading(false);
-      }
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [selectedBusinessId, productCategories]);
-
-  const handleBusinessSubmit = async (draft: BusinessDraft, files: Record<string, File>) => {
-    const createdResult = await createBusiness({
-      name: draft.name.trim(),
-      categoryId: draft.category,
-      contactEmail: draft.email.trim(),
-      contactPhone: draft.phone.trim(),
-      address: {
-        addressLine: draft.address.trim(),
-        city: draft.city.trim(),
-        district: draft.district.trim(),
-        division: draft.division,
-        postalCode: draft.postalCode.trim() || "0000",
-        country: "BANGLADESH",
-      },
-    });
-
-    if (!createdResult.ok || !createdResult.data) {
-      throw new Error(createdResult.message);
-    }
-    const created = createdResult.data;
-
-    let uploaded = 0;
-    for (const item of requiredBusinessDocuments) {
-      const file = files[item.id];
-      const documentType = WIZARD_DOCUMENT_TYPES[item.id];
-      if (!file || !documentType) continue;
-      const uploadResult = await uploadBusinessDocument(created.id, documentType, file);
-      if (!uploadResult.ok) {
-        throw new Error(`${item.label} upload failed: ${uploadResult.message}`);
-      }
-      uploaded += 1;
-    }
-
-    setBusinesses((current) => [created, ...current]);
-    setSelectedBusinessId(created.id);
-    setDashboardMessage({
-      tone: "success",
-      text: `Business "${created.name}" created${uploaded ? ` with ${uploaded} document${uploaded === 1 ? "" : "s"} uploaded` : ""}.`,
-    });
-  };
-
-  const saveProduct = async (product: Omit<ProductRecord, "id">, id?: string) => {
-    if (id) {
-      throw new Error("Editing existing products is not supported by the product API yet.");
-    }
-    if (!selectedBusinessId) {
-      throw new Error("Create a business profile before adding products.");
-    }
-
-    const price = Number(product.price);
-    if (!Number.isFinite(price) || price < 0) {
-      throw new Error("Enter a valid product price.");
-    }
-
-    await handleCreateProduct({
-      business_id: selectedBusinessId,
-      category_id: product.categoryId,
-      name: product.name.trim(),
-      description: product.description.trim() || undefined,
-      price,
-      currency: "BDT",
-      stock: product.stock,
-    });
-
-    try {
-      const apiProducts = await getProductsForBusiness(selectedBusinessId);
-      setProducts(apiProducts.map((apiProduct) => toProductRecord(apiProduct, productCategories)));
-      setProductsError(null);
-    } catch (error) {
-      console.error("Product was created but the list could not be refreshed:", error);
-      setProductsError(
-        error instanceof Error
-          ? `Product saved, but the list could not refresh: ${error.message}`
-          : "Product saved, but the list could not refresh. Reload to try again.",
-      );
-    }
-  };
-
-  const selectedBusiness = businesses.find((business) => business.id === selectedBusinessId);
-  const verification = selectedBusiness
-    ? verificationPresentation[selectedBusiness.verificationStatus]
-    : null;
-  const initials = (user?.name || "Seller")
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const statItems: StatItem[] = [
+    pendingStat("revenue", "Total Revenue", CircleDollarSign),
+    pendingStat("orders", "Total Orders", ShoppingBag),
+    {
+      id: "products",
+      value: isLoading ? "…" : String(stats.productCount),
+      label: "Total Products",
+      icon: Package,
+      iconColor: "text-primary",
+      bgColor: "bg-primary-soft",
+      caption: isLoading
+        ? undefined
+        : `${stats.publishedCount} published · ${stats.draftCount} draft`,
+    },
+    pendingStat("pending-orders", "Pending Orders", ClipboardList),
+  ];
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-7">
-      <header className="flex flex-col gap-6 rounded-3xl border border-border/70 bg-surface p-6 shadow-surface sm:flex-row sm:items-center sm:justify-between sm:p-8">
-        <div className="max-w-2xl">
-          <Badge variant="outline" className="mb-4 gap-1.5 border-primary/20 bg-primary/5 text-primary">
-            <Store className="size-3.5" />
-            Seller workspace
-          </Badge>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Welcome{user?.name ? `, ${user.name.split(" ")[0]}` : " back"}
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
-            Build your business profile, manage your product catalog, and grow customer trust—all in one place.
-          </p>
+    <div className="mx-auto w-full max-w-7xl space-y-6">
+      {error && (
+        <div
+          role="alert"
+          className="rounded-xl border border-danger/30 bg-danger/5 p-4 text-sm text-danger"
+        >
+          {error}
         </div>
-        <div className="flex items-center gap-4 rounded-2xl border border-border/70 bg-background/60 p-4 sm:min-w-64">
-          <Avatar className="size-12 border border-border">
-            <AvatarImage src={user?.image ?? undefined} alt="" />
-            <AvatarFallback className="bg-primary/10 font-semibold text-primary">{initials}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-foreground">{user?.name || "Seller account"}</p>
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">{user?.email}</p>
-          </div>
-          <BadgeCheck className="ml-auto size-5 shrink-0 text-primary" aria-label="Seller account" />
-        </div>
-      </header>
+      )}
 
-      <nav aria-label="Seller dashboard sections" className="overflow-x-auto border-b border-border">
-        <div role="tablist" aria-label="Seller dashboard" className="flex min-w-max gap-1">
-          {sections.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              id={`seller-tab-${id}`}
-              aria-selected={activeSection === id}
-              aria-controls={`seller-panel-${id}`}
-              onClick={() => setActiveSection(id)}
-              className={`inline-flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-                activeSection === id
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Icon className="size-4" />
-              {label}
-            </button>
-          ))}
-        </div>
-      </nav>
+      {/* 1. Top Section: 4 Stat Cards */}
+      <StatCards items={statItems} />
 
-      <section
-        id="seller-panel-overview"
-        role="tabpanel"
-        aria-labelledby="seller-tab-overview"
-        hidden={activeSection !== "overview"}
-        className="space-y-6"
-      >
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <OverviewCard
-            icon={Building2}
-            label="Business profile"
-            value={businessesLoading ? "Loading…" : businesses.length ? `${businesses.length} profile${businesses.length === 1 ? "" : "s"}` : "Get started"}
-            description={selectedBusiness ? selectedBusiness.name : "Create your first business profile"}
-            onClick={() => setActiveSection("business")}
-          />
-          <OverviewCard
-            icon={Package}
-            label="Product catalog"
-            value="Manage products"
-            description="Add products and keep your catalog current"
-            onClick={() => setActiveSection("products")}
-          />
-          <OverviewCard
-            icon={ShieldCheck}
-            label="Verification"
-            value={verification?.label ?? "Set up your profile"}
-            description={selectedBusiness ? "Current business review status" : "Verification starts with your business profile"}
-            onClick={() => setActiveSection("verification")}
-          />
-          <OverviewCard
-            icon={CircleDollarSign}
-            label="Payments"
-            value="View payments"
-            description="Open the fee checkout and payment history"
-            onClick={() => router.push("/dashboard/seller/payments")}
+      {/* 2. Middle Section: Reports Chart (2 cols) & Analytics Chart (1 col) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 w-full">
+          <ReportsChart title="Reports" valueLabel="Revenue" pendingMessage={ORDERS_PENDING_MESSAGE} />
+        </div>
+        <div className="lg:col-span-1 w-full">
+          <AnalyticsChart
+            segments={productStatusSegments}
+            centerValue={isLoading ? undefined : `${publishedPercentage}%`}
+            centerLabel="Published"
+            pendingMessage="Add products to your catalog and the breakdown will show up here."
           />
         </div>
+      </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
-          <Card className="border-border/80 bg-surface shadow-surface">
-            <CardHeader>
-              <CardTitle>Getting started</CardTitle>
-              <CardDescription>Set up the essentials to make your business ready for customers.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-2">
-              <ActionCard
-                icon={Building2}
-                title="Create your business profile"
-                description="Add your business details and verification documents."
-                onClick={() => setActiveSection("business")}
-              />
-              <ActionCard
-                icon={Package}
-                title="Build your product catalog"
-                description="Create listings and keep stock information organized."
-                onClick={() => setActiveSection("products")}
-              />
-              <ActionCard
-                icon={Compass}
-                title="Explore the marketplace"
-                description="Browse the businesses listed on TrustPass."
-                onClick={() => setActiveSection("directory")}
-              />
-              <ActionCard
-                icon={ClipboardCheck}
-                title="Review verification"
-                description="Check your business review and trust score."
-                onClick={() => setActiveSection("verification")}
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="border-border/80 bg-surface shadow-surface">
-            <CardHeader>
-              <CardTitle>Your account</CardTitle>
-              <CardDescription>Personalize your seller profile.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ProfilePhotoPicker name={user?.name || "Seller profile photo"} />
-            </CardContent>
-          </Card>
+      {/* 3. Bottom Section: Recent Orders Table (2 cols) & Top Selling Products (1 col) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 w-full overflow-x-auto">
+          <RecentOrders pendingMessage={ORDERS_PENDING_MESSAGE} />
         </div>
-      </section>
-
-      <section
-        id="seller-panel-business"
-        role="tabpanel"
-        aria-labelledby="seller-tab-business"
-        hidden={activeSection !== "business"}
-        className="space-y-5"
-      >
-        {dashboardMessage && (
-          <Alert variant={dashboardMessage.tone === "error" ? "destructive" : "default"} className={dashboardMessage.tone === "success" ? "border-success/30 bg-success-soft text-success shadow-surface" : "shadow-surface"}>
-            <AlertDescription>{dashboardMessage.text}</AlertDescription>
-          </Alert>
-        )}
-
-        {businesses.length > 0 && selectedBusiness && (
-          <BuisnessUpdateForm
-            key={selectedBusiness.id}
-            businessId={selectedBusiness.id}
-            onSaved={(saved) =>
-              setBusinesses((current) => current.map((business) => (business.id === saved.id ? saved : business)))
-            }
-          />
-        )}
-
-        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
-          {businesses.length > 0
-            ? "Edit your existing business above, or create another business profile below. Documents are uploaded right after the business is created."
-            : "Create your first business profile. Your details and address are saved to the server, then your documents are uploaded automatically."}
+        <div className="lg:col-span-1 w-full">
+          <TopSellingProducts pendingMessage={ORDERS_PENDING_MESSAGE} />
         </div>
-        <BusinessCreationWizard onSubmit={handleBusinessSubmit} />
-      </section>
-
-      <section
-        id="seller-panel-products"
-        role="tabpanel"
-        aria-labelledby="seller-tab-products"
-        hidden={activeSection !== "products"}
-        className="space-y-5"
-      >
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">Product catalog</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {selectedBusiness ? `Organize listings for "${selectedBusiness.name}".` : "Create a business profile first, then manage its products here."}
-          </p>
-        </div>
-
-        {businesses.length > 1 && (
-          <label className="block max-w-md space-y-2 text-sm font-medium text-foreground">
-            Add products to
-            <select
-              value={selectedBusinessId}
-              onChange={(event) => setSelectedBusinessId(event.target.value)}
-              className="h-10 w-full rounded-field border border-border bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-            >
-              {businesses.map((business) => (
-                <option key={business.id} value={business.id}>{business.name}</option>
-              ))}
-            </select>
-          </label>
-        )}
-
-        <SellerProductManagement
-          products={selectedBusinessId ? products : []}
-          categories={productCategories}
-          isLoading={productsLoading}
-          error={
-            productsError ??
-            productCategoriesError ??
-            (businessesError ? `Could not load your business profiles: ${businessesError}` : null) ??
-            (!businessesLoading && !selectedBusinessId ? "Create a business profile before adding products." : null)
-          }
-          allowCreate={Boolean(selectedBusinessId) && !businessesLoading && productCategories.length > 0}
-          onSave={saveProduct}
-          allowEdit={false}
-          allowDelete={false}
-        />
-      </section>
-
-      <section
-        id="seller-panel-directory"
-        role="tabpanel"
-        aria-labelledby="seller-tab-directory"
-        hidden={activeSection !== "directory"}
-        className="space-y-5"
-      >
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">Marketplace directory</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Browse businesses listed on TrustPass.</p>
-        </div>
-        <SellerBusinessDirectory />
-      </section>
-
-      <section
-        id="seller-panel-verification"
-        role="tabpanel"
-        aria-labelledby="seller-tab-verification"
-        hidden={activeSection !== "verification"}
-        className="space-y-5"
-      >
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">Verification & trust</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Review your business status and the information available to customers.</p>
-        </div>
-
-        {businessesError && (
-          <div role="alert" className="rounded-xl border border-danger/30 bg-danger/5 p-4 text-sm text-danger">
-            {businessesError}
-          </div>
-        )}
-
-        {businesses.length > 1 && (
-          <label className="block max-w-md space-y-2 text-sm font-medium text-foreground">
-            Business profile
-            <select
-              value={selectedBusinessId}
-              onChange={(event) => setSelectedBusinessId(event.target.value)}
-              className="h-10 w-full rounded-field border border-border bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-            >
-              {businesses.map((business) => (
-                <option key={business.id} value={business.id}>{business.name}</option>
-              ))}
-            </select>
-          </label>
-        )}
-
-        {businessesLoading ? (
-          <p role="status" className="rounded-xl border border-border bg-surface p-5 text-sm text-muted-foreground">Loading your verification details…</p>
-        ) : selectedBusiness ? (
-          <div className="grid gap-5 lg:grid-cols-[1fr_1fr]">
-            <Card className="border-border/80 bg-surface shadow-surface">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <CardTitle>{selectedBusiness.name}</CardTitle>
-                    <CardDescription className="mt-1">Business verification status</CardDescription>
-                  </div>
-                  {verification && <Badge variant={verification.variant}>{verification.label}</Badge>}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {documentsError && (
-                  <p role="alert" className="rounded-lg border border-danger/30 bg-danger/5 p-3 text-sm text-danger">{documentsError}</p>
-                )}
-                {documentsLoading ? (
-                  <p role="status" className="rounded-lg border border-border bg-background/50 p-4 text-sm text-muted-foreground">Loading document statuses…</p>
-                ) : (
-                  <BusinessDocumentStatuses documents={documents.map(toDocumentStatusItem)} />
-                )}
-                <p className="text-xs leading-5 text-muted-foreground">
-                  Document statuses come from your uploaded Trade license, NID, and TIN files.
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="border-border/80 bg-surface shadow-surface">
-              <CardHeader>
-                <CardTitle>Trust score</CardTitle>
-                <CardDescription>Your current score and score history.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <TrustScoreBreakdown
-                  score={selectedBusiness.trustScore}
-                  factors={trustHistory
-                    .slice(0, 10)
-                    .map((entry) => ({
-                      name: entry.reason || "Score change",
-                      detail: entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : "",
-                      score: entry.score ?? 0,
-                      maximum: 100,
-                    }))}
-                  businessName={selectedBusiness.name}
-                />
-                <p className="mt-3 text-xs leading-5 text-muted-foreground">
-                  The API exposes the score and its history; a per-factor breakdown is not a separate endpoint yet.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        ) : (
-          <Card className="border-dashed border-border bg-surface shadow-none">
-            <CardContent className="flex flex-col items-center px-6 py-12 text-center">
-              <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <ShieldCheck className="size-6" />
-              </span>
-              <h3 className="mt-4 text-base font-semibold text-foreground">No business profile yet</h3>
-              <p className="mt-1 max-w-md text-sm leading-6 text-muted-foreground">
-                Create a business profile to see its verification status and trust score here.
-              </p>
-              <Button type="button" className="mt-5 gap-2" onClick={() => setActiveSection("business")}>
-                Set up a business
-                <ArrowUpRight className="size-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </section>
+      </div>
     </div>
-  );
-}
-
-function OverviewCard({
-  icon: Icon,
-  label,
-  value,
-  description,
-  onClick,
-}: {
-  icon: typeof Building2;
-  label: string;
-  value: string;
-  description: string;
-  onClick?: () => void;
-}) {
-  const content = (
-    <Card className={`h-full border-border/80 bg-surface text-left shadow-surface ${onClick ? "transition-colors hover:border-primary/30" : ""}`}>
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between gap-3">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Icon className="size-5" />
-          </span>
-          {onClick && <ArrowUpRight className="size-4 text-muted-foreground" />}
-        </div>
-        <p className="mt-5 text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-        <p className="mt-1 text-lg font-semibold text-foreground">{value}</p>
-        <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
-  );
-
-  return onClick ? (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-2xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-    >
-      {content}
-    </button>
-  ) : (
-    <div>{content}</div>
-  );
-}
-
-function ActionCard({
-  icon: Icon,
-  title,
-  description,
-  onClick,
-}: {
-  icon: typeof Building2;
-  title: string;
-  description: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group flex items-start gap-3 rounded-xl border border-border bg-background/40 p-4 text-left transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-    >
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-        <Icon className="size-4" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center justify-between gap-2 text-sm font-medium text-foreground">
-          {title}
-          <ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-        </span>
-        <span className="mt-1 block text-xs leading-5 text-muted-foreground">{description}</span>
-      </span>
-    </button>
   );
 }

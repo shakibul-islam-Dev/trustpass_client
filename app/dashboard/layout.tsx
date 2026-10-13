@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import DashboardSideBar from "@/components/dashboard/DashboardSideBar";
+import DashboardBreadcrumb from "@/components/dashboard/DashboardBreadcrumb";
 import DashboardRoleLabel from "@/components/dashboard/DashboardRoleLabel";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
@@ -32,21 +33,9 @@ export default function DashboardRootlayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  // Redirect in an effect, never during render. Calling router.push() while
-  // rendering makes React warn ("Cannot update a component (Router) while
-  // rendering a different component") and the navigation is not guaranteed to
-  // be committed before the next render.
+
   useEffect(() => {
-    // Still asking the server who this is — wait for the answer instead of
-    // guessing.
-    //
-    // This used to be `if (isPending || !isAuthenticated)`, which treated
-    // "loading" the same as "signed out". Right after verifying an OTP the
-    // client navigates here while `useAuth` is still on its first fetch, so
-    // `isPending` was true, this effect fired, and the user was bounced to
-    // /auth/login even though the server had just signed them in. The fix is
-    // to let the pending state finish first, which is what
-    // `app/dashboard/page.tsx` already does for the same reason.
+
     if (isPending) return;
 
     if (!isAuthenticated) {
@@ -66,9 +55,7 @@ export default function DashboardRootlayout({
   }, [isPending, isAuthenticated, pathname, role, router]);
 
   const handleSignOut = async () => {
-    // Navigate back to login even if the revoke call failed — the cookie is
-    // httpOnly on the API's domain, so the local session state is dropped by
-    // the redirect regardless of what the server said.
+
     await signOut();
     router.replace("/auth/login");
     router.refresh();
@@ -77,9 +64,6 @@ export default function DashboardRootlayout({
   const blocked =
     !isPending && isAuthenticated && !canAccessDashboardPath(pathname, role);
 
-  // Covers "still asking the server", "server said no session", and "this role
-  // cannot be here" — the effect above performs the actual redirect, this just
-  // holds the UI while it happens.
   if (isPending || !isAuthenticated || blocked) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -104,15 +88,25 @@ export default function DashboardRootlayout({
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background">
           {/* Top Navbar Header */}
           <header className="flex items-center justify-between border-b border-border px-4 md:px-6 py-3 bg-card sticky top-0 z-10">
-            <div className="flex items-center gap-3">
+            <div
+              className={
+                role === "SELLER"
+                  ? "flex min-w-0 flex-1 items-center gap-3"
+                  : "flex items-center gap-3"
+              }
+            >
               <SidebarTrigger />
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-muted-foreground">
-                  Dashboard
-                </span>
-                <span className="text-muted-foreground">/</span>
-                <DashboardRoleLabel role={role} />
-              </div>
+              {role === "SELLER" ? (
+                <DashboardBreadcrumb role={role} />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Dashboard
+                  </span>
+                  <span className="text-muted-foreground">/</span>
+                  <DashboardRoleLabel role={role} />
+                </div>
+              )}
             </div>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
               Sign Out
