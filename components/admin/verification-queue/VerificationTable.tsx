@@ -37,6 +37,16 @@ interface VerificationTableProps {
 
 const PAGE_SIZE = 20;
 
+/**
+ * Render a submission timestamp, tolerating values the API might not send or
+ * that aren't valid dates (an unexpected value must never crash the queue).
+ */
+const formatSubmittedAt = (value?: string): string => {
+  if (!value) return "-";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleDateString();
+};
+
 export const VerificationTable = ({
   requests,
   onViewDetails,
@@ -136,9 +146,7 @@ export const VerificationTable = ({
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {req.submittedAt
-                      ? new Date(req.submittedAt).toLocaleDateString()
-                      : "-"}
+                    {formatSubmittedAt(req.submittedAt)}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
