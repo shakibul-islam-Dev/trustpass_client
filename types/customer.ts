@@ -2,6 +2,8 @@
 // CUSTOMER TYPES
 // ============================================================
 
+import type { TVerificationStatus } from "@/types/business";
+
 // --- User / Auth (Optional - if separate from admin) ---
 export type CustomerRole = "Customer";
 
@@ -74,7 +76,7 @@ export interface WishlistItem {
   category: string;
   location: string;
   trustScore: number;
-  verificationStatus: "PENDING" | "VERIFIED" | "REJECTED";
+  verificationStatus: TVerificationStatus;
   addedAt: string;
 }
 
@@ -106,7 +108,7 @@ export interface PublicBusiness {
   category: string;
   location: string;
   trustScore: number;
-  verificationStatus: "PENDING" | "VERIFIED" | "REJECTED";
+  verificationStatus: TVerificationStatus;
   isFeatured: boolean;
   productsCount: number;
   logoUrl?: string;

@@ -4,19 +4,25 @@
 
 import { apiUrl } from "@/lib/core/api-url";
 import { apiFetch } from "@/lib/core/api-fetch";
+import type {
+  BusinessDocumentStatus,
+  BusinessDocumentType,
+  BusinessVerificationStatus,
+} from "@/types/admin";
 
-export type TVerificationStatus =
-  | "PENDING"
-  | "UNDER_REVIEW"
-  | "APPROVED"
-  | "REJECTED"
-  | "SUSPENDED";
+/**
+ * Status of a verification request row. Sourced from the shared admin type so
+ * the queue and the rest of the app cannot drift from the backend
+ * `BusinessVerificationStatus` enum.
+ */
+export type TVerificationStatus = BusinessVerificationStatus;
 
 export interface IVerificationDocument {
   id: string;
-  documentType: string;
+  documentType: BusinessDocumentType | string;
   fileUrl: string;
-  status?: string;
+  status?: BusinessDocumentStatus | string;
+  rejectionReason?: string | null;
   uploadedAt?: string;
 }
 
@@ -113,6 +119,7 @@ const normalizeVerification = (raw: any): IVerificationResponse => {
           documentType: doc.documentType || doc.document_type || "UNKNOWN",
           fileUrl: doc.fileUrl || doc.file_url || doc.url || "#",
           status: doc.status,
+          rejectionReason: doc.rejectionReason ?? doc.rejection_reason ?? null,
           uploadedAt: doc.uploadedAt || doc.uploaded_at || doc.createdAt,
         }))
       : [],

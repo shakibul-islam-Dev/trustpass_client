@@ -12,6 +12,8 @@
  *   PATCH /api/v1/businesses/:id/address     - update the business address
  *   POST  /api/v1/businesses/:id/documents   - upload a business document
  *   GET   /api/v1/businesses/:id/documents   - list document statuses
+ *   POST  /api/v1/businesses/:id/verify      - submit the business for review
+ *   DELETE /api/v1/documents/:id              - remove a document (seller-owned)
  *   GET   /api/v1/trust-scores/business/:id  - trust score history/current
  *
  * Every call returns `{ ok, message, data }`; errors never throw.
@@ -52,7 +54,7 @@ async function readEnvelope<T>(response: Response): Promise<ApiEnvelope<T> | nul
   }
 }
 
-async function sendJson<T>(method: "GET" | "POST" | "PATCH", path: string, body?: unknown): Promise<ApiResult<T>> {
+async function sendJson<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<ApiResult<T>> {
   try {
     const response = await apiFetch(apiUrl(path), {
       method,
@@ -215,10 +217,12 @@ export interface BusinessDocument {
   id: string;
   businessId: string;
   documentType: BusinessDocumentType;
-  documentUrl: string;
+  /** Cloudinary URL — the backend field is `fileUrl`. */
+  fileUrl: string;
   publicId?: string | null;
   status: "APPROVED" | "PENDING" | "REJECTED" | "MISSING";
   uploadedAt?: string;
+  createdAt?: string;
   updatedAt?: string;
   expiresAt?: string | null;
   rejectionReason?: string | null;
@@ -248,6 +252,56 @@ export async function getBusinessDocuments(businessId: string): Promise<ApiResul
   return sendJson<BusinessDocument[]>(
     "GET",
     `/api/v1/businesses/${encodeURIComponent(businessId)}/documents`,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /api/v1/documents/:id
+// ---------------------------------------------------------------------------
+
+/**
+ * Remove one business document.
+ *
+ * The backend allows a seller to delete their own document only while it is not
+ * `APPROVED` — approved documents are locked and can only be removed by an
+ * admin. It also deletes the underlying Cloudinary asset.
+ */
+export async function deleteBusinessDocument(documentId: string): Promise<ApiResult<null>> {
+  return sendJson<null>("DELETE", `/api/v1/documents/${encodeURIComponent(documentId)}`);
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/businesses/:id/verify
+// ---------------------------------------------------------------------------
+
+/** The `BusinessVerification` row the backend returns from a submit/review. */
+export interface BusinessVerificationRecord {
+  id: string;
+  businessId: string;
+  submittedBy: string;
+  status: "PENDING" | "UNDER_REVIEW" | "APPROVED" | "REJECTED" | "SUSPENDED";
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  adminNote?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Submit a business for verification.
+ *
+ * The backend enforces the rules: the caller must own the business, the business
+ * must not already be `VERIFIED`, at least one document must be `APPROVED`, and
+ * there must be no pending/under-review request. Those are returned as normal
+ * error messages (409/422) rather than thrown, so callers should show the real
+ * message to the seller instead of inventing one.
+ */
+export async function submitBusinessVerification(
+  businessId: string,
+): Promise<ApiResult<BusinessVerificationRecord>> {
+  return sendJson<BusinessVerificationRecord>(
+    "POST",
+    `/api/v1/businesses/${encodeURIComponent(businessId)}/verify`,
   );
 }
 

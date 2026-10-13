@@ -4,14 +4,14 @@
 
 import { apiUrl } from "@/lib/core/api-url";
 import { apiFetch } from "@/lib/core/api-fetch";
+import type { TVerificationStatus } from "@/types/business";
 
-export type TVerificationStatus =
-  | "PENDING"
-  | "UNDER_REVIEW"
-  | "APPROVED"
-  | "REJECTED"
-  | "SUSPENDED"
-  | "VERIFIED"; // backend may still return this alias
+/**
+ * Business-level verification status. Re-exported from the shared business
+ * types so the admin list and the rest of the app use one union
+ * (`UNVERIFIED | PENDING | VERIFIED | REJECTED | SUSPENDED`).
+ */
+export type { TVerificationStatus };
 
 export interface IBusinessResponse {
   id: string;

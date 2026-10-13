@@ -14,5 +14,13 @@
 import { SERVER_URL } from "@/lib/core/env";
 
 export function apiUrl(path: string): string {
+  // Browser requests go through this Next.js app's origin. The rewrite in
+  // next.config.ts forwards them to the API, avoiding browser CORS and
+  // cross-site session-cookie behavior. Server-side callers still need an
+  // absolute URL because they do not pass through the browser rewrite.
+  if (typeof window !== "undefined") {
+    return path;
+  }
+
   return `${SERVER_URL}${path}`;
 }
