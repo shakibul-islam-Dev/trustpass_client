@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { GoogleIcon, FacebookIcon } from "@/components/auth/social-icons";
+import { GoogleIcon } from "@/components/auth/social-icons";
 import { readApiError, safeApiMessage, safeThrownError } from "@/lib/core/api-error";
 import {
   isApiConfigured,
@@ -250,7 +250,7 @@ export default function RegistrationForm() {
   // Social Login -> handled entirely by the API server
   // ============================================================
 
-  const handleSocialLogin = async (provider: "google" | "facebook") => {
+  const handleSocialLogin = async (provider: "google") => {
     setErrorMessage(null);
 
     // On success the browser has already been sent to the provider, so there is
@@ -267,7 +267,6 @@ export default function RegistrationForm() {
   };
 
   const handleGoogleLogin = () => handleSocialLogin("google");
-  const handleFacebookLogin = () => handleSocialLogin("facebook");
 
   // ============================================================
   // UI
@@ -489,7 +488,7 @@ export default function RegistrationForm() {
           </div>
 
           {/* Social */}
-          <div className="grid grid-cols-1 gap-2.5 min-[420px]:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2.5">
             <Button
               type="button"
               variant="outline"
@@ -499,17 +498,6 @@ export default function RegistrationForm() {
             >
               <GoogleIcon className="size-4.5 shrink-0" />
               Google
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="h-12 rounded-xl border-border/80 bg-background/70 gap-2 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:bg-surface-secondary"
-              onClick={handleFacebookLogin}
-              disabled={isSubmitting}
-            >
-              <FacebookIcon className="size-4.5 shrink-0" />
-              Facebook
             </Button>
           </div>
         </form>

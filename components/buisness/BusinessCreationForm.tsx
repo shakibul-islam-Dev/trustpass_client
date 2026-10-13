@@ -43,6 +43,9 @@ export default function BusinessCreationForm() {
       categoryId: draft.category,
       contactEmail: draft.email.trim(),
       contactPhone: draft.phone.trim(),
+      websiteUrl: draft.websiteUrl.trim() || undefined,
+      instaUrl: draft.instaUrl.trim() || undefined,
+      tiktokUrl: draft.tiktokUrl.trim() || undefined,
       address: {
         addressLine: draft.address.trim(),
         city: draft.city.trim(),

@@ -1,8 +1,6 @@
 import SearchHero from "@/components/marketplace/SearchHero";
 import Categories from "@/components/marketplace/Categories";
 import { getCategories } from "@/lib/categories-api";
-import ProfileManagement from "@/components/profile/ProfileManagement";
-import ProductUpdateComponent from "@/components/seller/ProductUpdateComponent";
 
 export const dynamic = "force-dynamic";
 

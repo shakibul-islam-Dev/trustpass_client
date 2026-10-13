@@ -113,14 +113,14 @@ export async function signOut(): Promise<boolean> {
   }
 }
 
-export type SocialProvider = "google" | "facebook";
+export type SocialProvider = "google";
 
 /**
  * Starts an OAuth sign-in and returns the provider URL to navigate to.
  *
- * The server owns the OAuth handshake and hands back the Google/Facebook
- * authorize URL, so the client just has to follow it. Any failure returns
- * `null` for the caller to report.
+ * The server owns the OAuth handshake and hands back the Google authorize URL,
+ * so the client just has to follow it. Any failure returns `null` for the
+ * caller to report.
  */
 export async function getSocialAuthUrl(
   provider: SocialProvider,
