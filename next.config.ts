@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 
+const apiServerUrl = (
+  process.env.NEXT_PUBLIC_SERVER_URL ||
+  "https://trust-pass-server.vercel.app"
+).replace(/\/$/, "");
+
 const nextConfig: NextConfig = {
   reactCompiler: true,
   images: {
@@ -14,9 +19,16 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // No rewrites: the browser talks DIRECTLY to the API server — the local one
-  // in `next dev`, the live one in production. The addresses are defined in
-  // exactly one place: `lib/core/env.ts`.
+  // Keep browser API calls same-origin so session cookies are first-party.
+  // Server-side code uses the absolute URL from lib/core/env.ts directly.
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${apiServerUrl}/api/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
