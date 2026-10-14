@@ -14,8 +14,8 @@ import {
   CreditCard,
   BarChart3,
   Package,
-  ShoppingBag,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import type { ApiRole } from "@/lib/core/roles";
 
@@ -114,6 +114,11 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         icon: LayoutDashboard,
       },
       {
+        name: "Trust Passport",
+        href: "/dashboard/seller/passport",
+        icon: Sparkles,
+      },
+      {
         name:"Analytics",
         href: "/dashboard/seller/analytics",
         icon: BarChart3,
@@ -123,21 +128,6 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         href: "/dashboard/seller/products",
         icon: Package,
 
-      },
-      {
-        name: "Orders",
-        href: "/dashboard/seller/orders",
-        icon: ShoppingBag,
-      },
-      {
-        name: "Payments",
-        href: "/dashboard/seller/payments",
-        icon: CreditCard,
-      },
-      {
-        name: "My Reports",
-        href: "/dashboard/customer/reports",
-        icon: Flag,
       },
       {
         name: "Notifications",

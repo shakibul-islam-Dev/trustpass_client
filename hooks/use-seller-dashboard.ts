@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getMyBusinesses } from "@/lib/core/business-api";
 import { getBusinessProducts, type ProductRecord } from "@/lib/core/product-api";
-import { fetchUnreadCount } from "@/lib/customer_api/notifications";
+import { getUnreadNotificationCount } from "@/lib/core/notification-api";
 import type { IBusiness } from "@/types/business";
 import type { AnalyticsSegment } from "@/components/dashboard/AnalyticsChart";
 
@@ -67,7 +67,7 @@ export function useSellerDashboardData(): SellerDashboardData {
               return result.ok && result.data ? result.data : [];
             }),
           ),
-          fetchUnreadCount(),
+          getUnreadNotificationCount(),
         ]);
 
         if (!active) return;

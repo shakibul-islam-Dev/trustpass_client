@@ -309,12 +309,24 @@ export async function submitBusinessVerification(
 // GET /api/v1/trust-scores/business/:id
 // ---------------------------------------------------------------------------
 
+/**
+ * One trust-score snapshot from `GET /api/v1/trust-scores/business/:id`.
+ *
+ * The server returns `TrustScore` rows (one per business) serialized with
+ * `score` coerced to a number.
+ */
 export interface TrustScoreHistoryEntry {
-  id?: string;
-  score?: number;
-  reason?: string | null;
-  createdAt?: string;
-  changedBy?: string | null;
+  id: string;
+  businessId: string;
+  score: number;
+  /**
+   * Points per trust-rule key, e.g. `{ trade_license_01: 20 }`.
+   * Note: the backend only records the first awarded rule here, so treat this
+   * as partial — a per-rule ledger is not exposed on a public endpoint.
+   */
+  breakdown: Record<string, number>;
+  businessType?: string | null;
+  calculatedAt: string;
 }
 
 export async function getTrustScoreHistory(

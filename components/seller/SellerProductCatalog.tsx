@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, BarChart3, Package, PackageCheck, PackageX } from "lucide-react";
 
@@ -79,6 +79,12 @@ export default function SellerProductCatalog() {
   const outOfStock = products.filter((product) => product.stock === 0).length;
   const selectedBusiness = businesses.find((business) => business.id === selectedBusinessId);
 
+  // Stable reference so the child's load effect does not re-run every render.
+  const categoryOptions = useMemo(
+    () => categories.map((category) => ({ id: category.id, name: category.name })),
+    [categories],
+  );
+
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
       <SellerPageHeader
@@ -139,7 +145,7 @@ export default function SellerProductCatalog() {
           {selectedBusinessId ? (
             <SellerProductManagement
               businessId={selectedBusinessId}
-              categories={categories.map((category) => ({ id: category.id, name: category.name }))}
+              categories={categoryOptions}
               onProductsChange={setProducts}
               detailHref={(product) => `/dashboard/seller/products/${product.id}`}
             />
