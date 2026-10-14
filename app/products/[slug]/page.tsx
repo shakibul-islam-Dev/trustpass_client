@@ -47,12 +47,11 @@ export async function generateMetadata({ params }: ProductDetailPageProps) {
     `View ${product.name}, listed by a business on TrustPass.`;
   const canonicalSlug = product.slug || product.id;
 
-  return {
-    ...createPageMetadata(product.name, description),
-    alternates: {
-      canonical: `/products/${encodeURIComponent(canonicalSlug)}`,
-    },
-  };
+  return createPageMetadata(
+    product.name,
+    description,
+    `/products/${encodeURIComponent(canonicalSlug)}`,
+  );
 }
 
 export default async function ProductDetailPage({

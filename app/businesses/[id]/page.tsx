@@ -42,12 +42,11 @@ export async function generateMetadata({ params }: BusinessProfileProps) {
     business.description?.trim() ||
     `View the ${business.name} profile, verification status, and trust information on TrustPass.`;
 
-  return {
-    ...createPageMetadata(business.name, description),
-    alternates: {
-      canonical: `/businesses/${encodeURIComponent(business.slug || business.id)}`,
-    },
-  };
+  return createPageMetadata(
+    business.name,
+    description,
+    `/businesses/${encodeURIComponent(business.slug || business.id)}`,
+  );
 }
 
 export default async function BusinessProfilePage({ params }: BusinessProfileProps) {

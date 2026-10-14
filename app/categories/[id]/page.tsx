@@ -27,12 +27,11 @@ export async function generateMetadata({ params }: CategoryPageProps) {
     category.description?.trim() ||
     `Explore TrustPass businesses and products in the ${category.name} category.`;
 
-  return {
-    ...createPageMetadata(category.name, description),
-    alternates: {
-      canonical: `/categories/${encodeURIComponent(category.id)}`,
-    },
-  };
+  return createPageMetadata(
+    category.name,
+    description,
+    `/categories/${encodeURIComponent(category.id)}`,
+  );
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {

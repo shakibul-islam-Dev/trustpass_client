@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import SearchHero from "@/components/marketplace/SearchHero";
 import Categories from "@/components/marketplace/Categories";
 import { getCategories } from "@/lib/categories-api";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/",
+  },
+};
 
 export const dynamic = "force-dynamic";
 
