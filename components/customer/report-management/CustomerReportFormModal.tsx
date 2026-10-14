@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Flag } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Flag, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -17,18 +18,13 @@ import {
   type ICreateReportPayload,
 } from "@/lib/customer_action/reports";
 import { ReportForm } from "./ReportForm";
+// 🔑 Tor session helper — path adjust kor jodi different hoy
+import { getSession } from "@/lib/core/session";
 
 interface CustomerReportFormModalProps {
   businessId: string;
   businessName: string;
-  /**
-   * Optional: Custom trigger button.
-   * Must be a single React element (not string/number/array).
-   */
   trigger?: React.ReactElement;
-  /**
-   * Optional: Callback after successful submit.
-   */
   onSuccess?: () => void;
 }
 
@@ -38,29 +34,70 @@ export const CustomerReportFormModal = ({
   trigger,
   onSuccess,
 }: CustomerReportFormModalProps) => {
-  // --- Modal State ---
+  const router = useRouter();
+
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); // null = loading
 
-  /**
-   * Handles form submission.
-   * - Calls backend API via submitReport()
-   * - Shows success/error toast
-   * - Closes modal on success
-   * - Triggers onSuccess callback if provided
-   */
+  // ── Session check on mount ──
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const session = await getSession();
+        if (!cancelled) {
+          setIsLoggedIn(!!session.user);
+        }
+      } catch (err) {
+        console.error("Session check failed:", err);
+        if (!cancelled) setIsLoggedIn(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // ── Redirect to login ──
+  const redirectToLogin = () => {
+    const currentPath =
+      typeof window !== "undefined" ? window.location.pathname : "/";
+    router.push(
+      `/auth/login?redirect=${encodeURIComponent(currentPath)}`
+    );
+  };
+
+  // ── Modal open handler (login gate) ──
+  const handleOpenChange = (open: boolean) => {
+    if (open && isLoggedIn === false) {
+      toast.error("Please login to report a business.");
+      redirectToLogin();
+      return;
+    }
+    setIsOpen(open);
+  };
+
+  // ── Submit ──
   const handleSubmit = async (payload: ICreateReportPayload) => {
+    // Double-check login
+    if (isLoggedIn === false) {
+      toast.error("Please login to submit a report.");
+      redirectToLogin();
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const result = await submitReport(payload);
 
-      // Handle API error
       if (result?.error) {
         toast.error("Failed to submit report. Please try again.");
         return;
       }
 
-      // Success!
       toast.success("Report submitted successfully!");
       setIsOpen(false);
       onSuccess?.();
@@ -72,20 +109,33 @@ export const CustomerReportFormModal = ({
     }
   };
 
-  // Default trigger button if none provided
+  // ── Default trigger — disabled while session loading ──
   const defaultTrigger = (
-    <Button variant="destructive" size="sm">
-      <Flag className="mr-2 h-4 w-4" />
+    <Button
+      variant="destructive"
+      size="sm"
+      disabled={isLoggedIn === null}
+      title={
+        isLoggedIn === null
+          ? "Checking session..."
+          : isLoggedIn === false
+          ? "Login required"
+          : "Report this business"
+      }
+    >
+      {isLoggedIn === null ? (
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      ) : (
+        <Flag className="mr-2 h-4 w-4" />
+      )}
       Report Business
     </Button>
   );
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      {/* Trigger */}
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger render={trigger ?? defaultTrigger} />
 
-      {/* Modal Content */}
       <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -98,7 +148,6 @@ export const CustomerReportFormModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Form */}
         <ReportForm
           businessId={businessId}
           onSubmit={handleSubmit}

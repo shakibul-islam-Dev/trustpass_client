@@ -16,15 +16,10 @@ import { VerificationDetailsModal } from "@/components/admin/verification-queue/
 import {
   fetchVerifications,
   type IVerificationResponse,
-  type TVerificationStatus,
 } from "@/lib/admin_api/get-verifications";
 import { reviewVerification } from "@/lib/admin_action/verifications_action";
 
-// Previous implementation used DUMMY_REQUESTS.
-// Removed — now using live API via fetchVerifications.
-// Updated by: Aritro
-
-const VerificationQueue = () => {
+const AdminVerificationQueue = () => {
   const [requests, setRequests] = useState<IVerificationResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -106,16 +101,13 @@ const VerificationQueue = () => {
 
   const filteredRequests = useMemo(() => {
     return requests.filter((req) => {
+      const q = searchTerm.toLowerCase();
       const matchesSearch =
-        (req.businessName || "")
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        (req.ownerName || "")
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        (req.tradeLicenseNo || "")
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase());
+        (req.businessName || "").toLowerCase().includes(q) ||
+        (req.businessSlug || "").toLowerCase().includes(q) ||
+        (req.ownerId || "").toLowerCase().includes(q) ||
+        (req.businessId || "").toLowerCase().includes(q) ||
+        String(req.status || "").toLowerCase().includes(q);
 
       const matchesStatus =
         statusFilter === "all" || req.status === statusFilter;
@@ -126,7 +118,6 @@ const VerificationQueue = () => {
 
   return (
     <div className="p-6 space-y-6 bg-background min-h-screen">
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Verification Queue</h1>
         <p className="text-muted-foreground mt-1">
@@ -134,12 +125,11 @@ const VerificationQueue = () => {
         </p>
       </div>
 
-      {/* Filters Row */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by business, owner or license..."
+            placeholder="Search by business, slug, or ID..."
             className="pl-9"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -164,7 +154,6 @@ const VerificationQueue = () => {
         </Select>
       </div>
 
-      {/* Table */}
       {isLoading ? (
         <div className="space-y-2">
           {[...Array(5)].map((_, i) => (
@@ -180,7 +169,6 @@ const VerificationQueue = () => {
         />
       )}
 
-      {/* Details Modal */}
       <VerificationDetailsModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -192,4 +180,4 @@ const VerificationQueue = () => {
   );
 };
 
-export default VerificationQueue;
+export default AdminVerificationQueue;

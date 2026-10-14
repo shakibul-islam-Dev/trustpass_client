@@ -13,58 +13,38 @@ import {
 } from "@/components/ui/select";
 import { BusinessTable } from "@/components/admin/bussiness-list/BusinessTable";
 import { BusinessDetailsModal } from "@/components/admin/bussiness-list/BusinessDetailsModal";
-
+import { DeleteBusinessDialog } from "@/components/admin/bussiness-list/DeleteBusinessDialog";
 import {
   fetchAllBusinesses,
   type IBusinessResponse,
 } from "@/lib/admin_api/get-businesses";
 import { deleteBusiness } from "@/lib/admin_action/businesses_action";
-import type { Business } from "@/types/admin";
-import { DeleteBusinessDialog } from "@/components/admin/bussiness-list/DeleteBusinessDialog";
-
-const toBusiness = (raw: IBusinessResponse): Business => ({
-  id: raw.id,
-  name: raw.name,
-  slug: raw.slug || "",
-  ownerName: raw.ownerName || "-",
-  ownerEmail: raw.ownerEmail || "-",
-  category: raw.category || "-",
-  phone: raw.phone || "-",
-  location: raw.location || "-",
-  verificationStatus: raw.verificationStatus as any,
-  trustScore: raw.trustScore,
-  productsCount: raw.productsCount,
-  tradeLicenseNo: raw.tradeLicenseNo || "-",
-  isFeatured: raw.isFeatured,
-  createdAt: raw.createdAt,
-});
 
 const BusinessesPage = () => {
-  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [businesses, setBusinesses] = useState<IBusinessResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [categoryFilter, setCategoryFilter] = useState("all");
   const [featuredFilter, setFeaturedFilter] = useState("all");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(
-    null
-  );
+  const [selectedBusiness, setSelectedBusiness] =
+    useState<IBusinessResponse | null>(null);
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [deletingBusiness, setDeletingBusiness] = useState<Business | null>(
-    null
-  );
+  const [deletingBusiness, setDeletingBusiness] =
+    useState<IBusinessResponse | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // ── Load ──
   const loadBusinesses = async () => {
     setIsLoading(true);
     try {
       const data = await fetchAllBusinesses({ page: 1, limit: 100 });
-      setBusinesses(data.map(toBusiness));
+      console.log("📦 Loaded businesses:", data.length);
+      setBusinesses(data);
     } catch (error) {
-      console.error("Failed to load businesses:", error);
+      console.error("Load error:", error);
       toast.error("Failed to load businesses.");
     } finally {
       setIsLoading(false);
@@ -75,26 +55,42 @@ const BusinessesPage = () => {
     loadBusinesses();
   }, []);
 
-  const openDeleteDialog = (business: Business) => {
+  // ── Open Modals ──
+  const openDetailsModal = (business: IBusinessResponse) => {
+    console.log("🔓 Open details:", business.name);
+    setSelectedBusiness(business);
+    setIsModalOpen(true);
+  };
+
+  const openDeleteDialog = (business: IBusinessResponse) => {
+    console.log("🗑️ Open delete:", business.name);
     setDeletingBusiness(business);
     setIsDeleteOpen(true);
   };
 
+  // ── Confirm Delete ──
   const handleConfirmDelete = async () => {
     if (!deletingBusiness) return;
 
     setIsDeleting(true);
     try {
       const result = await deleteBusiness(deletingBusiness.id);
+      console.log("🗑️ Delete result:", result);
+
       if (result?.error) {
-        toast.error("Failed to delete business.");
+        toast.error(result.message || "Failed to delete business.");
         return;
       }
 
-      toast.success("Business deleted successfully!");
+      toast.success(`"${deletingBusiness.name}" deleted successfully!`);
+
+      // Optimistic update
+      setBusinesses((prev) =>
+        prev.filter((b) => b.id !== deletingBusiness.id)
+      );
+
       setIsDeleteOpen(false);
       setDeletingBusiness(null);
-      await loadBusinesses();
     } catch (error) {
       console.error("Delete error:", error);
       toast.error("Something went wrong.");
@@ -103,46 +99,33 @@ const BusinessesPage = () => {
     }
   };
 
-  const openDetailsModal = (business: Business) => {
-    setSelectedBusiness(business);
-    setIsModalOpen(true);
-  };
-
+  // ── Filter ──
   const filteredBusinesses = useMemo(() => {
     return businesses.filter((business) => {
+      const q = searchTerm.toLowerCase();
       const matchesSearch =
-        business.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        business.ownerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        business.tradeLicenseNo
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase());
+        (business.name || "").toLowerCase().includes(q) ||
+        (business.ownerName || "").toLowerCase().includes(q) ||
+        (business.ownerEmail || "").toLowerCase().includes(q) ||
+        (business.contactPhone || "").toLowerCase().includes(q) ||
+        (business.slug || "").toLowerCase().includes(q);
 
       const matchesStatus =
         statusFilter === "all" ||
         business.verificationStatus === statusFilter;
-
-      const matchesCategory =
-        categoryFilter === "all" || business.category === categoryFilter;
 
       const matchesFeatured =
         featuredFilter === "all" ||
         (featuredFilter === "featured" && business.isFeatured) ||
         (featuredFilter === "not-featured" && !business.isFeatured);
 
-      return (
-        matchesSearch && matchesStatus && matchesCategory && matchesFeatured
-      );
+      return matchesSearch && matchesStatus && matchesFeatured;
     });
-  }, [businesses, searchTerm, statusFilter, categoryFilter, featuredFilter]);
-
-  const categories = useMemo(() => {
-    return Array.from(new Set(businesses.map((b) => b.category))).filter(
-      (c) => c && c !== "-"
-    );
-  }, [businesses]);
+  }, [businesses, searchTerm, statusFilter, featuredFilter]);
 
   return (
     <div className="p-6 space-y-6 bg-background min-h-screen">
+      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">All Businesses</h1>
         <p className="text-muted-foreground mt-1">
@@ -150,11 +133,12 @@ const BusinessesPage = () => {
         </p>
       </div>
 
+      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name, owner or license..."
+            placeholder="Search by name, owner, email or phone..."
             className="pl-9"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -171,28 +155,10 @@ const BusinessesPage = () => {
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="VERIFIED">Verified</SelectItem>
-            <SelectItem value="APPROVED">Approved</SelectItem>
             <SelectItem value="PENDING">Pending</SelectItem>
             <SelectItem value="UNDER_REVIEW">Under Review</SelectItem>
             <SelectItem value="REJECTED">Rejected</SelectItem>
             <SelectItem value="SUSPENDED">Suspended</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={categoryFilter}
-          onValueChange={(value) => setCategoryFilter(value ?? "all")}
-        >
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map((cat) => (
-              <SelectItem key={cat} value={cat}>
-                {cat}
-              </SelectItem>
-            ))}
           </SelectContent>
         </Select>
 
@@ -211,6 +177,7 @@ const BusinessesPage = () => {
         </Select>
       </div>
 
+      {/* Table */}
       {isLoading ? (
         <div className="space-y-2">
           {[...Array(5)].map((_, i) => (
@@ -225,12 +192,14 @@ const BusinessesPage = () => {
         />
       )}
 
+      {/* Details Modal */}
       <BusinessDetailsModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         business={selectedBusiness}
       />
 
+      {/* Delete Dialog */}
       <DeleteBusinessDialog
         isOpen={isDeleteOpen}
         onClose={() => {
