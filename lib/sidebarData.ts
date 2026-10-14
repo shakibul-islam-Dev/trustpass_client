@@ -142,6 +142,21 @@ export const roleSidebars: Record<
         icon: Package,
       },
       {
+        name: "Orders",
+        href: "/dashboard/seller/orders",
+        icon: ShoppingBag,
+      },
+      {
+        name: "Payments",
+        href: "/dashboard/seller/payments",
+        icon: CreditCard,
+      },
+      {
+        name: "My Reports",
+        href: "/dashboard/customer/reports",
+        icon: Flag,
+      },
+      {
         name: "Notifications",
         href: "/dashboard/customer/notifications",
         icon: BellIcon,
