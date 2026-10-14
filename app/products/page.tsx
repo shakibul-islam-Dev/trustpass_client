@@ -1,7 +1,25 @@
-import productDetails from '@/public/data/productDetails.json';
-import businesses from '@/public/data/businessCard.json';
+import { cache } from "react";
 import ProductCatalogFilters from '@/components/marketplace/products/ProductCatalogFilters';
 import ProductGrid from '@/components/marketplace/products/ProductGrid';
+import { fetchAllProducts } from "@/lib/admin_api/get-products";
+import { getBusinesses } from "@/lib/business-api/all-business";
+import { createPageMetadata } from "@/lib/page-metadata";
+
+export const dynamic = "force-dynamic";
+
+export const metadata = createPageMetadata(
+  "Products",
+  "Browse authentic products from businesses listed on TrustPass.",
+);
+
+const getProducts = cache(() =>
+  fetchAllProducts({ page: 1, limit: 100, status: "ACTIVE" }),
+);
+
+const getBusinessList = cache(async () => {
+  const response = await getBusinesses({ page: 1, limit: 100 });
+  return response.success ? response.data ?? [] : [];
+});
 
 type ProductsPageProps = {
   searchParams: Promise<{
@@ -14,11 +32,15 @@ export default async function ProductsCatalogPage({ searchParams }: ProductsPage
   const params = await searchParams;
   const query = params.query?.trim().toLowerCase() ?? '';
   const stockFilter = params.stock?.trim().toLowerCase() ?? 'all';
+  const [allProducts, businesses] = await Promise.all([
+    getProducts(),
+    getBusinessList(),
+  ]);
 
-  const filteredProducts = productDetails.filter((product) => {
+  const filteredProducts = allProducts.filter((product) => {
     const matchesQuery = query
       ? product.name.toLowerCase().includes(query) ||
-        product.description.toLowerCase().includes(query)
+        (product.description ?? "").toLowerCase().includes(query)
       : true;
 
     const matchesStock =
@@ -50,7 +72,7 @@ export default async function ProductsCatalogPage({ searchParams }: ProductsPage
         <ProductGrid
           products={filteredProducts}
           businesses={businesses}
-          totalCount={productDetails.length}
+          totalCount={allProducts.length}
           query={query}
           stockFilter={stockFilter}
         />

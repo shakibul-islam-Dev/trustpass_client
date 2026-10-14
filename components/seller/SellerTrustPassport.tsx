@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Building2,
@@ -36,22 +36,6 @@ function trustScoreColor(score: number): string {
   return "#f43f5e";
 }
 
-/** A subscribe function that never changes — we only read the value once. */
-const emptySubscribe = () => () => {};
-
-/**
- * Read the browser origin without an SSR hydration mismatch: the server (and
- * the first hydration pass) sees an empty string, the browser sees the real
- * origin. Avoids setting state inside an effect.
- */
-function useBrowserOrigin(): string {
-  return useSyncExternalStore(
-    emptySubscribe,
-    () => window.location.origin,
-    () => "",
-  );
-}
-
 /**
  * Digital Trust Passport.
  *
@@ -65,8 +49,6 @@ export default function SellerTrustPassport() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-
-  const origin = useBrowserOrigin();
 
   useEffect(() => {
     let active = true;
@@ -111,7 +93,8 @@ export default function SellerTrustPassport() {
   );
 
   const publicPath = business ? `/businesses/${business.slug || business.id}` : "";
-  const publicUrl = origin ? `${origin}${publicPath}` : publicPath;
+  // Share the path only — the host is supplied by whoever opens the link.
+  const publicUrl = publicPath;
 
   const handleCopy = async () => {
     if (!publicUrl) return;

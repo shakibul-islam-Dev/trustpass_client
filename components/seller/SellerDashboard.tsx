@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   Bell,
   Building2,
@@ -10,12 +11,22 @@ import {
 } from "lucide-react";
 
 import StatCards, { type StatItem } from "../dashboard/StatCard";
-import AnalyticsChart from "../dashboard/AnalyticsChart";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { useSellerDashboardData } from "@/hooks/use-seller-dashboard";
 import type { IBusiness } from "@/types/business";
 import SellerStatusBadge from "./SellerStatusBadge";
+
+/**
+ * The donut chart pulls in recharts, which is heavy. Loading it on demand keeps
+ * it out of the dashboard's initial bundle so the stat cards and business list
+ * paint without waiting on the charting library.
+ */
+const AnalyticsChart = dynamic(() => import("../dashboard/AnalyticsChart"), {
+  loading: () => (
+    <div className="h-full min-h-60 w-full animate-pulse rounded-2xl border border-border bg-surface" />
+  ),
+});
 
 /**
  * Share of the public business profile that is filled in.
@@ -47,35 +58,42 @@ function trustScoreColor(score: number): string {
 }
 
 export default function SellerDashboard() {
-  const { businesses, stats, productStatusSegments, publishedPercentage, isLoading, error } =
-    useSellerDashboardData();
+  const {
+    businesses,
+    stats,
+    productStatusSegments,
+    publishedPercentage,
+    isBusinessesLoading,
+    isProductsLoading,
+    error,
+  } = useSellerDashboardData();
 
   const statItems: StatItem[] = [
     {
       id: "businesses",
-      value: isLoading ? "…" : String(stats.businessCount),
+      value: isBusinessesLoading ? "…" : String(stats.businessCount),
       label: "Businesses",
       icon: Building2,
       iconColor: "text-primary",
       bgColor: "bg-primary-soft",
-      caption: isLoading
+      caption: isBusinessesLoading
         ? undefined
         : `${stats.averageTrustScore ?? 0}/100 avg trust`,
     },
     {
       id: "products",
-      value: isLoading ? "…" : String(stats.productCount),
+      value: isProductsLoading ? "…" : String(stats.productCount),
       label: "Total Products",
       icon: Package,
       iconColor: "text-primary",
       bgColor: "bg-primary-soft",
-      caption: isLoading
+      caption: isProductsLoading
         ? undefined
         : `${stats.publishedCount} published · ${stats.draftCount} draft`,
     },
     {
       id: "notifications",
-      value: isLoading ? "…" : String(stats.unreadNotifications),
+      value: String(stats.unreadNotifications),
       label: "Unread Notifications",
       icon: Bell,
       iconColor: "text-muted-foreground",
@@ -137,7 +155,7 @@ export default function SellerDashboard() {
             </Badge>
           </div>
 
-          {isLoading ? (
+          {isBusinessesLoading ? (
             <p role="status" className="mt-5 text-sm text-muted-foreground">
               Loading your businesses…
             </p>
@@ -246,13 +264,20 @@ export default function SellerDashboard() {
 
       {/* 2. Catalog status — real product-status breakdown (full width) */}
       <section>
-        <AnalyticsChart
-          title="Catalog status"
-          segments={productStatusSegments}
-          centerValue={isLoading ? undefined : `${publishedPercentage}%`}
-          centerLabel="Published"
-          pendingMessage="Add products to your catalog and the breakdown will show up here."
-        />
+        {isProductsLoading ? (
+          <div
+            role="status"
+            className="h-full min-h-60 w-full animate-pulse rounded-2xl border border-border bg-surface"
+          />
+        ) : (
+          <AnalyticsChart
+            title="Catalog status"
+            segments={productStatusSegments}
+            centerValue={`${publishedPercentage}%`}
+            centerLabel="Published"
+            pendingMessage="Add products to your catalog and the breakdown will show up here."
+          />
+        )}
       </section>
     </div>
   );
