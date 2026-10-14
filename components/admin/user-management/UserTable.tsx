@@ -9,6 +9,8 @@ import {
   ChevronRight,
   Copy,
   Check,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import type { User, UserRole } from "@/types/admin";
 
@@ -33,6 +36,7 @@ interface UserTableProps {
   users: User[];
   onRoleChangeClick: (user: User) => void;
   onDeleteClick: (user: User) => void;
+  onStatusToggle: (user: User) => void; // 🆕
 }
 
 const ROLE_LABEL: Record<UserRole, string> = {
@@ -55,6 +59,7 @@ export const UserTable = ({
   users,
   onRoleChangeClick,
   onDeleteClick,
+  onStatusToggle,
 }: UserTableProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -64,18 +69,10 @@ export const UserTable = ({
   const endIndex = startIndex + PAGE_SIZE;
   const paginatedUsers = users.slice(startIndex, endIndex);
 
-  const handlePrev = () => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1);
-  };
+  const handlePrev = () => currentPage > 1 && setCurrentPage(currentPage - 1);
+  const handleNext = () =>
+    currentPage < totalPages && setCurrentPage(currentPage + 1);
 
-  const handleNext = () => {
-    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-  };
-
-  /**
-   * Copies the user ID to the clipboard.
-   * Shows a brief check-mark icon + toast.
-   */
   const handleCopyId = async (id: string) => {
     try {
       await navigator.clipboard.writeText(id);
@@ -99,6 +96,7 @@ export const UserTable = ({
               <TableHead>Email</TableHead>
               <TableHead>User ID</TableHead>
               <TableHead>Role</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Joined</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -107,94 +105,135 @@ export const UserTable = ({
             {paginatedUsers.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="text-center py-8 text-muted-foreground"
                 >
                   No users found.
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedUsers.map((user, index) => (
-                <TableRow key={user.id}>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {startIndex + index + 1}
-                  </TableCell>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
+              paginatedUsers.map((user, index) => {
+                const isBlocked =
+                  String(user.status).toUpperCase() === "BLOCKED";
 
-                  {/* User ID with copy button */}
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
-                        {user.id.length > 12
-                          ? `${user.id.slice(0, 8)}...${user.id.slice(-4)}`
-                          : user.id}
-                      </code>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 shrink-0"
-                        onClick={() => handleCopyId(user.id)}
-                        title="Copy full user ID"
+                return (
+                  <TableRow key={user.id}>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {startIndex + index + 1}
+                    </TableCell>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+
+                    {/* User ID with copy */}
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                          {user.id.length > 12
+                            ? `${user.id.slice(0, 8)}...${user.id.slice(-4)}`
+                            : user.id}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0"
+                          onClick={() => handleCopyId(user.id)}
+                          title="Copy full user ID"
+                        >
+                          {copiedId === user.id ? (
+                            <Check className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                        </Button>
+                      </div>
+                    </TableCell>
+
+                    {/* Role */}
+                    <TableCell>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          ROLE_COLOR[user.role] ||
+                          "bg-muted text-muted-foreground"
+                        }`}
                       >
-                        {copiedId === user.id ? (
-                          <Check className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <Copy className="h-3 w-3" />
-                        )}
-                      </Button>
-                    </div>
-                  </TableCell>
+                        {ROLE_LABEL[user.role] || user.role}
+                      </span>
+                    </TableCell>
 
-                  <TableCell>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        ROLE_COLOR[user.role] ||
-                        "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {ROLE_LABEL[user.role] || user.role}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {user.createdAt}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8"
+                    {/* 🆕 Status badge */}
+                    <TableCell>
+                      <Badge
+                        variant={isBlocked ? "destructive" : "default"}
+                        className="text-xs"
+                      >
+                        {isBlocked ? "Blocked" : "Active"}
+                      </Badge>
+                    </TableCell>
+
+                    <TableCell className="text-muted-foreground">
+                      {user.createdAt}
+                    </TableCell>
+
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          }
+                        />
+                        <DropdownMenuContent align="end" className="w-[200px]">
+                          {/* Change Role */}
+                          <DropdownMenuItem
+                            onClick={() => onRoleChangeClick(user)}
                           >
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Open menu</span>
-                          </Button>
-                        }
-                      />
-                      <DropdownMenuContent align="end" className="w-[160px]">
-                        <DropdownMenuItem
-                          onClick={() => onRoleChangeClick(user)}
-                        >
-                          <Shield className="mr-2 h-4 w-4" />
-                          Change Role
-                        </DropdownMenuItem>
+                            <Shield className="mr-2 h-4 w-4" />
+                            Change Role
+                          </DropdownMenuItem>
 
-                        <DropdownMenuSeparator />
+                          {/* 🆕 Toggle Status — Block / Unblock */}
+                          <DropdownMenuItem
+                            onClick={() => onStatusToggle(user)}
+                          >
+                            {isBlocked ? (
+                              <>
+                                <Unlock className="mr-2 h-4 w-4 text-green-600" />
+                                <span className="text-green-600">
+                                  Unblock User
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="mr-2 h-4 w-4 text-amber-600" />
+                                <span className="text-amber-600">
+                                  Block User
+                                </span>
+                              </>
+                            )}
+                          </DropdownMenuItem>
 
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={() => onDeleteClick(user)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete User
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+                          <DropdownMenuSeparator />
+
+                          {/* Delete */}
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => onDeleteClick(user)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete User
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

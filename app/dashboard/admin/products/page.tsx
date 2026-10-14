@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Search, Package } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -112,18 +113,34 @@ const ProductsPage = () => {
     });
   }, [products, searchTerm, statusFilter]);
 
+  // 🔑 Counts
+  const totalCount = products.length;
+  const filteredCount = filteredProducts.length;
+  const isFiltering = searchTerm !== "" || statusFilter !== "all";
+
   return (
     <div className="p-6 space-y-6 bg-background min-h-screen">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">All Products</h1>
-        <p className="text-muted-foreground mt-1">
-          Browse and manage all products on the platform.
-        </p>
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">All Products</h1>
+          <p className="text-muted-foreground mt-1">
+            Browse and manage all products on the platform.
+          </p>
+        </div>
+
+        {/* 🔑 Total count badge in header */}
+        <Badge
+          variant="outline"
+          className="gap-1.5 px-3 py-1.5 text-sm font-medium"
+        >
+          <Package className="h-3.5 w-3.5" />
+          {isLoading ? "..." : `${totalCount} Products`}
+        </Badge>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -133,6 +150,24 @@ const ProductsPage = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+
+        {/* 🔑 Count badge next to search */}
+        <Badge
+          variant={isFiltering ? "default" : "secondary"}
+          className="gap-1.5 shrink-0"
+        >
+          {isFiltering ? (
+            <>
+              <Search className="h-3 w-3" />
+              {filteredCount} of {totalCount}
+            </>
+          ) : (
+            <>
+              <Package className="h-3 w-3" />
+              {totalCount} total
+            </>
+          )}
+        </Badge>
 
         <Select
           value={statusFilter}
