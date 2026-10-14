@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getMyBusinesses } from "@/lib/core/business-api";
 import { getBusinessProducts, type ProductRecord } from "@/lib/core/product-api";
-import { fetchUnreadCount } from "@/lib/customer_api/notifications";
+import { useUnreadCount } from "@/hooks/use-unread-count";
 import type { IBusiness } from "@/types/business";
 import type { AnalyticsSegment } from "@/components/dashboard/AnalyticsChart";
 
@@ -33,64 +33,95 @@ export interface SellerDashboardData {
   productStatusSegments: AnalyticsSegment[];
   /** Published share of the catalog (0–100), used as the donut centre value. */
   publishedPercentage: number;
+  /** True until the business list has resolved. */
+  isBusinessesLoading: boolean;
+  /** True until the product list has resolved. */
+  isProductsLoading: boolean;
+  /** True while either list is still loading. */
   isLoading: boolean;
   error: string | null;
   reload: () => void;
 }
 
-export function useSellerDashboardData(): SellerDashboardData {
-  const [businesses, setBusinesses] = useState<IBusiness[]>([]);
-  const [products, setProducts] = useState<ProductRecord[]>([]);
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+/**
+ * A snapshot the Server Component already fetched, so the first client render
+ * can paint with data instead of an empty shell. Optional: when it is absent
+ * the hook falls back to fetching in the browser.
+ */
+export interface SellerDashboardInitialData {
+  businesses: IBusiness[];
+  products: ProductRecord[];
+}
+
+export function useSellerDashboardData(
+  initialData?: SellerDashboardInitialData,
+): SellerDashboardData {
+  const hasInitialData = Boolean(initialData);
+  const [businesses, setBusinesses] = useState<IBusiness[]>(initialData?.businesses ?? []);
+  const [products, setProducts] = useState<ProductRecord[]>(initialData?.products ?? []);
+  const [isBusinessesLoading, setIsBusinessesLoading] = useState(!hasInitialData);
+  const [isProductsLoading, setIsProductsLoading] = useState(!hasInitialData);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
+  // Read from the shared store so this page does not fire a second
+  // `/notifications/unread-count` request alongside the sidebar's. It also
+  // starts in parallel with the business fetch below rather than after it.
+  const unreadNotifications = useUnreadCount();
+
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
 
     const load = async () => {
-      setIsLoading(true);
+      setIsBusinessesLoading(true);
+      setIsProductsLoading(true);
       setError(null);
 
       try {
-        const businessResult = await getMyBusinesses();
+        const businessResult = await getMyBusinesses(controller.signal);
+        if (!active) return;
         if (!businessResult.ok || !businessResult.data) {
           throw new Error(businessResult.message);
         }
         const ownedBusinesses = businessResult.data;
 
-        const [productGroups, unread] = await Promise.all([
-          Promise.all(
-            ownedBusinesses.map(async (business) => {
-              const result = await getBusinessProducts(business.id);
-              return result.ok && result.data ? result.data : [];
-            }),
-          ),
-          fetchUnreadCount(),
-        ]);
+        // Show the businesses as soon as they arrive — the product list is a
+        // separate, slower round-trip and the Overview should not wait on it.
+        setBusinesses(ownedBusinesses);
+        setIsBusinessesLoading(false);
+
+        const productGroups = await Promise.all(
+          ownedBusinesses.map(async (business) => {
+            const result = await getBusinessProducts(business.id, controller.signal);
+            return result.ok && result.data ? result.data : [];
+          }),
+        );
 
         if (!active) return;
-        setBusinesses(ownedBusinesses);
         setProducts(productGroups.flat());
-        setUnreadNotifications(unread);
       } catch (loadError) {
+        if (!active) return;
         console.error("Could not load seller dashboard data:", loadError);
-        if (active) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Could not load your dashboard.",
-          );
-        }
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Could not load your dashboard.",
+        );
       } finally {
-        if (active) setIsLoading(false);
+        if (active) {
+          setIsBusinessesLoading(false);
+          setIsProductsLoading(false);
+        }
       }
     };
 
     void load();
     return () => {
       active = false;
+      // Cancel in-flight requests so a quick unmount (or the dev double-mount)
+      // does not leave work running or set stale state.
+      controller.abort();
     };
   }, [reloadKey]);
 
@@ -137,7 +168,9 @@ export function useSellerDashboardData(): SellerDashboardData {
     stats,
     productStatusSegments,
     publishedPercentage,
-    isLoading,
+    isBusinessesLoading,
+    isProductsLoading,
+    isLoading: isBusinessesLoading || isProductsLoading,
     error,
     reload,
   };

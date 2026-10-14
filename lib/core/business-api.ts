@@ -54,16 +54,27 @@ async function readEnvelope<T>(response: Response): Promise<ApiEnvelope<T> | nul
   }
 }
 
-async function sendJson<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<ApiResult<T>> {
+async function sendJson<T>(
+  method: "GET" | "POST" | "PATCH" | "DELETE",
+  path: string,
+  body?: unknown,
+  signal?: AbortSignal,
+): Promise<ApiResult<T>> {
   try {
     const response = await apiFetch(apiUrl(path), {
       method,
       headers: body === undefined ? undefined : { "Content-Type": "application/json" },
       credentials: "include",
       body: body === undefined ? undefined : JSON.stringify(body),
+      signal,
     });
     return toResult<T>(await readEnvelope<T>(response), `Request failed (${response.status}).`);
   } catch (error) {
+    // An aborted request is a deliberate cancel (unmount / effect cleanup), not
+    // a failure — return quietly so it never reaches the console or the UI.
+    if (error instanceof Error && error.name === "AbortError") {
+      return { ok: false, message: "Request cancelled.", data: null };
+    }
     console.error("Business API request failed:", error);
     return { ok: false, message: "Could not reach the server. Please try again.", data: null };
   }
@@ -88,8 +99,8 @@ async function sendMultipart<T>(method: "POST" | "PATCH", path: string, formData
 // GET /api/v1/businesses/me
 // ---------------------------------------------------------------------------
 
-export async function getMyBusinesses(): Promise<ApiResult<IBusiness[]>> {
-  return sendJson<IBusiness[]>("GET", "/api/v1/businesses/me");
+export async function getMyBusinesses(signal?: AbortSignal): Promise<ApiResult<IBusiness[]>> {
+  return sendJson<IBusiness[]>("GET", "/api/v1/businesses/me", undefined, signal);
 }
 
 // ---------------------------------------------------------------------------
@@ -309,12 +320,24 @@ export async function submitBusinessVerification(
 // GET /api/v1/trust-scores/business/:id
 // ---------------------------------------------------------------------------
 
+/**
+ * One trust-score snapshot from `GET /api/v1/trust-scores/business/:id`.
+ *
+ * The server returns `TrustScore` rows (one per business) serialized with
+ * `score` coerced to a number.
+ */
 export interface TrustScoreHistoryEntry {
-  id?: string;
-  score?: number;
-  reason?: string | null;
-  createdAt?: string;
-  changedBy?: string | null;
+  id: string;
+  businessId: string;
+  score: number;
+  /**
+   * Points per trust-rule key, e.g. `{ trade_license_01: 20 }`.
+   * Note: the backend only records the first awarded rule here, so treat this
+   * as partial — a per-rule ledger is not exposed on a public endpoint.
+   */
+  breakdown: Record<string, number>;
+  businessType?: string | null;
+  calculatedAt: string;
 }
 
 export async function getTrustScoreHistory(

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getCategories } from "@/lib/categories-api";
 import type { ICategory } from "@/types/categories";
+import { validateSocialLinks } from "@/lib/core/url";
 import BusinessDocumentManager from "./BusinessDocumentManager";
 import CategorySelector from "./CategorySelector";
 
@@ -24,6 +25,7 @@ export interface BusinessDraft {
   email: string;
   phone: string;
   websiteUrl: string;
+  facebokUrl:string;
   instaUrl: string;
   tiktokUrl: string;
   category: string;
@@ -56,6 +58,7 @@ export default function BusinessCreationWizard({ onSubmit }: BusinessCreationWiz
     email: "",
     phone: "",
     websiteUrl: "",
+    facebokUrl:"",
     instaUrl: "",
     tiktokUrl: "",
     category: "",
@@ -119,6 +122,20 @@ export default function BusinessCreationWizard({ onSubmit }: BusinessCreationWiz
       return;
     }
     if (!onSubmit) return;
+
+    // Social links are optional, but if provided they must be valid URLs —
+    // same rule the business form and the server apply.
+    const socialError = validateSocialLinks([
+      { label: "Website", value: draft.websiteUrl },
+      { label: "Instagram", value: draft.instaUrl },
+      { label: "TikTok", value: draft.tiktokUrl },
+    ]);
+    if (socialError) {
+      setSubmitError(socialError);
+      setActiveStep(0);
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitError(null);
     try {
