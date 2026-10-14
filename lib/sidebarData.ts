@@ -1,4 +1,3 @@
-
 import {
   LayoutDashboard,
   Users,
@@ -15,16 +14,14 @@ import {
   CreditCard,
   BarChart3,
   Package,
-  ShoppingBagIcon,
+  ShoppingBag,
   ShieldCheck,
-  Sparkles,
+  ShoppingBagIcon,
+  User2,
 } from "lucide-react";
 import type { ApiRole } from "@/lib/core/roles";
 
-export const roleSidebars: Record<
-  ApiRole,
-  { title: string; items: SidebarItem[] }
-> = {
+export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[] }> = {
   ADMIN: {
     title: "Admin",
     items: [
@@ -44,20 +41,16 @@ export const roleSidebars: Record<
         icon: Factory,
       },
       {
-        name: "All Products",
-        href: "/dashboard/admin/products",
-        icon: ShoppingBagIcon,
+        name: 'All Products',
+        href: '/dashboard/admin/products',
+        icon: ShoppingBagIcon
       },
       {
         name: "Verification Queue",
         href: "/dashboard/admin/verification-queue",
         icon: Shield,
       },
-      {
-        name: "Reports Review",
-        href: "/dashboard/admin/reports",
-        icon: Flag,
-      },
+      { name: "Reports Review", href: "/dashboard/admin/reports", icon: Flag },
       {
         name: "Trust Rules",
         href: "/dashboard/admin/trust-rules",
@@ -77,6 +70,12 @@ export const roleSidebars: Record<
         name: "Payments",
         href: "/dashboard/admin/payments",
         icon: CreditCard,
+      },
+      {
+        name: "Profile",
+        href: "/dashboard/profile",
+        icon: User2,
+
       },
       {
         name: "Change Password",
@@ -99,6 +98,8 @@ export const roleSidebars: Record<
         href: "/dashboard/moderator/verification-queue",
         icon: Shield,
       },
+      // all perferct
+
       {
         name: "Reports Review",
         href: "/dashboard/moderator/reports",
@@ -126,11 +127,6 @@ export const roleSidebars: Record<
         icon: LayoutDashboard,
       },
       {
-        name: "Trust Passport",
-        href: "/dashboard/seller/passport",
-        icon: Sparkles,
-      },
-      {
         name: "Analytics",
         href: "/dashboard/seller/analytics",
         icon: BarChart3,
@@ -139,12 +135,22 @@ export const roleSidebars: Record<
         name: "My Products",
         href: "/dashboard/seller/products",
         icon: Package,
+
       },
-   
+      {
+        name: "Orders",
+        href: "/dashboard/seller/orders",
+        icon: ShoppingBag,
+      },
       {
         name: "Payments",
         href: "/dashboard/seller/payments",
         icon: CreditCard,
+      },
+      {
+        name: "My Reports",
+        href: "/dashboard/customer/reports",
+        icon: Flag,
       },
       {
         name: "Notifications",
@@ -202,6 +208,8 @@ export type SidebarItem = {
   icon: typeof LayoutDashboard;
 };
 
+
 export type UserRole = ApiRole;
 
 export { Settings };
+

@@ -36,7 +36,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  // status: UserStatus;
+   status?: string;
   createdAt: string;
   avatar?: string;
 }

@@ -32,25 +32,24 @@ export const PaymentsClient = ({ initialPayments }: PaymentsClientProps) => {
     setIsDetailsOpen(true);
   };
 
+  // ✅ Search — name, email, business, IDs
   const filteredPayments = useMemo(() => {
     return payments.filter((payment) => {
+      const q = searchTerm.toLowerCase();
       const matchesSearch =
-        (payment.transactionId || "")
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        (payment.userName || "")
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        (payment.userEmail || "")
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        (payment.businessName || "")
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase());
+        (payment.bkashTrxId || "").toLowerCase().includes(q) ||
+        (payment.bkashPaymentId || "").toLowerCase().includes(q) ||
+        (payment.userName || "").toLowerCase().includes(q) ||
+        (payment.userEmail || "").toLowerCase().includes(q) ||
+        (payment.userId || "").toLowerCase().includes(q) ||
+        (payment.businessName || "").toLowerCase().includes(q) ||
+        (payment.businessId || "").toLowerCase().includes(q) ||
+        (payment.merchantInvoiceNumber || "").toLowerCase().includes(q);
 
       const matchesStatus =
         statusFilter === "all" ||
-        String(payment.status || "").toUpperCase() === statusFilter.toUpperCase();
+        String(payment.status || "").toUpperCase() ===
+          statusFilter.toUpperCase();
 
       return matchesSearch && matchesStatus;
     });
@@ -62,7 +61,7 @@ export const PaymentsClient = ({ initialPayments }: PaymentsClientProps) => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by transaction, payer, or business..."
+            placeholder="Search by trx ID,business..."
             className="pl-9"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -78,7 +77,7 @@ export const PaymentsClient = ({ initialPayments }: PaymentsClientProps) => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="COMPLETED">Completed</SelectItem>
+            <SelectItem value="SUCCESS">Success</SelectItem>
             <SelectItem value="PENDING">Pending</SelectItem>
             <SelectItem value="FAILED">Failed</SelectItem>
             <SelectItem value="CANCELLED">Cancelled</SelectItem>

@@ -92,7 +92,6 @@ export default async function BusinessProfilePage({ params }: BusinessProfilePro
             <ArrowLeft className="size-4" aria-hidden="true" />
             Directory
           </Link>
-          <CustomerReportFormModal businessId={business.id} businessName={business.name} />
         </div>
 
         <article className="mt-5 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
