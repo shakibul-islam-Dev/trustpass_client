@@ -39,6 +39,11 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         icon: Factory,
       },
       {
+        name:'All Products',
+        href: '/dashboard/admin/products',
+        icon: ShoppingBagIcon
+      },
+      {
         name: "Verification Queue",
         href: "/dashboard/admin/verification-queue",
         icon: Shield,

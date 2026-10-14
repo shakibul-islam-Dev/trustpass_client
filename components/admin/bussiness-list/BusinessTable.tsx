@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   MoreHorizontal,
   Eye,
   Trash2,
-  Star,
-  StarOff,
   ChevronLeft,
   ChevronRight,
+  Store,
+  Star,
+  Copy,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,10 +29,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { Business } from "@/types/admin";
+import type { IBusinessResponse } from "@/lib/admin_api/get-businesses";
 
-// Backend can return PENDING | UNDER_REVIEW | APPROVED | REJECTED | SUSPENDED | VERIFIED.
-// The frontend Business type narrows to PENDING | VERIFIED | REJECTED, so we normalize.
 const getStatusVariant = (
   status: string | undefined
 ): "default" | "secondary" | "destructive" => {
@@ -48,10 +49,45 @@ const getStatusVariant = (
 const PAGE_SIZE = 20;
 
 interface BusinessTableProps {
-  businesses: Business[];
-  onViewDetails: (business: Business) => void;
-  onDelete: (business: Business) => void;
+  businesses: IBusinessResponse[];
+  onViewDetails: (business: IBusinessResponse) => void;
+  onDelete: (business: IBusinessResponse) => void;
 }
+
+// ── Copyable Business ID component ──
+const CopyableId = ({ id }: { id: string }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(id);
+      setCopied(true);
+      toast.success("Business ID copied!");
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      title="Click to copy ID"
+      className="group inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground hover:text-foreground transition"
+    >
+      <span className="truncate max-w-[100px]">
+        {id.slice(0, 8)}...{id.slice(-4)}
+      </span>
+      {copied ? (
+        <Check className="h-3 w-3 text-green-500 shrink-0" />
+      ) : (
+        <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition shrink-0" />
+      )}
+    </button>
+  );
+};
 
 export const BusinessTable = ({
   businesses,
@@ -60,19 +96,14 @@ export const BusinessTable = ({
 }: BusinessTableProps) => {
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Pagination
   const totalPages = Math.max(1, Math.ceil(businesses.length / PAGE_SIZE));
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const endIndex = startIndex + PAGE_SIZE;
   const paginated = businesses.slice(startIndex, endIndex);
 
-  const handlePrev = () => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1);
-  };
-
-  const handleNext = () => {
-    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-  };
+  const handlePrev = () => currentPage > 1 && setCurrentPage(currentPage - 1);
+  const handleNext = () =>
+    currentPage < totalPages && setCurrentPage(currentPage + 1);
 
   return (
     <div className="space-y-4">
@@ -82,12 +113,11 @@ export const BusinessTable = ({
             <TableRow className="hover:bg-transparent">
               <TableHead className="w-[60px]">#</TableHead>
               <TableHead>Business</TableHead>
+              <TableHead>Business ID</TableHead>
               <TableHead>Owner</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Trust Score</TableHead>
+              <TableHead>Trust</TableHead>
               <TableHead>Products</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Featured</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -95,7 +125,7 @@ export const BusinessTable = ({
             {paginated.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={9}
+                  colSpan={8}
                   className="text-center py-8 text-muted-foreground"
                 >
                   No businesses found.
@@ -107,39 +137,70 @@ export const BusinessTable = ({
                   <TableCell className="text-muted-foreground text-sm">
                     {startIndex + index + 1}
                   </TableCell>
+
+                  {/* Business + Logo */}
                   <TableCell className="font-medium">
+                    <div className="flex items-center gap-3">
+                      <div className="relative size-9 rounded-full bg-muted border border-border overflow-hidden flex items-center justify-center shrink-0">
+                        {business.logoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={business.logoUrl}
+                            alt={business.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Store className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="truncate flex items-center gap-1">
+                          {business.name}
+                          {business.isFeatured && (
+                            <Star className="h-3 w-3 text-yellow-500 fill-yellow-500 shrink-0" />
+                          )}
+                        </span>
+                        <span className="text-xs text-muted-foreground truncate">
+                          {business.slug || "-"}
+                        </span>
+                      </div>
+                    </div>
+                  </TableCell>
+
+                  {/* ✅ Business ID — copyable */}
+                  <TableCell>
+                    <CopyableId id={business.id} />
+                  </TableCell>
+
+                  {/* Owner */}
+                  <TableCell>
                     <div className="flex flex-col">
-                      <span>{business.name}</span>
+                      <span>{business.ownerName || "Business Owner"}</span>
                       <span className="text-xs text-muted-foreground">
-                        {business.tradeLicenseNo}
+                        {business.ownerEmail || "-"}
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span>{business.ownerName}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {business.ownerEmail}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{business.category}</Badge>
-                  </TableCell>
+
+                  {/* Trust */}
                   <TableCell>
                     <Badge
                       variant={
                         business.trustScore >= 80
                           ? "default"
                           : business.trustScore >= 50
-                          ? "secondary"
-                          : "destructive"
+                            ? "secondary"
+                            : "destructive"
                       }
                     >
                       {business.trustScore}
                     </Badge>
                   </TableCell>
+
+                  {/* Products */}
                   <TableCell>{business.productsCount}</TableCell>
+
+                  {/* Status */}
                   <TableCell>
                     <Badge
                       variant={getStatusVariant(
@@ -152,13 +213,8 @@ export const BusinessTable = ({
                       )}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    {business.isFeatured ? (
-                      <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                    ) : (
-                      <StarOff className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </TableCell>
+
+                  {/* Actions */}
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger
@@ -198,7 +254,6 @@ export const BusinessTable = ({
         </Table>
       </div>
 
-      {/* Pagination */}
       {businesses.length > 0 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">

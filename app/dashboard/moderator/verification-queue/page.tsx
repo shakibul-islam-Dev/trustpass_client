@@ -19,13 +19,7 @@ import {
 } from "@/lib/admin_api/get-verifications";
 import { reviewVerification } from "@/lib/admin_action/verifications_action";
 
-/**
- * Previous implementation by: Saheen (deleted/outdated)
- * Re-implemented by: Aritro
- * Reason: Same type mismatch as Moderator Reports.
- * Reused Admin Verification Queue pattern.
- */
-export default function ModeratorVerificationQueue() {
+const ModeratorVerificationQueue = () => {
   const [requests, setRequests] = useState<IVerificationResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,53 +29,80 @@ export default function ModeratorVerificationQueue() {
   const [selectedRequest, setSelectedRequest] =
     useState<IVerificationResponse | null>(null);
 
-  useEffect(() => {
-    const load = async () => {
-      setIsLoading(true);
+  const loadVerifications = async () => {
+    setIsLoading(true);
+    try {
       const data = await fetchVerifications({ limit: 100 });
       setRequests(data);
+    } catch (error) {
+      console.error("Failed to load verifications:", error);
+      toast.error("Failed to load verifications.");
+    } finally {
       setIsLoading(false);
-    };
-    load();
+    }
+  };
+
+  useEffect(() => {
+    loadVerifications();
   }, []);
 
-  const handleApprove = async (id: string) => {
-    const result = await reviewVerification(id, { status: "APPROVED" });
-    if (result?.error) {
-      toast.error("Failed to approve.");
-      return;
+  const handleApprove = async (requestId: string) => {
+    try {
+      const result = await reviewVerification(requestId, { status: "APPROVED" });
+      if (result?.error || result?.success === false) {
+        toast.error("Failed to approve.");
+        return;
+      }
+      toast.success("Verification approved!");
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === requestId ? { ...r, status: "APPROVED" as const } : r
+        )
+      );
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Approve error:", error);
+      toast.error("Something went wrong.");
     }
-    toast.success("Approved!");
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "APPROVED" as const } : r))
-    );
-    setIsModalOpen(false);
   };
 
-  const handleReject = async (id: string) => {
-    const result = await reviewVerification(id, { status: "REJECTED" });
-    if (result?.error) {
-      toast.error("Failed to reject.");
-      return;
+  const handleReject = async (requestId: string) => {
+    try {
+      const result = await reviewVerification(requestId, { status: "REJECTED" });
+      if (result?.error || result?.success === false) {
+        toast.error("Failed to reject.");
+        return;
+      }
+      toast.success("Verification rejected.");
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === requestId ? { ...r, status: "REJECTED" as const } : r
+        )
+      );
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Reject error:", error);
+      toast.error("Something went wrong.");
     }
-    toast.success("Rejected.");
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "REJECTED" as const } : r))
-    );
-    setIsModalOpen(false);
   };
 
-  const openDetails = (request: IVerificationResponse) => {
+  const openDetailsModal = (request: IVerificationResponse) => {
     setSelectedRequest(request);
     setIsModalOpen(true);
   };
 
-  const filtered = useMemo(() => {
-    return requests.filter((r) => {
+  const filteredRequests = useMemo(() => {
+    return requests.filter((req) => {
+      const q = searchTerm.toLowerCase();
       const matchesSearch =
-        (r.businessName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (r.ownerName || "").toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === "all" || r.status === statusFilter;
+        (req.businessName || "").toLowerCase().includes(q) ||
+        (req.businessSlug || "").toLowerCase().includes(q) ||
+        (req.ownerId || "").toLowerCase().includes(q) ||
+        (req.businessId || "").toLowerCase().includes(q);
+
+      const matchesStatus =
+        statusFilter === "all" || req.status === statusFilter;
+
       return matchesSearch && matchesStatus;
     });
   }, [requests, searchTerm, statusFilter]);
@@ -99,13 +120,17 @@ export default function ModeratorVerificationQueue() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search..."
+            placeholder="Search by business, slug, or ID..."
             className="pl-9"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "all")}>
+
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v ?? "all")}
+        >
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Filter by Status" />
           </SelectTrigger>
@@ -121,11 +146,15 @@ export default function ModeratorVerificationQueue() {
       </div>
 
       {isLoading ? (
-        <div className="text-sm text-muted-foreground">Loading...</div>
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-16 bg-muted animate-pulse rounded-md" />
+          ))}
+        </div>
       ) : (
         <VerificationTable
-          requests={filtered}
-          onViewDetails={openDetails}
+          requests={filteredRequests}
+          onViewDetails={openDetailsModal}
           onApprove={handleApprove}
           onReject={handleReject}
         />
@@ -140,4 +169,6 @@ export default function ModeratorVerificationQueue() {
       />
     </div>
   );
-}
+};
+
+export default ModeratorVerificationQueue;
