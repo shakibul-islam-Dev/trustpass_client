@@ -1,39 +1,39 @@
-import productDetails from '@/public/data/productDetails.json';
-import businesses from '@/public/data/businessCard.json';
-import ProductCatalogFilters from '@/components/marketplace/products/ProductCatalogFilters';
-import ProductGrid from '@/components/marketplace/products/ProductGrid';
+
+import { ProductCatalogFilters } from "@/components/products/ProductCatalogFilters";
+import ProductGrid from "@/components/products/ProductGrid";
+import ProductPagination from "@/components/products/ProductPagination";
+import { fetchProducts } from "@/lib/products-api/create-products";
 
 type ProductsPageProps = {
   searchParams: Promise<{
     query?: string;
-    stock?: string;
+    status?: string;
+    page?: string;
+    limit?: string;
   }>;
 };
 
-export default async function ProductsCatalogPage({ searchParams }: ProductsPageProps) {
+const PAGE_SIZE = 12;
+
+export default async function ProductsCatalogPage({
+  searchParams,
+}: ProductsPageProps) {
   const params = await searchParams;
-  const query = params.query?.trim().toLowerCase() ?? '';
-  const stockFilter = params.stock?.trim().toLowerCase() ?? 'all';
+  const query = params.query?.trim() ?? "";
+  const statusFilter = params.status?.trim().toUpperCase() ?? "ALL";
+  const currentPage = Math.max(1, Number(params.page ?? 1));
+  const limit = Math.max(1, Number(params.limit ?? PAGE_SIZE));
 
-  const filteredProducts = productDetails.filter((product) => {
-    const matchesQuery = query
-      ? product.name.toLowerCase().includes(query) ||
-        product.description.toLowerCase().includes(query)
-      : true;
-
-    const matchesStock =
-      stockFilter === 'in_stock'
-        ? typeof product.stock === 'number' && product.stock > 0
-        : true;
-
-    return matchesQuery && matchesStock;
+  const { products, total, totalPages } = await fetchProducts({
+    page: currentPage,
+    limit,
+    search: query || undefined,
+    status: statusFilter !== "ALL" ? statusFilter : undefined,
   });
 
   return (
-    <main className="min-h-screen bg-background font-sans text-foreground">
+    <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        
-        {/* Header */}
         <div className="mb-8">
           <p className="text-sm font-semibold uppercase tracking-wider text-primary">
             Marketplace Catalog
@@ -46,14 +46,24 @@ export default async function ProductsCatalogPage({ searchParams }: ProductsPage
           </p>
         </div>
 
-        <ProductCatalogFilters query={query} stockFilter={stockFilter} />
-        <ProductGrid
-          products={filteredProducts}
-          businesses={businesses}
-          totalCount={productDetails.length}
+        <ProductCatalogFilters
           query={query}
-          stockFilter={stockFilter}
+          statusFilter={statusFilter}
+          totalCount={total}
+          filteredCount={products.length}
         />
+
+        <ProductGrid products={products} />
+
+        {totalPages > 1 && (
+          <ProductPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            query={query}
+            statusFilter={statusFilter}
+            limit={limit}
+          />
+        )}
       </div>
     </main>
   );

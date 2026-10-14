@@ -1,230 +1,167 @@
-import Link from 'next/link';
-import productDetails from '@/public/data/productDetails.json';
-import businesses from '@/public/data/businessCard.json';
-import Image from 'next/image';
-
-type Product = (typeof productDetails)[number];
-type Business = (typeof businesses)[number];
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ArrowLeft, Package, Shield, ExternalLink } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { ProductGallery } from "@/components/products/ProductGallery";
+import { cn } from "@/lib/utils";
+import { fetchProductBySlug } from "@/lib/products-api/create-products";
 
 type ProductDetailPageProps = {
   params: Promise<{ slug: string }>;
 };
 
-const getProductBusiness = (product: Product, businessList: Business[]): Business | undefined => {
-  return businessList.find(
-    (b) =>
-      b.owner_id === product.business_id ||
-      String(b.id) === product.business_id ||
-      b.category_id === product.category_id,
-  );
+const formatPrice = (price: number, currency: string = "BDT") => {
+  try {
+    return new Intl.NumberFormat("en-BD", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(price);
+  } catch {
+    return `${currency} ${price.toLocaleString()}`;
+  }
 };
 
-export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
-  const resolvedParams = await params;
-  const target = resolvedParams.slug?.toLowerCase().trim() ?? '';
-
-  const product = productDetails.find(
-    (item) => item.slug?.toLowerCase() === target || String(item.id) === target,
+const getSafeImage = (images?: string[] | null): string | null => {
+  if (!Array.isArray(images)) return null;
+  const valid = images.filter(
+    (img) => typeof img === "string" && img.trim().length > 0
   );
+  return valid[0] ?? null;
+};
+
+export default async function ProductDetailPage({
+  params,
+}: ProductDetailPageProps) {
+  const resolvedParams = await params;
+  const slug = resolvedParams.slug;
+
+  const product = await fetchProductBySlug(slug);
 
   if (!product) {
-    return (
-      <main className="min-h-screen bg-background px-4 py-20 text-center font-sans text-foreground">
-        <div className="mx-auto max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
-          <span className="text-4xl">📦</span>
-          <h1 className="mt-4 text-2xl font-bold">Product Not Found</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            The product you are looking for does not exist or may have been removed.
-          </p>
-          <Link
-            href="/products"
-            className="mt-6 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-          >
-            ← Back to Product Catalog
-          </Link>
-        </div>
-      </main>
-    );
+    notFound();
   }
 
-  const business = getProductBusiness(product, businesses);
-  const primaryImage =
-    product.images?.find((image) => image.is_primary)?.url ??
-    product.images?.[0]?.url ??
-    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80';
+  const isInStock = product.stock > 0;
+  const primaryImage = getSafeImage(product.images);
 
-  const galleryImages =
-    product.images && product.images.length > 0
-      ? product.images.map((img) => img.url)
-      : [primaryImage];
-
-  const isInStock = typeof product.stock === 'number' && product.stock > 0;
   return (
-    <main className="min-h-screen bg-background font-sans text-foreground">
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-        
-        {/* Navigation Breadcrumb */}
-        <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href="/products" className="transition hover:text-primary">
+    <main className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+        {/* Breadcrumb */}
+        <nav className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
+          <Link href="/products" className="hover:text-primary transition">
             Products
           </Link>
           <span>/</span>
-          <span className="truncate font-medium text-foreground">{product.name}</span>
-        </div>
+          <span className="truncate font-medium text-foreground">
+            {product.name}
+          </span>
+        </nav>
 
-        {/* Product Details Container */}
+        {/* Product Container */}
         <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
           <div className="grid gap-8 p-6 lg:grid-cols-[1.1fr_0.9fr] lg:p-10">
-            
-            {/* Gallery Column */}
-            <div className="space-y-4">
-              <div className="overflow-hidden rounded-2xl border border-border bg-muted/30">
-                <Image
-                  src={primaryImage}
-                  alt={product.name}
-                  width={400}
-                  height={400}
-                  className="h-80 sm:h-96 w-full object-cover"
-                />
-              </div>
+            {/* Gallery */}
+            <ProductGallery
+              images={product.images ?? []}
+              productName={product.name}
+              fallback={primaryImage ?? undefined}
+            />
 
-              {galleryImages.length > 1 && (
-                <div className="grid grid-cols-4 gap-3">
-                  {galleryImages.map((imageUrl, index) => (
-                    <div
-                      key={`${imageUrl}-${index}`}
-                      className="overflow-hidden rounded-xl border border-border bg-muted/20"
-                    >
-                      <Image
-                        src={imageUrl}
-                        alt={`${product.name} thumbnail ${index + 1}`}
-                        width={400}
-                        height={400}
-                        className="h-20 w-full object-cover"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Product Info Column */}
+            {/* Info */}
             <div className="space-y-6">
               <div>
-                {business && (
-                  <Link
-                    href="/businesses"
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary hover:underline"
-                  >
-                    <span>Sold by {business.business_name}</span>
-                    <span>↗</span>
-                  </Link>
-                )}
-                <h1 className="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
                   {product.name}
                 </h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Product ID: <span className="font-mono">{product.id}</span>
+                </p>
               </div>
 
-              {/* Price & Availability */}
+              {/* Price & Stock */}
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-3xl font-extrabold text-foreground">
-                  ${Number(product.price).toFixed(2)}{' '}
-                  <span className="text-sm font-normal text-muted-foreground">
-                    {product.currency}
-                  </span>
+                <span className="text-3xl font-extrabold">
+                  {formatPrice(product.price, product.currency)}
                 </span>
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    isInStock
-                      ? 'bg-emerald-500/10 text-emerald-600'
-                      : 'bg-rose-500/10 text-rose-600'
-                  }`}
+                <Badge
+                  variant={isInStock ? "default" : "destructive"}
+                  className="gap-1"
                 >
-                  {isInStock ? `In Stock (${product.stock} units)` : 'Out of Stock'}
-                </span>
-                <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  {product.status}
-                </span>
+                  <Package className="h-3 w-3" />
+                  {isInStock ? `${product.stock} in stock` : "Out of Stock"}
+                </Badge>
+                <Badge variant="outline">
+                  {product.status.replace(/_/g, " ")}
+                </Badge>
               </div>
+
+              <Separator />
 
               {/* Description */}
               <div className="space-y-2">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                   Description
                 </h2>
-                <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-                  {product.description}
+                <p className="text-sm leading-relaxed text-muted-foreground sm:text-base whitespace-pre-line">
+                  {product.description || "No description provided."}
                 </p>
               </div>
 
-              {/* Vendor Trust Badge Card */}
-              {business && (
-                <div className="rounded-2xl border border-border bg-muted/30 p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {business.logo_url ? (
-                        <Image
-                          src={business.logo_url}
-                          alt={business.business_name}
-                          width={40}
-                          height={40}
-                          className="h-10 w-10 rounded-full object-cover border border-border"
-                        />
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">
-                          {business.business_name.charAt(0)}
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-sm font-bold text-foreground">
-                          {business.business_name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {business.business_type} • Verified Vendor
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
-                        {business.trust_score} Trust
-                      </span>
-                    </div>
+              <Separator />
+
+              {/* Trust badge */}
+              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Shield className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold">Verified on TrustPass</p>
+                    <p className="text-xs text-muted-foreground">
+                      This product is listed by a verified business.
+                    </p>
                   </div>
                 </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-                <button
-                  type="button"
-                  className="flex-1 rounded-xl bg-primary px-6 py-3 text-center text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
-                >
-                  Contact Seller
-                </button>
-                {business && (
-                  <Link
-                    href="/businesses"
-                    className="flex-1 rounded-xl border border-border bg-card px-6 py-3 text-center text-sm font-semibold text-foreground transition hover:bg-muted"
-                  >
-                    Browse Business Directory
-                  </Link>
-                )}
               </div>
 
+              {/* Actions */}
+              <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+                {/* ✅ Real <Button> — no render, no asChild */}
+                <Button className="flex-1 h-12" size="lg">
+                  Contact Seller
+                </Button>
+
+                {/* ✅ Plain <Link> styled with buttonVariants — NO Button wrapper */}
+                <Link
+                  href={`/businesses/${product.businessId}`}
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "lg" }),
+                    "flex-1 h-12 gap-1"
+                  )}
+                >
+                  View Business
+                  <ExternalLink className="h-4 w-4" />
+                </Link>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Back Link */}
         <div className="mt-8">
+          {/* ✅ Plain <Link> — NO Button wrapper */}
           <Link
             href="/products"
-            className="text-sm font-medium text-primary hover:underline"
+            className={cn(buttonVariants({ variant: "ghost" }), "gap-2")}
           >
-            ← Back to Product Catalog
+            <ArrowLeft className="h-4 w-4" />
+            Back to Products
           </Link>
         </div>
-
       </div>
     </main>
   );
