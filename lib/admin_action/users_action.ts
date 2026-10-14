@@ -1,14 +1,4 @@
-// Previous implementation by: Existing Developer
-// Kept for reference because Server Action cannot send cross-origin cookies.
-//
-// "use server";
-// import { patchMutation } from "../core/mutations";
-// export const updateUserRole = async (userId, role) => {
-//   return await patchMutation(`/api/v1/users/${userId}/role`, { role });
-// };
-
 // Updated implementation for: User Management page (Admin)
-// Client-side fetch — cookie automatic goes via credentials: "include".
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
@@ -18,7 +8,6 @@ import type { UserRole } from "@/types/admin";
 // ============================================================
 // PATCH /api/v1/users/:id/role — Update user role (ADMIN)
 // ============================================================
-
 export const updateUserRole = async (
   userId: string,
   role: UserRole
@@ -29,16 +18,13 @@ export const updateUserRole = async (
     const res = await apiFetch(apiUrl(`/api/v1/users/${userId}/role`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role }),   // "CUSTOMER" | "SELLER" | "MODERATOR" | "ADMIN"
-      credentials: "include",   // ← Cookie automatic
+      body: JSON.stringify({ role }),
+      credentials: "include",
       cache: "no-store",
     });
 
-    console.log("📥 updateUserRole status:", res.status);
-
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      console.error("❌ updateUserRole failed:", res.status, errorData);
       return {
         error: true,
         status: res.status,
@@ -59,25 +45,86 @@ export const updateUserRole = async (
 };
 
 // ============================================================
+// 🆕 PATCH /api/v1/users/:id/status — Update user status (ADMIN)
+// Body: { status: "ACTIVE" | "BLOCKED", reason?: string }
+// ============================================================
+export interface IUpdateStatusPayload {
+  status: "ACTIVE" | "BLOCKED";
+  reason?: string;
+}
+
+export const updateUserStatus = async (
+  userId: string,
+  payload: IUpdateStatusPayload
+) => {
+  console.log("🟡 updateUserStatus:", userId, payload);
+
+  try {
+    const res = await apiFetch(apiUrl(`/api/v1/users/${userId}/status`), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    console.log("📥 updateUserStatus status:", res.status);
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      console.error("❌ updateUserStatus failed:", res.status, errorData);
+      return {
+        error: true,
+        status: res.status,
+        message: errorData.message || "Failed to update status",
+      };
+    }
+
+    const data = await res.json().catch(() => ({ success: true }));
+    console.log("✅ updateUserStatus success:", data);
+    return { success: true, ...data };
+  } catch (error) {
+    console.error("❌ updateUserStatus exception:", error);
+    return {
+      error: true,
+      message: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+
+// ============================================================
+// 🆕 Helper — Toggle status (ACTIVE ↔ BLOCKED)
+// ============================================================
+export const toggleUserStatus = async (
+  userId: string,
+  currentStatus?: string
+) => {
+  const isCurrentlyBlocked =
+    String(currentStatus).toUpperCase() === "BLOCKED";
+
+  const newStatus: "ACTIVE" | "BLOCKED" = isCurrentlyBlocked
+    ? "ACTIVE"
+    : "BLOCKED";
+
+  return updateUserStatus(userId, { status: newStatus });
+};
+
+// ============================================================
 // DELETE /api/v1/users/:id — Delete user (ADMIN)
 // ============================================================
-
 export const deleteUser = async (userId: string) => {
   console.log("🔴 deleteUser:", userId);
 
   try {
     const res = await apiFetch(apiUrl(`/api/v1/users/${userId}`), {
       method: "DELETE",
-      credentials: "include",   // ← Cookie automatic
+      credentials: "include",
       cache: "no-store",
       headers: { "Content-Type": "application/json" },
     });
 
-    console.log("📥 deleteUser status:", res.status);
-
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      console.error("❌ deleteUser failed:", res.status, errorData);
       return {
         error: true,
         status: res.status,
@@ -85,9 +132,9 @@ export const deleteUser = async (userId: string) => {
       };
     }
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({ success: true }));
     console.log("✅ deleteUser success:", data);
-    return data;
+    return { success: true, ...data };
   } catch (error) {
     console.error("❌ deleteUser exception:", error);
     return {
