@@ -1,7 +1,12 @@
 import { CategoryClient } from "@/components/admin/category-management/CategoryClient";
 import { fetchCategories } from "@/lib/admin_api/getcategories";
+import { createPageMetadata } from "@/lib/page-metadata";
 
 export const dynamic = "force-dynamic";
+export const metadata = createPageMetadata(
+  "Categories",
+  "Manage the business and product categories available on TrustPass.",
+);
 
 /**
  * Server Component — Fetches initial data on the server.

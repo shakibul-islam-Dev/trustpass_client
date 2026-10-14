@@ -17,6 +17,7 @@ import {
   ShoppingBag,
   ShieldCheck,
   ShoppingBagIcon,
+  User2,
 } from "lucide-react";
 import type { ApiRole } from "@/lib/core/roles";
 
@@ -40,7 +41,7 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         icon: Factory,
       },
       {
-        name:'All Products',
+        name: 'All Products',
         href: '/dashboard/admin/products',
         icon: ShoppingBagIcon
       },
@@ -66,10 +67,16 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         icon: Bell,
       },
       {
-  name: "Payments",
-  href: "/dashboard/admin/payments",
-  icon: CreditCard,
-},
+        name: "Payments",
+        href: "/dashboard/admin/payments",
+        icon: CreditCard,
+      },
+      {
+        name: "Profile",
+        href: "/dashboard/profile",
+        icon: User2,
+
+      },
       {
         name: "Change Password",
         href: "/dashboard/change-password",
@@ -120,7 +127,7 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         icon: LayoutDashboard,
       },
       {
-        name:"Analytics",
+        name: "Analytics",
         href: "/dashboard/seller/analytics",
         icon: BarChart3,
       },

@@ -2,7 +2,11 @@
 
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
-import { updateUserRole, deleteUser } from "@/lib/admin_action/users_action";
+import {
+  updateUserRole,
+  deleteUser,
+  toggleUserStatus,
+} from "@/lib/admin_action/users_action";
 import { fetchUsers } from "@/lib/admin_api/get-users";
 import type { User, UserRole } from "@/types/admin";
 import { UserFilters } from "./UserFilters";
@@ -22,6 +26,7 @@ export const UserManagementClient = ({
     name: u.name,
     email: u.email,
     role: u.role as UserRole,
+    status: u.status, // 🆕 status field
     createdAt: new Date(u.createdAt).toLocaleDateString(),
     avatar: u.image,
   }));
@@ -37,6 +42,9 @@ export const UserManagementClient = ({
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // 🆕 Status toggle loading state
+  const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
+
   const reloadUsers = async () => {
     try {
       const data = await fetchUsers({ page: 1, limit: 100 });
@@ -45,6 +53,7 @@ export const UserManagementClient = ({
         name: u.name,
         email: u.email,
         role: u.role as UserRole,
+        status: u.status,
         createdAt: new Date(u.createdAt).toLocaleDateString(),
         avatar: u.image,
       }));
@@ -55,6 +64,7 @@ export const UserManagementClient = ({
     }
   };
 
+  // ── Role change ──
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
     try {
       const result = await updateUserRole(userId, newRole);
@@ -74,6 +84,38 @@ export const UserManagementClient = ({
     }
   };
 
+  // ── 🆕 Status toggle ──
+  const handleStatusToggle = async (user: User) => {
+    setTogglingUserId(user.id);
+    try {
+      const result = await toggleUserStatus(user.id, user.status);
+
+      if (result?.error || result?.success === false) {
+        toast.error(result?.message || "Failed to update status.");
+        return;
+      }
+
+      const isBlocked = String(user.status).toUpperCase() === "BLOCKED";
+      const newStatus = isBlocked ? "ACTIVE" : "BLOCKED";
+
+      toast.success(
+        newStatus === "ACTIVE" ? "User unblocked!" : "User blocked!"
+      );
+
+      // Optimistic update
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id ? { ...u, status: newStatus } : u
+        )
+      );
+    } catch (error) {
+      console.error("Status toggle error:", error);
+      toast.error("Something went wrong.");
+    } finally {
+      setTogglingUserId(null);
+    }
+  };
+
   const openRoleModal = (user: User) => {
     setSelectedUser(user);
     setIsModalOpen(true);
@@ -84,6 +126,7 @@ export const UserManagementClient = ({
     setIsDeleteDialogOpen(true);
   };
 
+  // ── Delete ──
   const handleConfirmDelete = async () => {
     if (!deletingUser) return;
 
@@ -109,6 +152,7 @@ export const UserManagementClient = ({
     }
   };
 
+  // ── Filter ──
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
       const matchesSearch =
@@ -132,6 +176,7 @@ export const UserManagementClient = ({
         users={filteredUsers}
         onRoleChangeClick={openRoleModal}
         onDeleteClick={openDeleteDialog}
+        onStatusToggle={handleStatusToggle}
       />
 
       <RoleChangeModal

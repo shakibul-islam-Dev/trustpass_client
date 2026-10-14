@@ -16,7 +16,7 @@ import {
 } from "@/lib/core/business-api";
 import type { IBusiness } from "@/types/business";
 
-/** Wizard document ids -> server document types. */
+/** Wizard document IDs mapped to server document types. */
 const WIZARD_DOCUMENT_TYPES: Record<string, BusinessDocumentType> = {
   "trade-license": "TRADE_LICENSE",
   nid: "NID",
@@ -25,10 +25,7 @@ const WIZARD_DOCUMENT_TYPES: Record<string, BusinessDocumentType> = {
 
 /**
  * Standalone business creation flow used by the settings page.
- *
- * Creates the business, then uploads every document the wizard collected, and
- * finally shows a success panel that links to the new business or the
- * dashboard. Errors are thrown so the wizard can surface them inline.
+ * Creates the business, uploads collected documents, and displays a success state.
  */
 export default function BusinessCreationForm() {
   const [created, setCreated] = useState<IBusiness | null>(null);
@@ -61,12 +58,12 @@ export default function BusinessCreationForm() {
     }
     const business = createdResult.data;
 
-    // Upload every document the wizard collected, right after creation.
     let uploaded = 0;
     for (const item of requiredBusinessDocuments) {
       const file = files[item.id];
       const documentType = WIZARD_DOCUMENT_TYPES[item.id];
       if (!file || !documentType) continue;
+      
       const uploadResult = await uploadBusinessDocument(
         business.id,
         documentType,
@@ -84,42 +81,48 @@ export default function BusinessCreationForm() {
 
   if (created) {
     return (
-      <div className="mx-auto w-full max-w-3xl space-y-4 rounded-2xl border border-border bg-surface p-8 text-center shadow-surface">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-success-soft text-success">
-          <CheckCircle2 className="size-7" />
+      <div className="mx-auto w-full max-w-2xl space-y-6 rounded-3xl border border-border bg-surface p-8 text-center shadow-lg transition-all md:p-12">
+        <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-success-soft text-success shadow-sm">
+          <CheckCircle2 className="size-8" />
         </div>
-        <div className="space-y-1">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">
-            Business created
+        
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Business successfully created!
           </h1>
-          <p className="text-sm text-muted-foreground">
-            {created.name} is ready
+          <p className="text-base text-muted-foreground">
+            <strong className="text-foreground">{created.name}</strong> is ready to go
             {uploadedDocuments > 0
-              ? `, with ${uploadedDocuments} document${
+              ? ` with ${uploadedDocuments} document${
                   uploadedDocuments === 1 ? "" : "s"
-                } uploaded`
+                } uploaded securely`
               : ""}
             .
           </p>
         </div>
-        <div className="flex flex-wrap justify-center gap-3 pt-2">
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
           <Link
             href={`/dashboard/seller/settings/buisnessform?id=${created.id}`}
-            className={buttonVariants({ className: "gap-2" })}
+            className={buttonVariants({ className: "w-full sm:w-auto gap-2" })}
           >
-            Manage this business
+            Manage business
             <ArrowRight className="size-4" />
           </Link>
           <Link
             href="/dashboard/seller"
-            className={buttonVariants({ variant: "outline" })}
+            className={buttonVariants({ variant: "outline", className: "w-full sm:w-auto" })}
           >
-            Back to dashboard
+            Return to dashboard
           </Link>
         </div>
       </div>
     );
   }
 
-  return <BusinessCreationWizard onSubmit={handleSubmit} />;
+  return (
+    <div className="mx-auto w-full max-w-4xl">
+      <BusinessCreationWizard onSubmit={handleSubmit} />
+    </div>
+  );
 }
