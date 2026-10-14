@@ -1,33 +1,56 @@
-// Updated implementation for: Business List (Admin)
-// Client-side fetch + response normalization.
+// Business List (Admin) — API + normalize
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
 import { apiFetch } from "@/lib/core/api-fetch";
 import type { TVerificationStatus } from "@/types/business";
 
-/**
- * Business-level verification status. Re-exported from the shared business
- * types so the admin list and the rest of the app use one union
- * (`UNVERIFIED | PENDING | VERIFIED | REJECTED | SUSPENDED`).
- */
 export type { TVerificationStatus };
+
+export interface IBusinessAddress {
+  id?: string;
+  addressLine?: string;
+  city?: string;
+  district?: string;
+  division?: string;
+  postalCode?: string;
+  country?: string;
+}
 
 export interface IBusinessResponse {
   id: string;
   name: string;
   slug?: string;
+  description?: string | null;
+  logoUrl?: string | null;
+  coverUrl?: string | null;
+  businessType?: "INDIVIDUAL" | "COMPANY";
+
+  ownerId?: string;
   ownerName?: string;
   ownerEmail?: string;
-  category?: string;
-  phone?: string;
-  location?: string;
+
+  categoryId?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+
+  websiteUrl?: string | null;
+  instaUrl?: string | null;
+  tiktokUrl?: string | null;
+
   verificationStatus: TVerificationStatus;
   trustScore: number;
   productsCount: number;
-  tradeLicenseNo?: string;
+  documentsCount: number;
+  reportsCount: number;
   isFeatured: boolean;
   createdAt: string;
+  updatedAt?: string;
+
+  address?: IBusinessAddress | null;
+
+  // Flag — full details load hoyeche ki na
+  _detailsLoaded?: boolean;
 }
 
 export interface IBusinessFilters {
@@ -35,7 +58,6 @@ export interface IBusinessFilters {
   limit?: number;
   search?: string;
   verificationStatus?: TVerificationStatus;
-  categoryId?: string;
 }
 
 const buildQuery = (filters: IBusinessFilters): string => {
@@ -45,80 +67,100 @@ const buildQuery = (filters: IBusinessFilters): string => {
   if (filters.search) params.set("search", filters.search);
   if (filters.verificationStatus)
     params.set("verificationStatus", filters.verificationStatus);
-  if (filters.categoryId) params.set("categoryId", filters.categoryId);
-  const query = params.toString();
-  return query ? `?${query}` : "";
+  const q = params.toString();
+  return q ? `?${q}` : "";
 };
 
 // ============================================================
-// NORMALIZE — backend nested object → flat UI shape
+// NORMALIZE — ADMIN list (limited fields)
 // ============================================================
-
 const normalizeBusiness = (raw: any): IBusinessResponse => {
-  const business = raw.business || raw;
-  const owner = business.owner || raw.owner || {};
+  const owner = raw.owner ?? {};
 
   return {
-    id: business.id || raw.id,
-    name: business.name || "Unknown Business",
-    slug: business.slug,
+    id: raw.id,
+    name: raw.name || "Unknown Business",
+    slug: raw.slug,
+    description: raw.description ?? null,
+    logoUrl: raw.logoUrl ?? null,
+    coverUrl: raw.coverUrl ?? null,
+    businessType: raw.businessType,
 
-    ownerName:
-      raw.ownerName ||
-      owner.name ||
-      business.ownerName ||
-      "-",
+    ownerId: raw.ownerId ?? owner.id,
+    ownerName: owner.name || raw.ownerName || "Business Owner",
+    ownerEmail: owner.email || raw.contactEmail || "-",
 
-    ownerEmail:
-      raw.ownerEmail ||
-      owner.email ||
-      business.ownerEmail ||
-      "-",
+    categoryId: raw.categoryId,
+    contactEmail: raw.contactEmail ?? null,
+    contactPhone: raw.contactPhone ?? null,
 
-    category:
-      raw.category ||
-      business.category?.name ||
-      business.categoryName ||
-      "-",
+    websiteUrl: raw.websiteUrl ?? null,
+    instaUrl: raw.instaUrl ?? null,
+    tiktokUrl: raw.tiktokUrl ?? null,
 
-    phone: business.contactPhone || business.phone,
-    location:
-      business.address?.city ||
-      business.address?.district ||
-      business.location,
+    verificationStatus: raw.verificationStatus || "PENDING",
+    trustScore: Number(raw.trustScore ?? 0),
+    productsCount: Number(raw._count?.products ?? raw.productsCount ?? 0),
+    documentsCount: Number(raw._count?.documents ?? 0),
+    reportsCount: Number(raw._count?.reports ?? 0),
+    isFeatured: Boolean(raw.isFeatured),
 
-    verificationStatus:
-      business.verificationStatus ||
-      raw.verificationStatus ||
-      "PENDING",
+    createdAt: raw.createdAt ?? "",
+    updatedAt: raw.updatedAt,
 
-    trustScore: Number(business.trustScore ?? raw.trustScore ?? 0),
-
-    productsCount: Number(
-      business.productsCount ?? business._count?.products ?? raw.productsCount ?? 0
-    ),
-
-    tradeLicenseNo:
-      business.tradeLicenseNo ||
-      business.tradeLicense ||
-      raw.tradeLicenseNo ||
-      "-",
-
-    isFeatured: Boolean(business.isFeatured ?? raw.isFeatured),
-
-    createdAt: business.createdAt || raw.createdAt,
+    address: raw.address ?? null,
+    _detailsLoaded: false,
   };
 };
 
 // ============================================================
-// GET /api/v1/admin/businesses — List all businesses (ADMIN)
+// NORMALIZE — PUBLIC single (full fields)
 // ============================================================
+const mergeFullDetails = (
+  base: IBusinessResponse,
+  full: any
+): IBusinessResponse => {
+  const addr = full.address ?? null;
 
+  return {
+    ...base,
+    description: full.description ?? base.description,
+    logoUrl: full.logoUrl ?? base.logoUrl,
+    coverUrl: full.coverUrl ?? base.coverUrl,
+    businessType: full.businessType ?? base.businessType,
+
+    contactEmail: full.contactEmail ?? base.contactEmail,
+    contactPhone: full.contactPhone ?? base.contactPhone,
+    categoryId: full.categoryId ?? base.categoryId,
+
+    websiteUrl: full.websiteUrl ?? base.websiteUrl,
+    instaUrl: full.instaUrl ?? base.instaUrl,
+    tiktokUrl: full.tiktokUrl ?? base.tiktokUrl,
+
+    address: addr
+      ? {
+          id: addr.id,
+          addressLine: addr.addressLine,
+          city: addr.city,
+          district: addr.district,
+          division: addr.division,
+          postalCode: addr.postalCode,
+          country: addr.country,
+        }
+      : base.address,
+
+    _detailsLoaded: true,
+  };
+};
+
+// ============================================================
+// GET /api/v1/admin/businesses — list (limited)
+// ============================================================
 export const fetchAllBusinesses = async (
   filters: IBusinessFilters = {}
 ): Promise<IBusinessResponse[]> => {
   const url = apiUrl(`/api/v1/admin/businesses${buildQuery(filters)}`);
-  console.log("🔍 fetchAllBusinesses URL:", url);
+  console.log("🔍 fetchAllBusinesses:", url);
 
   try {
     const response = await apiFetch(url, {
@@ -128,26 +170,74 @@ export const fetchAllBusinesses = async (
       headers: { Accept: "application/json" },
     });
 
-    console.log("📥 fetchAllBusinesses status:", response.status);
-
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
-      console.error("❌ fetchAllBusinesses error:", response.status, errorText);
+      console.error("❌ fetch error:", response.status);
       return [];
     }
 
     const json = await response.json();
-    console.log("📥 fetchAllBusinesses raw:", json);
 
     let rawArray: any[] = [];
     if (Array.isArray(json)) rawArray = json;
     else if (Array.isArray(json?.data)) rawArray = json.data;
     else if (Array.isArray(json?.businesses)) rawArray = json.businesses;
-    else if (Array.isArray(json?.data?.businesses)) rawArray = json.data.businesses;
+    else if (Array.isArray(json?.data?.businesses))
+      rawArray = json.data.businesses;
 
-    return rawArray.map(normalizeBusiness);
+    const normalized = rawArray.map(normalizeBusiness);
+    console.log("✅ Loaded", normalized.length, "businesses");
+    return normalized;
   } catch (error) {
-    console.error("❌ fetchAllBusinesses exception:", error);
+    console.error("❌ fetch exception:", error);
     return [];
   }
+};
+
+// ============================================================
+// GET /api/v1/businesses/:id — full details (merge)
+// ============================================================
+export const fetchBusinessFullDetails = async (
+  businessId: string
+): Promise<any | null> => {
+  const url = apiUrl(`/api/v1/businesses/${businessId}`);
+  console.log("🔍 fetchBusinessFullDetails:", url);
+
+  try {
+    const response = await apiFetch(url, {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+
+    if (!response.ok) {
+      console.warn("⚠️ Full details fetch failed:", response.status);
+      return null;
+    }
+
+    const json = await response.json();
+    console.log("📥 Full details raw:", json);
+
+    // Handle various shapes
+    const data = json?.data ?? json?.business ?? json;
+    return data;
+  } catch (error) {
+    console.error("❌ fetchBusinessFullDetails exception:", error);
+    return null;
+  }
+};
+
+// ============================================================
+// Merged helper — list item + full details
+// ============================================================
+export const fetchBusinessWithDetails = async (
+  business: IBusinessResponse
+): Promise<IBusinessResponse> => {
+  // Already loaded? Return as-is
+  if (business._detailsLoaded) return business;
+
+  const full = await fetchBusinessFullDetails(business.id);
+  if (!full) return business; // fallback to list data
+
+  return mergeFullDetails(business, full);
 };
