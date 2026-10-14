@@ -16,54 +16,93 @@ export default function Footer() {
   const isStaff = role === 'MODERATOR' || role === 'ADMIN';
 
   return (
-    <footer className="border-t border-neutral-800 bg-neutral-950 font-sans text-white">
+    <footer className="border-t border-border bg-card font-sans text-foreground transition-colors duration-200">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
+          
+          {/* Brand & Description */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white font-bold text-neutral-950">TP</span>
-              <span className="text-lg font-bold tracking-tight text-white">Trust<span className="text-sky-400">Pass</span></span>
-            </div>
-            <p className="text-xs leading-relaxed text-neutral-400">
+            <Link href="/" className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary font-bold text-primary-foreground">
+                TP
+              </span>
+              <span className="text-lg font-bold tracking-tight text-foreground">
+                Trust<span className="text-primary">Pass</span>
+              </span>
+            </Link>
+            <p className="text-xs leading-relaxed text-muted-foreground">
               The verified business directory. We validate legitimacy, monitor reviews, and calculate genuine Trust Scores so buyers and vendors transact with confidence.
             </p>
           </div>
 
+          {/* Marketplace Links */}
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-white">Marketplace</h4>
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+              Marketplace
+            </h4>
             <ul className="mt-4 space-y-2 text-xs">
-              <li><Link href="/businesses" className="text-neutral-300 transition hover:text-white">Browse All Businesses</Link></li>
-              <li><Link href="/businesses?sort=trustScore" className="text-neutral-300 transition hover:text-white">Top Trust Score Rankings</Link></li>
-              <li><Link href="/businesses?category=ecommerce" className="text-neutral-300 transition hover:text-white">E-Commerce & Retail</Link></li>
-              <li><Link href="/businesses?category=services" className="text-neutral-300 transition hover:text-white">Professional Services</Link></li>
+              <li>
+                <Link href="/businesses" className="text-muted-foreground transition hover:text-foreground">
+                  Browse All Businesses
+                </Link>
+              </li>
+              <li>
+                <Link href="/businesses?sort=trustScore" className="text-muted-foreground transition hover:text-foreground">
+                  Top Trust Score Rankings
+                </Link>
+              </li>
+              <li>
+                <Link href="/businesses?category=ecommerce" className="text-muted-foreground transition hover:text-foreground">
+                  E-Commerce & Retail
+                </Link>
+              </li>
+              <li>
+                <Link href="/businesses?category=services" className="text-muted-foreground transition hover:text-foreground">
+                  Professional Services
+                </Link>
+              </li>
             </ul>
           </div>
 
+          {/* Governance & Staff Links */}
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-white">Trust & Governance</h4>
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+              Trust & Governance
+            </h4>
             <ul className="mt-4 space-y-2 text-xs">
-              <li><Link href="/dashboard/customer/reports" className="text-neutral-300 transition hover:text-white">File a Business Complaint</Link></li>
-              {/* Staff-only. Previously these were plain links, so every
-                  anonymous visitor saw a "Moderator Queue (Staff)" link that
-                  bounced them to sign-in. */}
+              <li>
+                <Link href="/dashboard/customer/reports" className="text-muted-foreground transition hover:text-foreground">
+                  File a Business Complaint
+                </Link>
+              </li>
               {isStaff && (
                 <>
-                  <li><Link href="/dashboard/moderator/verification-queue" className="text-neutral-300 transition hover:text-white">Moderator Queue (Staff)</Link></li>
-                  <li><Link href="/dashboard/moderator/reports" className="text-neutral-300 transition hover:text-white">Report Review Center</Link></li>
+                  <li>
+                    <Link href="/dashboard/moderator/verification-queue" className="text-muted-foreground transition hover:text-foreground">
+                      Moderator Queue (Staff)
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/dashboard/moderator/reports" className="text-muted-foreground transition hover:text-foreground">
+                      Report Review Center
+                    </Link>
+                  </li>
                 </>
               )}
             </ul>
           </div>
 
+          {/* Portals Link */}
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-white">Portals</h4>
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+              Portals
+            </h4>
             <ul className="mt-4 space-y-2 text-xs">
-              {/* One link, pointing at whichever dashboard this account
-                  actually has. The old list advertised /dashboard/business,
-                  /dashboard/buyer and /admin/analytics — none of which exist,
-                  so all three were 404s. */}
               <li>
-                <Link href={isAuthenticated ? homeForRole(role) : '/auth/login'} className="text-neutral-300 transition hover:text-white">
+                <Link 
+                  href={isAuthenticated ? homeForRole(role) : '/auth/login'} 
+                  className="text-muted-foreground transition hover:text-foreground"
+                >
                   {isAuthenticated ? 'My Dashboard' : 'Sign In'}
                 </Link>
               </li>
@@ -71,7 +110,8 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col items-center justify-between border-t border-neutral-800 pt-6 text-xs text-neutral-400 sm:flex-row">
+        {/* Bottom Bar */}
+        <div className="mt-10 flex flex-col items-center justify-between border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row">
           <p>© {new Date().getFullYear()} TrustPass. All rights reserved.</p>
         </div>
       </div>
