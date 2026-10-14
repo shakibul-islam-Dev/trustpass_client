@@ -100,6 +100,7 @@ async function sendJson<T>(
   method: "GET" | "POST" | "PATCH" | "DELETE",
   path: string,
   body?: unknown,
+  signal?: AbortSignal,
 ): Promise<ApiResult<T>> {
   try {
     const response = await apiFetch(apiUrl(path), {
@@ -107,9 +108,15 @@ async function sendJson<T>(
       headers: body === undefined ? undefined : { "Content-Type": "application/json" },
       credentials: "include",
       body: body === undefined ? undefined : JSON.stringify(body),
+      signal,
     });
     return toResult<T>(await readEnvelope<T>(response), `Request failed (${response.status}).`);
   } catch (error) {
+    // An aborted request is a deliberate cancel (unmount / effect cleanup), not
+    // a failure — return quietly so it never reaches the console or the UI.
+    if (error instanceof Error && error.name === "AbortError") {
+      return { ok: false, message: "Request cancelled.", data: null };
+    }
     console.error("Product API request failed:", error);
     return { ok: false, message: "Could not reach the server. Please try again.", data: null };
   }
@@ -140,14 +147,17 @@ const PRODUCTS_PAGE_SIZE = 100;
  * The response envelope carries `meta`, but `sendJson` returns only `data`, so
  * we keep requesting pages until one comes back short of a full page.
  */
-export async function getBusinessProducts(businessId: string): Promise<ApiResult<ProductRecord[]>> {
+export async function getBusinessProducts(
+  businessId: string,
+  signal?: AbortSignal,
+): Promise<ApiResult<ProductRecord[]>> {
   const path = (page: number) =>
     `/api/v1/businesses/${encodeURIComponent(businessId)}/products?limit=${PRODUCTS_PAGE_SIZE}&page=${page}`;
 
   const products: ProductRecord[] = [];
 
   for (let page = 1; ; page += 1) {
-    const result = await sendJson<ProductRecord[]>("GET", path(page));
+    const result = await sendJson<ProductRecord[]>("GET", path(page), undefined, signal);
     if (!result.ok) {
       // Surface the error only if we have nothing yet; otherwise return what we
       // could load rather than dropping the whole list.

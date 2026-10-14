@@ -1,4 +1,10 @@
 import ChangePasswordForm from "@/components/password/ChangePasswordForm";
+import { createPageMetadata } from "@/lib/page-metadata";
+
+export const metadata = createPageMetadata(
+  "Change Password",
+  "Update the password for your TrustPass account.",
+);
 
 /**
  * `/dashboard/change-password` — open to every signed-in role

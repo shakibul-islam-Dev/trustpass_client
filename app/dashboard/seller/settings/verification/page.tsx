@@ -1,4 +1,10 @@
 import SellerBusinessVerification from "@/components/seller/SellerBusinessVerification";
+import { createPageMetadata } from "@/lib/page-metadata";
+
+export const metadata = createPageMetadata(
+  "Business Verification",
+  "Review verification status and manage documents for your TrustPass business.",
+);
 
 /**
  * Seller verification page.

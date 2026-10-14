@@ -1,6 +1,13 @@
 import { Suspense } from "react";
 import ResetPasswordForm from "@/components/password/ResetPasswordForm";
 
+import { createPageMetadata } from "@/lib/page-metadata";
+
+export const metadata = createPageMetadata(
+  "Choose a New Password",
+  "Set a new password for your TrustPass account.",
+);
+
 /**
  * `/auth/reset-password` — password reset.
  *

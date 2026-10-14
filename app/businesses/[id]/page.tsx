@@ -1,11 +1,13 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, Camera, Globe, Mail, MapPin, Music2, Phone } from 'lucide-react';
+import { cache } from "react";
 import {
   getBusinessById,
   getBusinessBySlug,
 } from '@/lib/business-api/all-business';
 import { CustomerReportFormModal } from '@/components/customer/report-management/CustomerReportFormModal';
+import { createPageMetadata } from "@/lib/page-metadata";
 import type { IBusiness } from '@/types/business';
 
 type BusinessProfileProps = {
@@ -18,11 +20,39 @@ const isUuid = (value: string) =>
 const formatLabel = (value: string) =>
   value.toLowerCase().replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 
+const getBusiness = cache(async (identifier: string) =>
+  isUuid(identifier)
+    ? getBusinessById(identifier)
+    : getBusinessBySlug(identifier),
+);
+
+export async function generateMetadata({ params }: BusinessProfileProps) {
+  const { id } = await params;
+  const response = await getBusiness(id);
+  const business = response.success ? response.data : undefined;
+
+  if (!business) {
+    return createPageMetadata(
+      "Business Profile",
+      "View a business profile and verification information on TrustPass.",
+    );
+  }
+
+  const description =
+    business.description?.trim() ||
+    `View the ${business.name} profile, verification status, and trust information on TrustPass.`;
+
+  return {
+    ...createPageMetadata(business.name, description),
+    alternates: {
+      canonical: `/businesses/${encodeURIComponent(business.slug || business.id)}`,
+    },
+  };
+}
+
 export default async function BusinessProfilePage({ params }: BusinessProfileProps) {
   const { id: identifier } = await params;
-  const response = isUuid(identifier)
-    ? await getBusinessById(identifier)
-    : await getBusinessBySlug(identifier);
+  const response = await getBusiness(identifier);
   const business: IBusiness | undefined = response.success ? response.data : undefined;
 
   if (!business) {
