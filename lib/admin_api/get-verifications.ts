@@ -1,5 +1,4 @@
 // Updated implementation for: Business Verifications (Admin/Moderator)
-// Client-side fetch + response normalization.
 // Developer: Aritro
 
 import { apiUrl } from "@/lib/core/api-url";
@@ -10,11 +9,6 @@ import type {
   BusinessVerificationStatus,
 } from "@/types/admin";
 
-/**
- * Status of a verification request row. Sourced from the shared admin type so
- * the queue and the rest of the app cannot drift from the backend
- * `BusinessVerificationStatus` enum.
- */
 export type TVerificationStatus = BusinessVerificationStatus;
 
 export interface IVerificationDocument {
@@ -30,16 +24,19 @@ export interface IVerificationResponse {
   id: string;
   businessId: string;
   businessName?: string;
-  ownerName?: string;
-  ownerEmail?: string;
-  category?: string;
-  phone?: string;
-  location?: string;
-  tradeLicenseNo?: string;
-  trustScore?: number;
+  businessSlug?: string;
+  businessVerificationStatus?: string;
+
+  // 🔑 Owner ID (submittedBy) — notification er jonno
+  ownerId?: string;
+
   status: TVerificationStatus;
+  reviewedBy?: string | null;
+  reviewedAt?: string;
   submittedAt?: string;
-  documents?: IVerificationDocument[];
+
+  trustScore?: number;
+  documents: IVerificationDocument[];
 }
 
 export interface IVerificationFilters {
@@ -55,80 +52,47 @@ const buildQuery = (filters: IVerificationFilters): string => {
   if (filters.page) params.set("page", String(filters.page));
   if (filters.limit) params.set("limit", String(filters.limit));
   if (filters.search) params.set("search", filters.search);
-  const query = params.toString();
-  return query ? `?${query}` : "";
+  const q = params.toString();
+  return q ? `?${q}` : "";
 };
 
-// ============================================================
-// NORMALIZE — backend nested object → flat UI shape
-// ============================================================
+const normalizeDocument = (doc: any): IVerificationDocument => ({
+  id: doc.id,
+  documentType: doc.documentType || doc.document_type || "UNKNOWN",
+  fileUrl: doc.fileUrl || doc.file_url || doc.url || "#",
+  status: doc.status,
+  rejectionReason: doc.rejectionReason ?? doc.rejection_reason ?? null,
+  uploadedAt: doc.uploadedAt || doc.uploaded_at || doc.createdAt,
+});
 
 const normalizeVerification = (raw: any): IVerificationResponse => {
   const business = raw.business || {};
-  const owner = raw.business?.owner || raw.owner || {};
+
+  const rawDocs = Array.isArray(business.documents)
+    ? business.documents
+    : Array.isArray(raw.documents)
+    ? raw.documents
+    : [];
 
   return {
     id: raw.id,
     businessId: raw.businessId || business.id,
+    businessName: raw.businessName || business.name || "Unknown Business",
+    businessSlug: business.slug,
+    businessVerificationStatus: business.verificationStatus,
 
-    businessName:
-      raw.businessName ||
-      business.name ||
-      "Unknown Business",
-
-    ownerName:
-      raw.ownerName ||
-      owner.name ||
-      business.ownerName ||
-      "-",
-
-    ownerEmail:
-      raw.ownerEmail ||
-      owner.email ||
-      business.ownerEmail ||
-      "-",
-
-    category:
-      raw.category ||
-      business.category?.name ||
-      business.categoryName ||
-      "-",
-
-    phone: raw.phone || business.contactPhone || business.phone,
-    location:
-      raw.location ||
-      business.address?.city ||
-      business.address?.district ||
-      business.location,
-
-    tradeLicenseNo:
-      raw.tradeLicenseNo ||
-      business.tradeLicenseNo ||
-      business.tradeLicense ||
-      "-",
-
-    trustScore: raw.trustScore ?? business.trustScore ?? 0,
+    // 🔑 ownerId = submittedBy (backend theke)
+    ownerId: raw.submittedBy || business.ownerId,
 
     status: raw.status || "PENDING",
+    reviewedBy: raw.reviewedBy,
+    reviewedAt: raw.reviewedAt,
+    submittedAt: raw.submittedAt || raw.createdAt,
 
-    submittedAt: raw.submittedAt || raw.createdAt || raw.updatedAt,
-
-    documents: Array.isArray(raw.documents)
-      ? raw.documents.map((doc: any) => ({
-          id: doc.id,
-          documentType: doc.documentType || doc.document_type || "UNKNOWN",
-          fileUrl: doc.fileUrl || doc.file_url || doc.url || "#",
-          status: doc.status,
-          rejectionReason: doc.rejectionReason ?? doc.rejection_reason ?? null,
-          uploadedAt: doc.uploadedAt || doc.uploaded_at || doc.createdAt,
-        }))
-      : [],
+    trustScore: raw.trustScore ?? business.trustScore ?? 0,
+    documents: rawDocs.map(normalizeDocument),
   };
 };
-
-// ============================================================
-// GET /api/v1/verifications — List (MODERATOR, ADMIN)
-// ============================================================
 
 export const fetchVerifications = async (
   filters: IVerificationFilters = {}
@@ -144,35 +108,28 @@ export const fetchVerifications = async (
       headers: { Accept: "application/json" },
     });
 
-    console.log("📥 fetchVerifications status:", response.status);
-
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
-      console.error("❌ fetchVerifications error:", response.status, errorText);
+      console.error("❌ fetchVerifications error:", response.status);
       return [];
     }
 
     const json = await response.json();
-    console.log("📥 fetchVerifications raw:", json);
 
     let rawArray: any[] = [];
     if (Array.isArray(json)) rawArray = json;
     else if (Array.isArray(json?.data)) rawArray = json.data;
     else if (Array.isArray(json?.verifications)) rawArray = json.verifications;
-    else if (Array.isArray(json?.data?.verifications)) rawArray = json.data.verifications;
+    else if (Array.isArray(json?.data?.verifications))
+      rawArray = json.data.verifications;
 
     const normalized = rawArray.map(normalizeVerification);
-    console.log("✅ fetchVerifications normalized:", normalized);
+    console.log("✅ Normalized[0]:", normalized[0]);
     return normalized;
   } catch (error) {
     console.error("❌ fetchVerifications exception:", error);
     return [];
   }
 };
-
-// ============================================================
-// GET /api/v1/verifications/:id — Detail
-// ============================================================
 
 export const fetchVerificationById = async (
   id: string
@@ -198,10 +155,6 @@ export const fetchVerificationById = async (
   }
 };
 
-// ============================================================
-// GET /api/v1/businesses/:id/documents — List business documents
-// ============================================================
-
 export const fetchBusinessDocuments = async (
   businessId: string
 ): Promise<IVerificationDocument[]> => {
@@ -223,13 +176,7 @@ export const fetchBusinessDocuments = async (
     else if (Array.isArray(json?.data)) rawArray = json.data;
     else if (Array.isArray(json?.documents)) rawArray = json.documents;
 
-    return rawArray.map((doc: any) => ({
-      id: doc.id,
-      documentType: doc.documentType || doc.document_type || "UNKNOWN",
-      fileUrl: doc.fileUrl || doc.file_url || doc.url || "#",
-      status: doc.status,
-      uploadedAt: doc.uploadedAt || doc.uploaded_at || doc.createdAt,
-    }));
+    return rawArray.map(normalizeDocument);
   } catch (error) {
     console.error("fetchBusinessDocuments error:", error);
     return [];
