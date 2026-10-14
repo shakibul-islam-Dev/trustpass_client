@@ -22,14 +22,14 @@ export default function Footer() {
           
           {/* Brand & Description */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary font-bold text-primary-foreground">
                 TP
               </span>
               <span className="text-lg font-bold tracking-tight text-foreground">
                 Trust<span className="text-primary">Pass</span>
               </span>
-            </div>
+            </Link>
             <p className="text-xs leading-relaxed text-muted-foreground">
               The verified business directory. We validate legitimacy, monitor reviews, and calculate genuine Trust Scores so buyers and vendors transact with confidence.
             </p>
