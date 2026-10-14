@@ -1,3 +1,4 @@
+
 import {
   LayoutDashboard,
   Users,
@@ -14,12 +15,17 @@ import {
   CreditCard,
   BarChart3,
   Package,
+  ShoppingBag,
+  ShoppingBagIcon,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
 import type { ApiRole } from "@/lib/core/roles";
 
-export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[] }> = {
+export const roleSidebars: Record<
+  ApiRole,
+  { title: string; items: SidebarItem[] }
+> = {
   ADMIN: {
     title: "Admin",
     items: [
@@ -39,11 +45,20 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         icon: Factory,
       },
       {
+        name: "All Products",
+        href: "/dashboard/admin/products",
+        icon: ShoppingBagIcon,
+      },
+      {
         name: "Verification Queue",
         href: "/dashboard/admin/verification-queue",
         icon: Shield,
       },
-      { name: "Reports Review", href: "/dashboard/admin/reports", icon: Flag },
+      {
+        name: "Reports Review",
+        href: "/dashboard/admin/reports",
+        icon: Flag,
+      },
       {
         name: "Trust Rules",
         href: "/dashboard/admin/trust-rules",
@@ -60,10 +75,10 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         icon: Bell,
       },
       {
-  name: "Payments",
-  href: "/dashboard/admin/payments",
-  icon: CreditCard,
-},
+        name: "Payments",
+        href: "/dashboard/admin/payments",
+        icon: CreditCard,
+      },
       {
         name: "Change Password",
         href: "/dashboard/change-password",
@@ -85,8 +100,6 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         href: "/dashboard/moderator/verification-queue",
         icon: Shield,
       },
-      // all perferct
-
       {
         name: "Reports Review",
         href: "/dashboard/moderator/reports",
@@ -119,7 +132,7 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         icon: Sparkles,
       },
       {
-        name:"Analytics",
+        name: "Analytics",
         href: "/dashboard/seller/analytics",
         icon: BarChart3,
       },
@@ -127,7 +140,6 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
         name: "My Products",
         href: "/dashboard/seller/products",
         icon: Package,
-
       },
       {
         name: "Notifications",
@@ -185,8 +197,6 @@ export type SidebarItem = {
   icon: typeof LayoutDashboard;
 };
 
-
 export type UserRole = ApiRole;
 
 export { Settings };
-
