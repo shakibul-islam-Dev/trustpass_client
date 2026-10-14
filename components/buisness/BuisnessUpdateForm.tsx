@@ -29,6 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getCategories } from "@/lib/categories-api";
 import type { ICategory } from "@/types/categories";
+import { validateSocialLinks } from "@/lib/core/url";
 import {
   getBusinessById,
   updateBusiness,
@@ -226,6 +227,18 @@ export default function BuisnessUpdateForm({
     return null;
   };
 
+  /**
+   * The server's updateBusinessSchema validates these fields as URLs, so catch
+   * obvious mistakes before submitting. Empty values are allowed (a blank field
+   * clears the link).
+   */
+  const validateLinks = (): string | null =>
+    validateSocialLinks([
+      { label: "Website", value: websiteUrl },
+      { label: "Instagram", value: instaUrl },
+      { label: "TikTok", value: tiktokUrl },
+    ]);
+
   const handleSave = async () => {
     setMessage(null);
 
@@ -237,6 +250,12 @@ export default function BuisnessUpdateForm({
     const addressError = validateAddress();
     if (addressError) {
       setMessage({ tone: "error", text: addressError });
+      return;
+    }
+
+    const socialError = validateLinks();
+    if (socialError) {
+      setMessage({ tone: "error", text: socialError });
       return;
     }
 

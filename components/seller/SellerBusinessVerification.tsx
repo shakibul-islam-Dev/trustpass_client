@@ -280,7 +280,9 @@ export default function SellerBusinessVerification({
   const status = business?.verificationStatus;
   const isUnderReview = status === "PENDING";
   const isVerified = status === "VERIFIED";
-  const canSubmit = Boolean(business) && !isUnderReview && !isVerified;
+  // The backend rejects submissions without at least one APPROVED document,
+  // so only enable Submit once one exists (avoids a guaranteed 422).
+  const canSubmit = Boolean(business) && !isUnderReview && !isVerified && approvedCount > 0;
 
   // ---------------------------------------------------------------------------
   // Loading / error / empty states

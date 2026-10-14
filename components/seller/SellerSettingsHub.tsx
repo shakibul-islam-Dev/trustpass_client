@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   Building2,
   ChevronRight,
-  CreditCard,
   KeyRound,
   Palette,
   Settings,
@@ -45,12 +44,6 @@ const settingsLinks = [
     description: "Update the password used to sign in.",
     href: "/dashboard/change-password",
     icon: KeyRound,
-  },
-  {
-    title: "Payments",
-    description: "Fee payments and transaction history.",
-    href: "/dashboard/seller/payments",
-    icon: CreditCard,
   },
 ];
 

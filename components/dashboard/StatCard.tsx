@@ -20,8 +20,20 @@ interface StatCardsProps {
 }
 
 const StatCards = ({ items = [] }: StatCardsProps) => {
+  // Match the column count to the number of cards. The old fixed 4-column grid
+  // left an empty trailing slot whenever fewer than four cards were supplied
+  // (e.g. the seller overview has 3), so the row looked like it wasn't full width.
+  const columnsClass =
+    items.length === 1
+      ? "sm:grid-cols-1"
+      : items.length === 2
+        ? "sm:grid-cols-2"
+        : items.length === 3
+          ? "sm:grid-cols-3"
+          : "sm:grid-cols-2 xl:grid-cols-4";
+
   return (
-    <div className="grid w-full grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+    <div className={`grid w-full grid-cols-1 gap-5 ${columnsClass}`}>
       {items.map((item) => {
         const Icon = item.icon;
         return (
