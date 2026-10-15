@@ -2,6 +2,7 @@
 
 import { type FormEvent, useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,26 +56,31 @@ export default function ChangePasswordForm() {
 
     if (!currentPassword) {
       setErrorMessage("Enter your current password.");
+      toast.error("Enter your current password.");
       return;
     }
 
     if (newPassword.length < MIN_PASSWORD_LENGTH) {
       setErrorMessage(`New password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+      toast.error(`New password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
       return;
     }
 
     if (newPassword !== confirmPassword) {
       setErrorMessage("The two passwords do not match.");
+      toast.error("The two passwords do not match.");
       return;
     }
 
     if (newPassword === currentPassword) {
       setErrorMessage("The new password must be different from the current one.");
+      toast.error("The new password must be different from the current one.");
       return;
     }
 
     if (!isApiConfigured()) {
       setErrorMessage("API URL is not configured.");
+      toast.error("API URL is not configured.");
       return;
     }
 
@@ -92,14 +98,15 @@ export default function ChangePasswordForm() {
     if (!result.ok) {
       setSessionExpired(result.status === 401);
       setErrorMessage(result.message);
+      toast.error(result.message);
       return;
     }
 
-    setSuccessMessage(
-      revokeOtherSessions
-        ? "Password changed. Your other devices have been signed out."
-        : "Password changed.",
-    );
+    const message = revokeOtherSessions
+      ? "Password changed. Your other devices have been signed out."
+      : "Password changed.";
+    setSuccessMessage(message);
+    toast.success(message);
 
     // Wipe the fields so a stale password cannot be resubmitted by accident.
     setCurrentPassword("");

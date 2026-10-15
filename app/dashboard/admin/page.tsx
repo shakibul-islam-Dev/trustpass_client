@@ -90,7 +90,7 @@ export default function AdminOverviewPage() {
           title="Total Users"
           value={isLoading ? "..." : stats.totalUsers}
           icon={Users}
-          colorClass="bg-primary/10 text-primary"
+          colorClass="bg-primary-soft text-primary"
           description={
             stats.newUsersThisMonth > 0
               ? `+${stats.newUsersThisMonth} this month`
@@ -101,7 +101,7 @@ export default function AdminOverviewPage() {
           title="Total Businesses"
           value={isLoading ? "..." : stats.totalBusinesses}
           icon={Building2}
-          colorClass="bg-blue-500/10 text-blue-500"
+          colorClass="bg-primary-soft text-primary"
           description={
             stats.verifiedBusinesses > 0
               ? `${stats.verifiedBusinesses} verified`
@@ -112,14 +112,14 @@ export default function AdminOverviewPage() {
           title="Pending Verifications"
           value={isLoading ? "..." : stats.pendingVerifications}
           icon={ShieldCheck}
-          colorClass="bg-yellow-500/10 text-yellow-500"
+          colorClass="bg-warning-soft text-warning"
           description="Awaiting review"
         />
         <StatCard
           title="Active Reports"
           value={isLoading ? "..." : stats.activeReports}
           icon={Flag}
-          colorClass="bg-destructive/10 text-destructive"
+          colorClass="bg-danger-soft text-danger"
           description={
             stats.pendingReports > 0
               ? `${stats.pendingReports} pending`
@@ -134,25 +134,25 @@ export default function AdminOverviewPage() {
           title="New Users (Month)"
           value={isLoading ? "..." : stats.newUsersThisMonth}
           icon={TrendingUp}
-          colorClass="bg-green-500/10 text-green-500"
+          colorClass="bg-success-soft text-success"
         />
         <StatCard
           title="Verified Businesses"
           value={isLoading ? "..." : stats.verifiedBusinesses}
           icon={CheckCircle}
-          colorClass="bg-emerald-500/10 text-emerald-500"
+          colorClass="bg-success-soft text-success"
         />
         <StatCard
           title="Pending Reports"
           value={isLoading ? "..." : stats.pendingReports}
           icon={Flag}
-          colorClass="bg-orange-500/10 text-orange-500"
+          colorClass="bg-warning-soft text-warning"
         />
         <StatCard
           title="Total Categories"
           value={isLoading ? "..." : dashboard?.businessCategories.length ?? 0}
           icon={Building2}
-          colorClass="bg-purple-500/10 text-purple-500"
+          colorClass="bg-muted text-muted-foreground"
         />
       </div>
 
@@ -377,21 +377,21 @@ function StatCard({
   title,
   value,
   icon: Icon,
-  colorClass = "bg-primary/10 text-primary",
+  colorClass = "bg-primary-soft text-primary",
   description,
 }: StatCardProps) {
   return (
     <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
+      <CardContent>
+        <div className="flex items-center justify-between gap-4">
           <div className="space-y-1">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-3xl font-bold">{value}</p>
+            <p className="text-2xl font-bold tracking-tight tabular-nums sm:text-3xl">{value}</p>
             {description && (
               <p className="text-xs text-muted-foreground">{description}</p>
             )}
           </div>
-          <div className={`p-3 rounded-full ${colorClass}`}>
+          <div className={`shrink-0 rounded-full p-3 ${colorClass}`}>
             <Icon className="h-5 w-5" />
           </div>
         </div>

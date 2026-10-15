@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { NavLink } from "./NavLink";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { NotificationDropdown } from "@/components/shared/notification-dropdown/NotificationDropdown";
@@ -26,8 +27,12 @@ export default function Navbar() {
   }
 
   const handleLogout = async () => {
-    await signOut();
-    await refresh();
+    const ok = await signOut();
+    if (!ok) {
+      toast.error("Could not sign you out. Please try again.");
+      return;
+    }
+    toast.success("Signed out.");
     router.replace("/auth/login");
     router.refresh();
   };
@@ -43,7 +48,7 @@ export default function Navbar() {
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary font-bold text-primary-foreground shadow-sm">
               TP
             </span>
-            <span className="text-xl font-bold tracking-tight text-foreground">
+            <span className="hidden text-xl font-bold tracking-tight text-foreground sm:inline">
               Trust<span className="text-primary">Pass</span>
             </span>
           </Link>
@@ -65,8 +70,11 @@ export default function Navbar() {
 
         {/* RIGHT: Theme + Notifications + Profile */}
         <div className="flex items-center gap-2">
-          {/* Theme Toggle */}
-          <ToggleBar />
+          {/* Theme Toggle (hidden on phones to keep the header from overflowing —
+              it is reachable from the mobile menu instead). */}
+          <div className="hidden sm:block">
+            <ToggleBar />
+          </div>
 
           {/* Notification Dropdown (only if logged in) */}
           {isAuthenticated && <NotificationDropdown />}
@@ -134,8 +142,24 @@ export default function Navbar() {
                 >
                   Sign In
                 </Link>
+
+                <Link
+                  href="/auth/register"
+                  className={cn(buttonVariants({ size: "sm" }), "flex-1")}
+                >
+                  Sign Up
+                </Link>
               </div>
             )}
+
+            {/* The theme switch is hidden from the header on phones; keep it
+                reachable here so mobile users can still change theme. */}
+            <div className="mt-2 flex items-center justify-between border-t border-border pt-3 sm:hidden">
+              <span className="text-sm font-medium text-muted-foreground">
+                Theme
+              </span>
+              <ToggleBar />
+            </div>
           </nav>
         </div>
       )}

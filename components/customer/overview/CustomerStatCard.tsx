@@ -20,16 +20,16 @@ export const CustomerStatCard = ({
 }: CustomerStatCardProps) => {
   return (
     <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
+      <CardContent>
+        <div className="flex items-center justify-between gap-4">
           <div className="space-y-1">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-3xl font-bold">{value}</p>
+            <p className="text-2xl font-bold tracking-tight tabular-nums sm:text-3xl">{value}</p>
             {description && (
               <p className="text-xs text-muted-foreground">{description}</p>
             )}
           </div>
-          <div className={`p-3 rounded-full ${colorClass}`}>
+          <div className={`shrink-0 rounded-full p-3 ${colorClass}`}>
             <Icon className="h-5 w-5" />
           </div>
         </div>

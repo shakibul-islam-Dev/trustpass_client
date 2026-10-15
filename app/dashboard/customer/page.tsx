@@ -93,28 +93,28 @@ export default function CustomerOverviewPage() {
           value={isLoading ? "..." : stats.totalReports}
           icon={FileText}
           description="All time"
-          colorClass="bg-primary/10 text-primary"
+          colorClass="bg-primary-soft text-primary"
         />
         <CustomerStatCard
           title="Pending"
           value={isLoading ? "..." : stats.pendingReports}
           icon={Clock}
           description="Awaiting review"
-          colorClass="bg-yellow-500/10 text-yellow-500"
+          colorClass="bg-warning-soft text-warning"
         />
         <CustomerStatCard
           title="Resolved"
           value={isLoading ? "..." : stats.resolvedReports}
           icon={CheckCircle}
           description="Action taken"
-          colorClass="bg-green-500/10 text-green-500"
+          colorClass="bg-success-soft text-success"
         />
         <CustomerStatCard
           title="Unread Notifications"
           value={isLoading ? "..." : stats.unreadNotifications}
           icon={Bell}
           description={`${stats.totalNotifications} total`}
-          colorClass="bg-purple-500/10 text-purple-500"
+          colorClass="bg-muted text-muted-foreground"
         />
       </div>
 

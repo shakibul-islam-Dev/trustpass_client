@@ -3,6 +3,7 @@
 import { type FormEvent, useState } from "react";
 import Link from "next/link";
 import { Mail } from "lucide-react";
+import { toast } from "sonner";
 import AuthShell from "@/components/auth/AuthShell";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,11 +45,13 @@ export default function ForgotPasswordForm() {
 
     if (!email.trim()) {
       setErrorMessage("Enter your email address first.");
+      toast.error("Enter your email address first.");
       return;
     }
 
     if (!isApiConfigured()) {
       setErrorMessage("API URL is not configured.");
+      toast.error("API URL is not configured.");
       return;
     }
 
@@ -67,19 +70,20 @@ export default function ForgotPasswordForm() {
     if (!response.ok) {
       // readApiError shows the Live API's own message when it has one (for
       // example "Reset password isn't enabled").
-      setErrorMessage(
-        await readApiError(
-          "request-password-reset",
-          response,
-          "Could not send the reset email. Please try again.",
-        ),
+      const message = await readApiError(
+        "request-password-reset",
+        response,
+        "Could not send the reset email. Please try again.",
       );
+      setErrorMessage(message);
+      toast.error(message);
       return;
     }
 
     setSuccessMessage(
       "If an account exists for that email, a password reset link is on its way. Please check your inbox.",
     );
+    toast.success("If that account exists, a reset link is on its way.");
   };
 
   return (

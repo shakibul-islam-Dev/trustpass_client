@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { User, LayoutDashboard, LogOut, Settings, ChevronDown } from "lucide-react";
+import { User, LayoutDashboard, LogOut, ChevronDown } from "lucide-react";
 import { homeForRole, isApiRole } from "@/lib/core/roles";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button, buttonVariants } from "@/components/ui/button";

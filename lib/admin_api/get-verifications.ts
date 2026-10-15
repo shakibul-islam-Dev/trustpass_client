@@ -36,6 +36,8 @@ export interface IVerificationResponse {
   submittedAt?: string;
 
   trustScore?: number;
+  /** `null` when the API has never calculated a score for this business. */
+  trustScoreUpdatedAt?: string | null;
   documents: IVerificationDocument[];
 }
 
@@ -90,6 +92,8 @@ const normalizeVerification = (raw: any): IVerificationResponse => {
     submittedAt: raw.submittedAt || raw.createdAt,
 
     trustScore: raw.trustScore ?? business.trustScore ?? 0,
+    trustScoreUpdatedAt:
+      business.trustScoreUpdatedAt ?? raw.trustScoreUpdatedAt ?? null,
     documents: rawDocs.map(normalizeDocument),
   };
 };

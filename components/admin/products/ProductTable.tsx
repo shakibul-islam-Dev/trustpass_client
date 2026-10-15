@@ -95,7 +95,7 @@ const CopyableBusinessId = ({ id }: { id: string }) => {
         {id.slice(0, 8)}...{id.slice(-4)}
       </span>
       {copied ? (
-        <Check className="h-3 w-3 text-green-500 shrink-0" />
+        <Check className="h-3 w-3 text-success shrink-0" />
       ) : (
         <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition shrink-0" />
       )}

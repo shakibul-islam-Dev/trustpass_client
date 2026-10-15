@@ -39,7 +39,7 @@ export const UserFilters = ({
         value={roleFilter}
         onValueChange={(val) => setRoleFilter(val ?? "all")}
       >
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className="w-full sm:w-[180px]">
           <SelectValue placeholder="Filter by Role" />
         </SelectTrigger>
         <SelectContent>

@@ -9,21 +9,20 @@ interface ErrorProps {
 
 export default function Error({ error, reset }: ErrorProps) {
   useEffect(() => {
-  
     console.error(error);
   }, [error]);
 
   return (
-    <div className="flex min-h-[400px] w-full flex-col items-center justify-center gap-4 text-center">
-      <h2 className="text-2xl font-bold text-slate-800">
+    <div className="flex w-full flex-1 flex-col items-center justify-center gap-4 px-4 py-24 text-center">
+      <h2 className="text-2xl font-bold text-foreground">
         Something went wrong!
       </h2>
-      <p className="max-w-md text-sm text-slate-600">
+      <p className="max-w-md text-sm text-muted-foreground">
         {error.message || "An unexpected error occurred."}
       </p>
       <button
-        onClick={() => reset()} // পেজ রি-রেন্ডার করে পুনরায় চেষ্টা করার জন্য
-        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+        onClick={() => reset()}
+        className="rounded-field bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus/40"
       >
         Try Again
       </button>

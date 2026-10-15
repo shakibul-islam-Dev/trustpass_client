@@ -51,7 +51,7 @@ export default function AuthShell({
   className,
 }: AuthShellProps) {
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-background px-4 py-8 sm:px-6 sm:py-12">
+    <div className="relative flex min-h-dvh flex-col overflow-x-clip overflow-y-auto bg-background px-4 py-8 sm:px-6 sm:py-12">
       {/* Ambient brand glow — soft, no clutter */}
       <div
         aria-hidden

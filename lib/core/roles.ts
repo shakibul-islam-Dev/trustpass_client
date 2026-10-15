@@ -28,6 +28,7 @@ const SEGMENT_ROLES: Record<string, readonly ApiRole[]> = {
   seller: ["SELLER", "ADMIN"],
   moderator: ["MODERATOR", "ADMIN"],
   admin: ["ADMIN"],
+  profile: ["CUSTOMER", "SELLER", "MODERATOR", "ADMIN"],
   "change-password": ["CUSTOMER", "SELLER", "MODERATOR", "ADMIN"],
 };
 

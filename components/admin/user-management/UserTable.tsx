@@ -47,9 +47,9 @@ const ROLE_LABEL: Record<UserRole, string> = {
 };
 
 const ROLE_COLOR: Record<UserRole, string> = {
-  ADMIN: "bg-primary/20 text-primary",
-  MODERATOR: "bg-purple-500/20 text-purple-500",
-  SELLER: "bg-blue-500/20 text-blue-500",
+  ADMIN: "bg-primary-soft text-primary",
+  MODERATOR: "bg-warning-soft text-warning",
+  SELLER: "bg-success-soft text-success",
   CUSTOMER: "bg-muted text-muted-foreground",
 };
 
@@ -140,7 +140,7 @@ export const UserTable = ({
                           title="Copy full user ID"
                         >
                           {copiedId === user.id ? (
-                            <Check className="h-3 w-3 text-green-500" />
+                            <Check className="h-3 w-3 text-success" />
                           ) : (
                             <Copy className="h-3 w-3" />
                           )}
@@ -203,15 +203,15 @@ export const UserTable = ({
                           >
                             {isBlocked ? (
                               <>
-                                <Unlock className="mr-2 h-4 w-4 text-green-600" />
-                                <span className="text-green-600">
+                                <Unlock className="mr-2 h-4 w-4 text-success" />
+                                <span className="text-success">
                                   Unblock User
                                 </span>
                               </>
                             ) : (
                               <>
-                                <Lock className="mr-2 h-4 w-4 text-amber-600" />
-                                <span className="text-amber-600">
+                                <Lock className="mr-2 h-4 w-4 text-warning" />
+                                <span className="text-warning">
                                   Block User
                                 </span>
                               </>

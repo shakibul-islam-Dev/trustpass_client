@@ -177,7 +177,7 @@ export const BusinessDetailsModal = ({
               <DialogTitle className="flex items-center gap-2">
                 <span className="truncate">{b.name}</span>
                 {b.isFeatured && (
-                  <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 shrink-0" />
+                  <Star className="h-4 w-4 text-warning fill-warning shrink-0" />
                 )}
               </DialogTitle>
               <p className="text-xs text-muted-foreground mt-0.5 truncate flex items-center gap-2">
@@ -204,14 +204,18 @@ export const BusinessDetailsModal = ({
             </Badge>
             <Badge
               variant={
-                b.trustScore >= 80
-                  ? "default"
-                  : b.trustScore >= 50
-                    ? "secondary"
-                    : "destructive"
+                // `trustScoreUpdatedAt` is null until the API calculates a
+                // score — never treat "not scored yet" as a failing score.
+                b.trustScoreUpdatedAt == null
+                  ? "outline"
+                  : b.trustScore >= 80
+                    ? "default"
+                    : b.trustScore >= 50
+                      ? "secondary"
+                      : "destructive"
               }
             >
-              Trust Score: {b.trustScore}
+              Trust Score: {b.trustScoreUpdatedAt == null ? "—" : b.trustScore}
             </Badge>
             {b.businessType && (
               <Badge variant="outline" className="gap-1">

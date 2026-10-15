@@ -81,7 +81,7 @@ const CopyableId = ({ id }: { id: string }) => {
         {id.slice(0, 8)}...{id.slice(-4)}
       </span>
       {copied ? (
-        <Check className="h-3 w-3 text-green-500 shrink-0" />
+        <Check className="h-3 w-3 text-success shrink-0" />
       ) : (
         <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition shrink-0" />
       )}
@@ -157,7 +157,7 @@ export const BusinessTable = ({
                         <span className="truncate flex items-center gap-1">
                           {business.name}
                           {business.isFeatured && (
-                            <Star className="h-3 w-3 text-yellow-500 fill-yellow-500 shrink-0" />
+                            <Star className="h-3 w-3 text-warning fill-warning shrink-0" />
                           )}
                         </span>
                         <span className="text-xs text-muted-foreground truncate">
@@ -186,14 +186,21 @@ export const BusinessTable = ({
                   <TableCell>
                     <Badge
                       variant={
-                        business.trustScore >= 80
-                          ? "default"
-                          : business.trustScore >= 50
-                            ? "secondary"
-                            : "destructive"
+                        // The API leaves `trustScoreUpdatedAt` null until it
+                        // calculates a score — a red "0" would read as a failed
+                        // business rather than one that was never evaluated.
+                        business.trustScoreUpdatedAt == null
+                          ? "outline"
+                          : business.trustScore >= 80
+                            ? "default"
+                            : business.trustScore >= 50
+                              ? "secondary"
+                              : "destructive"
                       }
                     >
-                      {business.trustScore}
+                      {business.trustScoreUpdatedAt == null
+                        ? "—"
+                        : business.trustScore}
                     </Badge>
                   </TableCell>
 

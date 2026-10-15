@@ -14,7 +14,7 @@ export default function BusinessCard({ business, href }: BusinessCardProps) {
       href={href}
       className="group relative block overflow-hidden rounded-2xl border border-border/80 bg-card text-inherit no-underline shadow-sm transition-[transform,border-color,box-shadow] duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none visited:text-inherit"
     >
-      <div className="relative h-36 overflow-hidden bg-linear-to-br from-emerald-950 via-teal-800 to-slate-900">
+      <div className="relative h-36 overflow-hidden bg-linear-to-br from-primary-deep via-primary-deep to-primary">
         {business.coverUrl ? (
           <Image
             src={business.coverUrl}
@@ -27,7 +27,7 @@ export default function BusinessCard({ business, href }: BusinessCardProps) {
         ) : (
           <>
             <div className="absolute -right-8 -top-16 size-48 rounded-full border border-white/15 bg-white/5 transition-transform duration-700 group-hover:scale-110 motion-reduce:transition-none" />
-            <div className="absolute -bottom-24 left-1/3 size-52 rounded-full border border-white/15 bg-teal-300/10 transition-transform duration-700 group-hover:scale-110 motion-reduce:transition-none" />
+            <div className="absolute -bottom-24 left-1/3 size-52 rounded-full border border-white/15 bg-primary-foreground/10 transition-transform duration-700 group-hover:scale-110 motion-reduce:transition-none" />
             <Store className="absolute right-6 top-6 size-10 text-white/25" aria-hidden="true" />
           </>
         )}
@@ -36,7 +36,7 @@ export default function BusinessCard({ business, href }: BusinessCardProps) {
           {business.businessType.toLowerCase()}
         </div>
         {business.isFeatured && (
-          <div className="absolute right-4 top-4 rounded-full border border-amber-200/40 bg-amber-400/90 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-950 shadow-sm">
+          <div className="absolute right-4 top-4 rounded-full border border-warning/40 bg-warning/95 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-warning-foreground shadow-sm backdrop-blur-sm">
             Featured
           </div>
         )}
@@ -62,8 +62,14 @@ export default function BusinessCard({ business, href }: BusinessCardProps) {
             </div>
           )}
           <span className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/5 px-3 py-1.5 text-xs font-bold text-primary">
-            <BadgeCheck className="size-3.5" aria-hidden="true" />
-            {business.trustScore} Trust
+            {/* The check only makes sense once the API has actually recorded a
+                score — `trustScoreUpdatedAt` stays null until then. */}
+            {business.trustScoreUpdatedAt != null && (
+              <BadgeCheck className="size-3.5" aria-hidden="true" />
+            )}
+            {business.trustScoreUpdatedAt != null
+              ? `${business.trustScore} Trust`
+              : "Not scored yet"}
           </span>
         </div>
 
@@ -84,7 +90,16 @@ export default function BusinessCard({ business, href }: BusinessCardProps) {
 
         <div className="mt-4 flex items-center justify-between border-t border-border/70 pt-3 text-xs">
           <span className="inline-flex items-center gap-1.5 font-medium text-muted-foreground">
-            <span className={`size-2 rounded-full ${business.verificationStatus === 'VERIFIED' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            <span
+              className={`size-2 rounded-full ${
+                business.verificationStatus === 'VERIFIED'
+                  ? 'bg-success'
+                  : business.verificationStatus === 'REJECTED' ||
+                      business.verificationStatus === 'SUSPENDED'
+                    ? 'bg-danger'
+                    : 'bg-warning'
+              }`}
+            />
             {business.verificationStatus.replaceAll('_', ' ').toLowerCase()}
           </span>
           <span className="font-semibold text-primary">View profile</span>

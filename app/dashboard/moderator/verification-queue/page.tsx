@@ -131,7 +131,7 @@ const ModeratorVerificationQueue = () => {
           value={statusFilter}
           onValueChange={(v) => setStatusFilter(v ?? "all")}
         >
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder="Filter by Status" />
           </SelectTrigger>
           <SelectContent>

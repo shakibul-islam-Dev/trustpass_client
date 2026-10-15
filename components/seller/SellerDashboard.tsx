@@ -52,9 +52,9 @@ function businessCompletionPercent(business: IBusiness): number {
 
 /** Colour the trust score bar the same way the public profile does. */
 function trustScoreColor(score: number): string {
-  if (score >= 70) return "#10b981";
-  if (score >= 40) return "#f59e0b";
-  return "#f43f5e";
+  if (score >= 70) return "var(--success)";
+  if (score >= 40) return "var(--warning)";
+  return "var(--danger)";
 }
 
 export default function SellerDashboard() {
@@ -76,9 +76,10 @@ export default function SellerDashboard() {
       icon: Building2,
       iconColor: "text-primary",
       bgColor: "bg-primary-soft",
-      caption: isBusinessesLoading
-        ? undefined
-        : `${stats.averageTrustScore ?? 0}/100 avg trust`,
+      caption:
+        isBusinessesLoading || stats.averageTrustScore == null
+          ? undefined
+          : `${stats.averageTrustScore}/100 avg trust`,
     },
     {
       id: "products",
@@ -176,6 +177,10 @@ export default function SellerDashboard() {
               {businesses.map((business) => {
                 const completion = businessCompletionPercent(business);
                 const score = Math.min(100, Math.max(0, business.trustScore));
+                // The API only stamps `trustScoreUpdatedAt` when it actually
+                // calculates a score, so `null` means "never scored" — which is
+                // not the same thing as a business that scored 0.
+                const hasScore = business.trustScoreUpdatedAt != null;
                 return (
                   <li key={business.id} className="rounded-xl border border-border bg-background/40 p-4">
                     <div className="flex flex-wrap items-center gap-3">
@@ -202,21 +207,29 @@ export default function SellerDashboard() {
                       <div>
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
                           <span>Trust score</span>
-                          <span className="font-medium tabular-nums text-foreground">{score}/100</span>
+                          <span className="font-medium tabular-nums text-foreground">
+                            {hasScore ? `${score}/100` : "—"}
+                          </span>
                         </div>
-                        <div
-                          className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-secondary"
-                          role="meter"
-                          aria-label={`${business.name} trust score`}
-                          aria-valuemin={0}
-                          aria-valuemax={100}
-                          aria-valuenow={score}
-                        >
+                        {hasScore ? (
                           <div
-                            className="h-full rounded-full"
-                            style={{ width: `${score}%`, backgroundColor: trustScoreColor(score) }}
-                          />
-                        </div>
+                            className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-secondary"
+                            role="meter"
+                            aria-label={`${business.name} trust score`}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-valuenow={score}
+                          >
+                            <div
+                              className="h-full rounded-full"
+                              style={{ width: `${score}%`, backgroundColor: trustScoreColor(score) }}
+                            />
+                          </div>
+                        ) : (
+                          <p className="mt-1.5 text-xs text-muted-foreground">
+                            No trust score has been recorded yet.
+                          </p>
+                        )}
                       </div>
                       <div>
                         <div className="flex items-center justify-between text-xs text-muted-foreground">

@@ -149,7 +149,7 @@ const BusinessesPage = () => {
           value={statusFilter}
           onValueChange={(value) => setStatusFilter(value ?? "all")}
         >
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-full sm:w-[160px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -166,7 +166,7 @@ const BusinessesPage = () => {
           value={featuredFilter}
           onValueChange={(value) => setFeaturedFilter(value ?? "all")}
         >
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-full sm:w-[160px]">
             <SelectValue placeholder="Featured" />
           </SelectTrigger>
           <SelectContent>
