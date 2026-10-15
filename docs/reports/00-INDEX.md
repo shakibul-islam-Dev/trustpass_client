@@ -20,6 +20,10 @@ files changed, and the backend evidence used.
 | 08 | [Blocked & Out of Scope](08-blocked-and-out-of-scope.md) | Documented |
 | 09 | [Checks & Git State](09-checks-and-git-state.md) | Done |
 | 10 | [Removal of Unsupported Seller UI](10-unsupported-ui-removal.md) | Done |
+| 11 | [Project-Wide UI/UX Modernization](11-ui-ux-modernization.md) | Done |
+
+> Report 11 is project-wide (all roles), not seller-only — see the design spec at
+> [`docs/DESIGN_BLUEPRINT.md`](../DESIGN_BLUEPRINT.md).
 
 ## One-line summary
 

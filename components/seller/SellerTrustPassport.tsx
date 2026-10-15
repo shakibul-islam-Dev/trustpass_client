@@ -31,9 +31,9 @@ const formatLabel = (value: string) =>
   value.toLowerCase().replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 function trustScoreColor(score: number): string {
-  if (score >= 70) return "#10b981";
-  if (score >= 40) return "#f59e0b";
-  return "#f43f5e";
+  if (score >= 70) return "var(--success)";
+  if (score >= 40) return "var(--warning)";
+  return "var(--danger)";
 }
 
 /**
@@ -161,7 +161,10 @@ export default function SellerTrustPassport() {
   }
 
   const trustScore = business ? Math.min(100, Math.max(0, business.trustScore)) : 0;
-  const scoreColor = trustScoreColor(trustScore);
+  // `trustScoreUpdatedAt` stays null until the API calculates a score at least
+  // once. A business the API has never scored must not read as a red "0".
+  const hasScore = business?.trustScoreUpdatedAt != null;
+  const scoreColor = hasScore ? trustScoreColor(trustScore) : "var(--muted-foreground)";
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
@@ -188,7 +191,7 @@ export default function SellerTrustPassport() {
         <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
           {/* Public preview */}
           <article className="overflow-hidden rounded-2xl border border-border bg-surface shadow-surface">
-            <div className="relative h-40 bg-linear-to-br from-emerald-950 via-teal-900 to-slate-900 sm:h-52">
+            <div className="relative h-40 bg-linear-to-br from-primary-deep via-primary-deep to-primary sm:h-52">
               {business.coverUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -229,24 +232,26 @@ export default function SellerTrustPassport() {
             <div className="space-y-6 p-6">
               <div className="flex flex-wrap items-center gap-2.5">
                 <SellerStatusBadge status={business.verificationStatus} />
-                {business.isFeatured && <span className="text-xs font-semibold text-amber-600">Featured</span>}
+                {business.isFeatured && <span className="text-xs font-semibold text-warning">Featured</span>}
               </div>
 
               <div className="flex flex-col items-center gap-5 border-y border-border py-6 sm:flex-row">
                 <div
                   className="size-28 shrink-0 rounded-full p-2"
-                  role="meter"
-                  aria-label="Trust score"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={trustScore}
+                  role={hasScore ? "meter" : "img"}
+                  aria-label={hasScore ? "Trust score" : "Trust score not yet recorded"}
+                  aria-valuemin={hasScore ? 0 : undefined}
+                  aria-valuemax={hasScore ? 100 : undefined}
+                  aria-valuenow={hasScore ? trustScore : undefined}
                   style={{
-                    background: `conic-gradient(from -90deg, ${scoreColor} 0deg ${trustScore * 3.6}deg, var(--muted) ${trustScore * 3.6}deg 360deg)`,
+                    background: hasScore
+                      ? `conic-gradient(from -90deg, ${scoreColor} 0deg ${trustScore * 3.6}deg, var(--muted) ${trustScore * 3.6}deg 360deg)`
+                      : "conic-gradient(from -90deg, var(--muted) 0deg 360deg)",
                   }}
                 >
                   <div className="flex size-full flex-col items-center justify-center rounded-full bg-surface">
                     <span className="text-3xl font-bold tabular-nums" style={{ color: scoreColor }}>
-                      {trustScore}
+                      {hasScore ? trustScore : "—"}
                     </span>
                     <span className="text-xs font-medium text-muted-foreground">of 100</span>
                   </div>
@@ -255,7 +260,7 @@ export default function SellerTrustPassport() {
                   <p className="text-xs font-semibold uppercase tracking-wider text-primary">TrustPass score</p>
                   <h3 className="mt-1 text-lg font-semibold text-foreground">Trust score</h3>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {trustScore === 0
+                    {!hasScore
                       ? "No trust score has been recorded yet."
                       : "This is the score customers see on your public profile."}
                   </p>
@@ -276,7 +281,7 @@ export default function SellerTrustPassport() {
                     <a
                       aria-label={`Call ${business.name}`}
                       href={`tel:${business.contactPhone}`}
-                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-emerald-500/50 hover:bg-emerald-500/10"
+                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-primary/50 hover:bg-primary-soft"
                     >
                       <Phone className="size-5" aria-hidden="true" />
                     </a>
@@ -285,7 +290,7 @@ export default function SellerTrustPassport() {
                     <a
                       aria-label={`Email ${business.name}`}
                       href={`mailto:${business.contactEmail}`}
-                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-rose-500/50 hover:bg-rose-500/10"
+                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-primary/50 hover:bg-primary-soft"
                     >
                       <Mail className="size-5" aria-hidden="true" />
                     </a>
@@ -296,7 +301,7 @@ export default function SellerTrustPassport() {
                       href={business.websiteUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-sky-500/50 hover:bg-sky-500/10"
+                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-primary/50 hover:bg-primary-soft"
                     >
                       <Globe className="size-5" aria-hidden="true" />
                     </a>
@@ -307,7 +312,7 @@ export default function SellerTrustPassport() {
                       href={business.instaUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-fuchsia-500/50 hover:bg-fuchsia-500/10"
+                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-primary/50 hover:bg-primary-soft"
                     >
                       <Camera className="size-5" aria-hidden="true" />
                     </a>
@@ -318,7 +323,7 @@ export default function SellerTrustPassport() {
                       href={business.tiktokUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-cyan-500/50 hover:bg-cyan-500/10"
+                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-primary/50 hover:bg-primary-soft"
                     >
                       <Music2 className="size-5" aria-hidden="true" />
                     </a>
@@ -376,7 +381,9 @@ export default function SellerTrustPassport() {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Trust score</span>
-                  <span className="font-medium tabular-nums text-foreground">{trustScore}/100</span>
+                  <span className="font-medium tabular-nums text-foreground">
+                    {hasScore ? `${trustScore}/100` : "Not scored yet"}
+                  </span>
                 </div>
                 {business.verificationStatus !== "VERIFIED" && (
                   <p className="flex items-start gap-1.5 text-xs text-muted-foreground">

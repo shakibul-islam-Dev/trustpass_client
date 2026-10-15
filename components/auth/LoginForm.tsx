@@ -4,6 +4,7 @@ import { type FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LockKeyhole, Mail } from "lucide-react";
+import { toast } from "sonner";
 import AuthShell from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,11 +51,13 @@ export default function LoginForm() {
 
     if (!isApiConfigured()) {
       setErrorMessage("API URL is not configured.");
+      toast.error("API URL is not configured.");
       return;
     }
 
     if (!email.trim() || !password) {
       setErrorMessage("Enter your email and password.");
+      toast.error("Enter your email and password.");
       return;
     }
 
@@ -66,19 +69,25 @@ export default function LoginForm() {
 
       if (!result.ok) {
         setErrorMessage(result.message);
+        toast.error(result.message);
         return;
       }
 
       setSuccessMessage("Login successful! Redirecting...");
+      toast.success("Signed in successfully.");
       // /dashboard has no page of its own: the dashboard layout reads the
       // session and sends each role to its own home. Redirecting there keeps
       // role logic out of this form.
       router.replace("/dashboard");
       router.refresh();
     } catch (error) {
-      setErrorMessage(
-        safeThrownError("login", error, "Something went wrong while signing in."),
+      const message = safeThrownError(
+        "login",
+        error,
+        "Something went wrong while signing in.",
       );
+      setErrorMessage(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -94,6 +103,7 @@ export default function LoginForm() {
 
     if (!isSessionApiConfigured()) {
       setErrorMessage("API URL is not configured.");
+      toast.error("API URL is not configured.");
       return;
     }
 
@@ -102,11 +112,11 @@ export default function LoginForm() {
     const redirected = await signInWithSocial(provider, "/");
 
     if (!redirected) {
-      setErrorMessage(
-        safeApiMessage({
-          fallback: `Could not start ${provider} sign-in. Please try again.`,
-        }),
-      );
+      const message = safeApiMessage({
+        fallback: `Could not start ${provider} sign-in. Please try again.`,
+      });
+      setErrorMessage(message);
+      toast.error(message);
     }
   };
 

@@ -112,7 +112,7 @@ const NotificationsPage = () => {
         </div>
 
         <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v ?? "all")}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Filter by Type" />
           </SelectTrigger>
           <SelectContent>
@@ -124,7 +124,7 @@ const NotificationsPage = () => {
         </Select>
 
         <Select value={readFilter} onValueChange={(v) => setReadFilter(v ?? "all")}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-full sm:w-[160px]">
             <SelectValue placeholder="Read Status" />
           </SelectTrigger>
           <SelectContent>

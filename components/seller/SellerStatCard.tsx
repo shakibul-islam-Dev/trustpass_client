@@ -42,8 +42,8 @@ export default function SellerStatCard({
   onClick,
 }: SellerStatCardProps) {
   const card = (
-    <Card className="h-full border-border/80 bg-surface shadow-surface transition-colors hover:border-primary/30">
-      <CardContent className="p-5">
+    <Card className="h-full border-border/80 bg-surface shadow-surface transition-colors hover:border-primary/30 [--card-spacing:--spacing(5)]">
+      <CardContent>
         <div className="flex items-center justify-between gap-3">
           <span className={`flex size-10 items-center justify-center rounded-xl ${toneClasses[tone]}`}>
             <Icon className="size-5" />

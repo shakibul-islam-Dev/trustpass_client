@@ -42,7 +42,7 @@ export const ReportDetailsModal = ({
         </DialogHeader>
 
         <div className="py-4 space-y-4">
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-muted-foreground">Customer</p>
               <p className="font-medium">{report.customerName || "-"}</p>

@@ -4,6 +4,7 @@ import { type FormEvent, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { LockKeyhole } from "lucide-react";
+import { toast } from "sonner";
 import AuthShell from "@/components/auth/AuthShell";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,22 +51,26 @@ export default function ResetPasswordForm() {
 
     if (newPassword.length < MIN_PASSWORD_LENGTH) {
       setErrorMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+      toast.error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
       return;
     }
 
     if (newPassword !== confirmPassword) {
       setErrorMessage("The two passwords do not match.");
+      toast.error("The two passwords do not match.");
       return;
     }
 
     if (!isApiConfigured()) {
       setErrorMessage("API URL is not configured.");
+      toast.error("API URL is not configured.");
       return;
     }
 
     // The form is only rendered when a token exists, but a guard beats a cast.
     if (!token) {
       setErrorMessage("This reset link is not valid.");
+      toast.error("This reset link is not valid.");
       return;
     }
 
@@ -78,11 +83,13 @@ export default function ResetPasswordForm() {
 
     if (!result.ok) {
       setErrorMessage(result.message);
+      toast.error(result.message);
       return;
     }
 
     // The token is spent now; the form must not stay usable.
     setSuccessMessage("Your password has been reset. You can sign in with it now.");
+    toast.success("Password reset. You can sign in now.");
   };
 
   return (

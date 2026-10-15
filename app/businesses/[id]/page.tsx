@@ -71,18 +71,23 @@ export default async function BusinessProfilePage({ params }: BusinessProfilePro
   }
 
   const statusClasses: Record<string, string> = {
-    VERIFIED: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-    PENDING: 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300',
-    REJECTED: 'border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300',
-    SUSPENDED: 'border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300',
+    VERIFIED: 'border-success/30 bg-success-soft text-success',
+    PENDING: 'border-warning/30 bg-warning-soft text-warning',
+    REJECTED: 'border-danger/30 bg-danger-soft text-danger',
+    SUSPENDED: 'border-danger/30 bg-danger-soft text-danger',
     UNVERIFIED: 'border-border bg-muted text-muted-foreground',
   };
   const trustScore = Math.min(100, Math.max(0, business.trustScore));
-  const trustScoreColor = trustScore >= 70
-    ? '#10b981'
-    : trustScore >= 40
-      ? '#f59e0b'
-      : '#f43f5e';
+  // `trustScoreUpdatedAt` is null until the API calculates a score at least
+  // once — a business the API has never scored must not read as a red "0".
+  const hasScore = business.trustScoreUpdatedAt != null;
+  const trustScoreColor = !hasScore
+    ? 'var(--muted-foreground)'
+    : trustScore >= 70
+      ? 'var(--success)'
+      : trustScore >= 40
+        ? 'var(--warning)'
+        : 'var(--danger)';
 
   return (
     <main className="min-h-screen bg-muted/30 px-4 py-8 text-foreground sm:py-12">
@@ -95,7 +100,7 @@ export default async function BusinessProfilePage({ params }: BusinessProfilePro
         </div>
 
         <article className="mt-5 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-          <div className="relative h-64 bg-linear-to-br from-emerald-950 via-teal-900 to-slate-900 sm:h-80">
+          <div className="relative h-64 bg-linear-to-br from-primary-deep via-primary-deep to-primary sm:h-80">
             {business.coverUrl && (
               <Image
                 src={business.coverUrl}
@@ -145,7 +150,7 @@ export default async function BusinessProfilePage({ params }: BusinessProfilePro
                   {formatLabel(business.verificationStatus)}
                 </span>
                 {business.isFeatured && (
-                  <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300">
+                  <span className="rounded-full border border-warning/30 bg-warning-soft px-3 py-1.5 text-xs font-semibold text-warning">
                     Featured
                   </span>
                 )}
@@ -154,17 +159,19 @@ export default async function BusinessProfilePage({ params }: BusinessProfilePro
               <section className="flex flex-col items-center gap-5 border-y border-border py-6 sm:flex-row sm:items-center">
                 <div
                   className="size-36 shrink-0 rounded-full p-2.25"
-                  role="meter"
-                  aria-label="Trust score"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={trustScore}
+                  role={hasScore ? "meter" : "img"}
+                  aria-label={hasScore ? "Trust score" : "Trust score not yet recorded"}
+                  aria-valuemin={hasScore ? 0 : undefined}
+                  aria-valuemax={hasScore ? 100 : undefined}
+                  aria-valuenow={hasScore ? trustScore : undefined}
                   style={{
-                    background: `conic-gradient(from -90deg, ${trustScoreColor} 0deg ${trustScore * 3.6}deg, var(--muted) ${trustScore * 3.6}deg 360deg)`,
+                    background: hasScore
+                      ? `conic-gradient(from -90deg, ${trustScoreColor} 0deg ${trustScore * 3.6}deg, var(--muted) ${trustScore * 3.6}deg 360deg)`
+                      : "conic-gradient(from -90deg, var(--muted) 0deg 360deg)",
                   }}
                 >
                   <div className="flex size-full flex-col items-center justify-center rounded-full bg-card">
-                    <span className="text-4xl font-bold tabular-nums" style={{ color: trustScoreColor }}>{trustScore}</span>
+                    <span className="text-4xl font-bold tabular-nums" style={{ color: trustScoreColor }}>{hasScore ? trustScore : "—"}</span>
                     <span className="mt-0.5 text-xs font-medium text-muted-foreground">of 100</span>
                   </div>
                 </div>
@@ -172,14 +179,14 @@ export default async function BusinessProfilePage({ params }: BusinessProfilePro
                   <p className="text-xs font-semibold uppercase tracking-wider text-primary">TrustPass score</p>
                   <h2 className="mt-1 text-lg font-semibold">Trust score</h2>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {trustScore === 0
+                    {!hasScore
                       ? 'No trust score has been recorded yet.'
                       : 'This score summarizes the current trust rating for this business.'}
                   </p>
                   <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground" aria-label="Score color ranges">
-                    <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-rose-500" aria-hidden="true" />0-39</span>
-                    <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-amber-500" aria-hidden="true" />40-69</span>
-                    <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-500" aria-hidden="true" />70-100</span>
+                    <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-danger" aria-hidden="true" />0-39</span>
+                    <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-warning" aria-hidden="true" />40-69</span>
+                    <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-success" aria-hidden="true" />70-100</span>
                   </div>
                 </div>
               </section>
@@ -220,7 +227,7 @@ export default async function BusinessProfilePage({ params }: BusinessProfilePro
                       aria-label={`Call ${business.name}`}
                       title="Call business"
                       href={`tel:${business.contactPhone}`}
-                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-emerald-500/50 hover:bg-emerald-500/10 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-primary/50 hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Phone className="size-5" aria-hidden="true" />
                     </a>
@@ -230,7 +237,7 @@ export default async function BusinessProfilePage({ params }: BusinessProfilePro
                       aria-label={`Email ${business.name}`}
                       title="Email business"
                       href={`mailto:${business.contactEmail}`}
-                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-rose-500/50 hover:bg-rose-500/10 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-primary/50 hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Mail className="size-5" aria-hidden="true" />
                     </a>
@@ -242,7 +249,7 @@ export default async function BusinessProfilePage({ params }: BusinessProfilePro
                       href={business.websiteUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-sky-500/50 hover:bg-sky-500/10 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-primary/50 hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Globe className="size-5" aria-hidden="true" />
                     </a>
@@ -254,7 +261,7 @@ export default async function BusinessProfilePage({ params }: BusinessProfilePro
                       href={business.instaUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-fuchsia-500/50 hover:bg-fuchsia-500/10 hover:text-fuchsia-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-primary/50 hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Camera className="size-5" aria-hidden="true" />
                     </a>
@@ -266,7 +273,7 @@ export default async function BusinessProfilePage({ params }: BusinessProfilePro
                       href={business.tiktokUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-cyan-500/50 hover:bg-cyan-500/10 hover:text-cyan-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-primary/50 hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Music2 className="size-5" aria-hidden="true" />
                     </a>
@@ -283,7 +290,7 @@ export default async function BusinessProfilePage({ params }: BusinessProfilePro
                 </h2>
                 <dl className="mt-4 space-y-3 text-sm">
                   <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Type</dt><dd className="text-right font-medium">{formatLabel(business.businessType)}</dd></div>
-                  <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Trust score</dt><dd className="font-medium">{business.trustScore}/100</dd></div>
+                  <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Trust score</dt><dd className="font-medium">{hasScore ? `${trustScore}/100` : "Not scored yet"}</dd></div>
                   <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Verification</dt><dd className="text-right font-medium">{formatLabel(business.verificationStatus)}</dd></div>
                 </dl>
               </section>
