@@ -108,22 +108,27 @@ export default function SellerAppearanceSettings() {
 
         <Card className="border-border/80 bg-surface shadow-surface">
           <CardHeader>
-            <CardTitle>Live preview</CardTitle>
-            <CardDescription>A glimpse of cards and colors with this theme.</CardDescription>
+            <CardTitle>Theme preview</CardTitle>
+            <CardDescription>
+              Sample styling only; this preview does not show account metrics.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-xl border border-border bg-background/60 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground">Products this month</p>
-                  <p className="mt-0.5 text-xl font-semibold text-foreground tabular-nums">128</p>
+                  <p className="text-xs font-medium text-muted-foreground">Business dashboard</p>
+                  <p className="mt-0.5 text-base font-semibold text-foreground">
+                    Product catalog
+                  </p>
                 </div>
                 <span className="rounded-lg bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
-                  +12%
+                  Preview
                 </span>
               </div>
-              <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-muted">
-                <div className="h-full w-2/3 rounded-full bg-primary" />
+              <div className="mt-3 flex items-center gap-2 rounded-lg bg-surface-secondary px-3 py-2">
+                <span className="size-2 rounded-full bg-success" />
+                <span className="text-xs font-medium text-foreground">Published product</span>
               </div>
             </div>
 

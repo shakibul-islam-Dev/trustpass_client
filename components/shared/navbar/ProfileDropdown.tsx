@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { User, LayoutDashboard, LogOut, Settings, ChevronDown } from "lucide-react";
+import { User, LayoutDashboard, LogOut, ChevronDown } from "lucide-react";
 import { homeForRole, isApiRole } from "@/lib/core/roles";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -123,19 +123,11 @@ export const ProfileDropdown = ({ user, onLogout }: ProfileDropdownProps) => {
           </DropdownMenuItem>
 
           <DropdownMenuItem 
-            onClick={() => router.push("/profile")}
+            onClick={() => router.push("/dashboard/profile")}
             className="cursor-pointer"
           >
             <User className="mr-2 h-4 w-4" />
             My Profile
-          </DropdownMenuItem>
-
-          <DropdownMenuItem 
-            onClick={() => router.push("/settings")}
-            className="cursor-pointer"
-          >
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
           </DropdownMenuItem>
         </DropdownMenuGroup>
 

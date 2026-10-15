@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { KeyRound, LogOut, ShieldCheck, UserCog } from "lucide-react";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
@@ -27,16 +28,83 @@ import SellerStatusBadge from "./SellerStatusBadge";
  * session. Notification toggles are kept on this device only until an
  * preferences API exists.
  */
+type NotificationPreferences = {
+  orderEmails: boolean;
+  productUpdates: boolean;
+  securityAlerts: boolean;
+};
+
+const NOTIFICATION_PREFERENCES_KEY = "trustpass.seller.notification-preferences";
+const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+  orderEmails: true,
+  productUpdates: false,
+  securityAlerts: true,
+};
+
+function isNotificationPreferences(value: unknown): value is NotificationPreferences {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "orderEmails" in value &&
+    typeof value.orderEmails === "boolean" &&
+    "productUpdates" in value &&
+    typeof value.productUpdates === "boolean" &&
+    "securityAlerts" in value &&
+    typeof value.securityAlerts === "boolean"
+  );
+}
+
 export default function SellerAccountSettings() {
   const router = useRouter();
   const { user, isPending } = useAuth();
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [notifications, setNotifications] = useState({
-    orderEmails: true,
-    productUpdates: false,
-    securityAlerts: true,
-  });
+  const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATION_PREFERENCES);
+  const [notificationPreferencesLoaded, setNotificationPreferencesLoaded] = useState(false);
+  const [notificationPreferencesError, setNotificationPreferencesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        const stored = window.localStorage.getItem(NOTIFICATION_PREFERENCES_KEY);
+        if (stored) {
+          const parsed: unknown = JSON.parse(stored);
+          if (isNotificationPreferences(parsed)) {
+            setNotifications(parsed);
+          } else {
+            setNotificationPreferencesError(
+              "Saved notification preferences were invalid. Default settings have been restored.",
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Could not read seller notification preferences:", error);
+        setNotificationPreferencesError(
+          "Could not read saved notification preferences. Default settings are shown.",
+        );
+      } finally {
+        setNotificationPreferencesLoaded(true);
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  const updateNotificationPreference = (
+    key: keyof NotificationPreferences,
+    checked: boolean,
+  ) => {
+    const updatedPreferences = { ...notifications, [key]: checked };
+    setNotifications(updatedPreferences);
+    try {
+      window.localStorage.setItem(NOTIFICATION_PREFERENCES_KEY, JSON.stringify(updatedPreferences));
+      setNotificationPreferencesError(null);
+    } catch (error) {
+      console.error("Could not save seller notification preferences:", error);
+      setNotificationPreferencesError(
+        "Could not save preferences in this browser. Changes will not persist after you leave this page.",
+      );
+    }
+  };
 
   const handleSignOut = async () => {
     setIsLoggingOut(true);
@@ -164,10 +232,15 @@ export default function SellerAccountSettings() {
               <CardTitle>Notifications</CardTitle>
             </div>
             <CardDescription>
-              Saved on this device only until a preferences API is available.
+              Saved in this browser only. These choices do not change email delivery until a preferences API is available.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {notificationPreferencesError && (
+              <Alert variant="destructive">
+                <AlertDescription>{notificationPreferencesError}</AlertDescription>
+              </Alert>
+            )}
             {[
               {
                 key: "orderEmails" as const,
@@ -197,9 +270,8 @@ export default function SellerAccountSettings() {
                 </div>
                 <Switch
                   checked={notifications[setting.key]}
-                  onCheckedChange={(checked) =>
-                    setNotifications((current) => ({ ...current, [setting.key]: checked }))
-                  }
+                  disabled={!notificationPreferencesLoaded}
+                  onCheckedChange={(checked) => updateNotificationPreference(setting.key, checked)}
                   aria-label={setting.label}
                 />
               </div>

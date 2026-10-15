@@ -1,8 +1,7 @@
 import { cache } from "react";
-import ProductCatalogFilters from '@/components/marketplace/products/ProductCatalogFilters';
-import ProductGrid from '@/components/marketplace/products/ProductGrid';
+import ProductCatalogFilters from "@/components/marketplace/products/ProductCatalogFilters";
+import ProductGrid from "@/components/products/ProductGrid";
 import { fetchAllProducts } from "@/lib/admin_api/get-products";
-import { getBusinesses } from "@/lib/business-api/all-business";
 import { createPageMetadata } from "@/lib/page-metadata";
 
 export const dynamic = "force-dynamic";
@@ -14,29 +13,26 @@ export const metadata = createPageMetadata(
 );
 
 const getProducts = cache(() =>
-  fetchAllProducts({ page: 1, limit: 100, status: "ACTIVE" }),
+  fetchAllProducts({ page: 1, limit: 100 })
 );
-
-const getBusinessList = cache(async () => {
-  const response = await getBusinesses({ page: 1, limit: 100 });
-  return response.success ? response.data ?? [] : [];
-});
 
 type ProductsPageProps = {
   searchParams: Promise<{
     query?: string;
     stock?: string;
+    page?: string;
+    limit?: string;
   }>;
 };
 
-export default async function ProductsCatalogPage({ searchParams }: ProductsPageProps) {
+export default async function ProductsCatalogPage({
+  searchParams,
+}: ProductsPageProps) {
   const params = await searchParams;
-  const query = params.query?.trim().toLowerCase() ?? '';
-  const stockFilter = params.stock?.trim().toLowerCase() ?? 'all';
-  const [allProducts, businesses] = await Promise.all([
-    getProducts(),
-    getBusinessList(),
-  ]);
+  const query = params.query?.trim().toLowerCase() ?? "";
+  const stockFilter = params.stock?.trim().toLowerCase() ?? "all";
+
+  const allProducts = await getProducts();
 
   const filteredProducts = allProducts.filter((product) => {
     const matchesQuery = query
@@ -45,18 +41,16 @@ export default async function ProductsCatalogPage({ searchParams }: ProductsPage
       : true;
 
     const matchesStock =
-      stockFilter === 'in_stock'
-        ? typeof product.stock === 'number' && product.stock > 0
+      stockFilter === "in_stock"
+        ? typeof product.stock === "number" && product.stock > 0
         : true;
 
     return matchesQuery && matchesStock;
   });
 
   return (
-    <main className="min-h-screen bg-background font-sans text-foreground">
+    <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        
-        {/* Header */}
         <div className="mb-8">
           <p className="text-sm font-semibold uppercase tracking-wider text-primary">
             Marketplace Catalog
@@ -70,13 +64,7 @@ export default async function ProductsCatalogPage({ searchParams }: ProductsPage
         </div>
 
         <ProductCatalogFilters query={query} stockFilter={stockFilter} />
-        <ProductGrid
-          products={filteredProducts}
-          businesses={businesses}
-          totalCount={allProducts.length}
-          query={query}
-          stockFilter={stockFilter}
-        />
+        <ProductGrid products={filteredProducts} />
       </div>
     </main>
   );

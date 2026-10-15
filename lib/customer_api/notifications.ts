@@ -53,7 +53,9 @@ export const fetchMyNotifications = async (
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "");
-      console.error("❌ fetchMyNotifications error:", response.status, errorText);
+      if (response.status !== 401) {
+        console.error("❌ fetchMyNotifications error:", response.status, errorText);
+      }
       return [];
     }
 

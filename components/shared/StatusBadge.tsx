@@ -37,7 +37,7 @@ const STATUS_STYLES: Record<string, StatusStyle> = {
   "out of stock": { variant: "warning", label: "Out of stock" },
   open: { variant: "warning", label: "Open" },
   // Neutral
-  draft: { variant: "outline", label: "Draft" },
+  unavailable: { variant: "outline", label: "Unavailable" },
   inactive: { variant: "outline", label: "Inactive" },
   unverified: { variant: "outline", label: "Not submitted" },
   closed: { variant: "outline", label: "Closed" },

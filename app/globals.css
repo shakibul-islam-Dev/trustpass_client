@@ -418,3 +418,65 @@
     }
   }
 }
+
+/* ==========================================================================
+   Sonner toasts — TrustPass theme
+   --------------------------------------------------------------------------
+   Sonner injects its own stylesheet into <head> at runtime (after this file),
+   so the selectors below are scoped a little more tightly
+   (`html [data-sonner-toaster]`) to win on specificity regardless of order.
+   Status colours are supplied as CSS variables from
+   `components/ui/sonner.tsx`; this block owns the shared font + shape so a
+   toast reads as a first-class TrustPass surface (rounded-field corners, app
+   font, surface shadow) rather than a stock sonner toast.
+   ========================================================================== */
+html [data-sonner-toaster] {
+  font-family: var(--font-sans);
+}
+
+html [data-sonner-toaster] [data-sonner-toast][data-styled="true"] {
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: calc(var(--radius) * 1.5);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  box-shadow: var(--overlay-shadow);
+}
+
+html [data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-title] {
+  font-weight: 580;
+  line-height: 1.4;
+}
+
+html [data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-description] {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  opacity: 0.9;
+}
+
+html [data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-icon] {
+  margin-inline-end: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Mobile: stop the invisible toaster box from overhanging the viewport.
+   Sonner makes the toaster 100% wide and then shifts the whole element by the
+   mobile offset, which pushes its (transparent, empty) box 16px past the right
+   edge. The toasts themselves are placed correctly, but an element wider than
+   the viewport can be turned into a horizontal scroll by some mobile browsers.
+   Pin the toaster to the exact viewport width, then inset the toasts
+   symmetrically so they stay centred.
+   -------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+  html [data-sonner-toaster] {
+    left: 0;
+    right: 0;
+    width: 100%;
+  }
+
+  html [data-sonner-toaster] [data-sonner-toast] {
+    left: var(--mobile-offset-left);
+    right: var(--mobile-offset-right);
+    width: auto;
+  }
+}

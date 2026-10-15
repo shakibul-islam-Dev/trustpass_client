@@ -4,7 +4,7 @@ import { type FormEvent, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -146,9 +146,8 @@ export default function ChangePasswordForm() {
             <div className="space-y-2">
               <Label htmlFor="current-password">Current password</Label>
 
-              <Input
+              <PasswordInput
                 id="current-password"
-                type="password"
                 placeholder="••••••••"
                 autoComplete="current-password"
                 value={currentPassword}
@@ -159,9 +158,8 @@ export default function ChangePasswordForm() {
             <div className="space-y-2">
               <Label htmlFor="change-new-password">New password</Label>
 
-              <Input
+              <PasswordInput
                 id="change-new-password"
-                type="password"
                 placeholder="••••••••"
                 autoComplete="new-password"
                 value={newPassword}
@@ -172,9 +170,8 @@ export default function ChangePasswordForm() {
             <div className="space-y-2">
               <Label htmlFor="change-confirm-password">Confirm new password</Label>
 
-              <Input
+              <PasswordInput
                 id="change-confirm-password"
-                type="password"
                 placeholder="••••••••"
                 autoComplete="new-password"
                 value={confirmPassword}

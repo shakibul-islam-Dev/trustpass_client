@@ -1,12 +1,13 @@
+// File: app/products/[slug]/page.tsx
 import Image from "next/image";
 import Link from "next/link";
 import { cache } from "react";
-
-import {
-  fetchAllProducts,
-} from "@/lib/admin_api/get-products";
+import { ArrowLeft } from "lucide-react";
+import { fetchAllProducts } from "@/lib/admin_api/get-products";
 import { getBusinessById } from "@/lib/business-api/all-business";
 import { createPageMetadata } from "@/lib/page-metadata";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type ProductDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -15,7 +16,7 @@ type ProductDetailPageProps = {
 export const dynamic = "force-dynamic";
 
 const getProducts = cache(() =>
-  fetchAllProducts({ page: 1, limit: 100, status: "ACTIVE" }),
+  fetchAllProducts({ page: 1, limit: 100 })
 );
 
 const getProductBySlug = cache(async (slug: string) => {
@@ -24,7 +25,7 @@ const getProductBySlug = cache(async (slug: string) => {
   return products.find(
     (product) =>
       product.slug?.toLowerCase() === target ||
-      product.id.toLowerCase() === target,
+      product.id.toLowerCase() === target
   );
 });
 
@@ -36,7 +37,7 @@ export async function generateMetadata({ params }: ProductDetailPageProps) {
     return {
       ...createPageMetadata(
         "Product Not Found",
-        "This TrustPass product is unavailable or may have been removed.",
+        "This TrustPass product is unavailable or may have been removed."
       ),
       robots: { index: false, follow: false },
     };
@@ -91,16 +92,21 @@ export default async function ProductDetailPage({
   return (
     <main className="min-h-screen bg-background font-sans text-foreground">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+        {/* Breadcrumb */}
         <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
           <Link href="/products" className="transition hover:text-primary">
             Products
           </Link>
           <span>/</span>
-          <span className="truncate font-medium text-foreground">{product.name}</span>
+          <span className="truncate font-medium text-foreground">
+            {product.name}
+          </span>
         </div>
 
+        {/* Product Card */}
         <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
           <div className="grid gap-8 p-6 lg:grid-cols-[1.1fr_0.9fr] lg:p-10">
+            {/* Gallery Images */}
             <div className="space-y-4">
               <div className="flex h-80 items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted/30 sm:h-96">
                 {galleryImages[0] ? (
@@ -135,6 +141,7 @@ export default async function ProductDetailPage({
               )}
             </div>
 
+            {/* Product Meta & Actions */}
             <div className="space-y-6">
               <div>
                 {business && (
@@ -149,8 +156,12 @@ export default async function ProductDetailPage({
                 <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
                   {product.name}
                 </h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Product ID: <span className="font-mono">{product.id}</span>
+                </p>
               </div>
 
+              {/* Price & Stock */}
               <div className="flex flex-wrap items-center gap-3">
                 <span className="text-3xl font-extrabold">
                   ${Number(product.price).toFixed(2)}{" "}
@@ -172,6 +183,7 @@ export default async function ProductDetailPage({
                 </span>
               </div>
 
+              {/* Description */}
               <div className="space-y-2">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                   Description
@@ -181,6 +193,7 @@ export default async function ProductDetailPage({
                 </p>
               </div>
 
+              {/* Business Info Card */}
               {business && (
                 <div className="rounded-2xl border border-border bg-muted/30 p-4">
                   <div className="flex items-center justify-between">
@@ -220,6 +233,7 @@ export default async function ProductDetailPage({
                 </div>
               )}
 
+              {/* Action Buttons */}
               <div className="flex flex-col gap-3 pt-2 sm:flex-row">
                 <button
                   type="button"
@@ -240,12 +254,14 @@ export default async function ProductDetailPage({
           </div>
         </div>
 
+        {/* Back Link */}
         <div className="mt-8">
           <Link
             href="/products"
-            className="text-sm font-medium text-primary hover:underline"
+            className={cn(buttonVariants({ variant: "ghost" }), "gap-2")}
           >
-            ← Back to Product Catalog
+            <ArrowLeft className="h-4 w-4" />
+            Back to Products
           </Link>
         </div>
       </div>

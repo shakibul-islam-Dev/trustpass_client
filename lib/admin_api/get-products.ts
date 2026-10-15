@@ -89,36 +89,25 @@ const normalizeImages = (raw: any): string[] => {
 // ============================================================
 // NORMALIZE
 // ============================================================
-const normalizeProduct = (raw: any): IProductResponse => {
-  const business = raw.business ?? {};
-  const owner = business.owner ?? raw.owner ?? {};
-
-  return {
-    id: raw.id,
-    businessId: raw.businessId ?? raw.business_id ?? business.id ?? "",
-    categoryId: raw.categoryId ?? raw.category_id ?? "",
-    name: raw.name || "Untitled Product",
-    slug: raw.slug,
-    description: raw.description ?? null,
-    price: Number(raw.price ?? 0),
-    currency: raw.currency || "BDT",
-    stock: Number(raw.stock ?? 0),
-    images: normalizeImages(raw.images),
-    status: raw.status || "ACTIVE",
-    createdAt: raw.createdAt ?? raw.created_at ?? "",
-    updatedAt: raw.updatedAt ?? raw.updated_at,
-
-    // Nested business
-    businessName: raw.businessName ?? business.name ?? null,
-    businessSlug: raw.businessSlug ?? business.slug ?? null,
-    businessLogo: business.logoUrl ?? raw.businessLogo ?? null,
-
-    // Owner
-    ownerId: raw.ownerId ?? business.ownerId ?? owner.id ?? "",
-    ownerName: owner.name ?? raw.ownerName ?? null,
-    ownerEmail: owner.email ?? raw.ownerEmail ?? null,
-  };
-};
+const normalizeProduct = (raw: any): IProductResponse => ({
+  id: raw.id,
+  businessId: raw.businessId ?? raw.business_id,
+  categoryId: raw.categoryId ?? raw.category_id,
+  name: raw.name || "Untitled Product",
+  slug: raw.slug,
+  description: raw.description ?? null,
+  price: Number(raw.price ?? 0),
+  currency: raw.currency || "BDT",
+  stock: Number(raw.stock ?? 0),
+  images: Array.isArray(raw.images)
+    ? raw.images
+        .map((img: any) => (typeof img === "string" ? img : img?.url || ""))
+        .filter(Boolean)
+    : [],
+  status: raw.status || "ACTIVE",
+  createdAt: raw.createdAt ?? raw.created_at ?? "",
+  updatedAt: raw.updatedAt ?? raw.updated_at,
+});
 
 // ============================================================
 // GET /api/v1/products — list
