@@ -4,6 +4,7 @@ import { CheckCircle2, LockKeyhole, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   Card,
   CardContent,
@@ -47,8 +48,7 @@ const PasswordRest = () => {
           </label>
           <div className="relative">
             <LockKeyhole className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="password"
+            <PasswordInput
               placeholder="••••••••"
               className="h-11 w-full rounded-xl border border-border bg-background/60 pl-10 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary/20"
             />
@@ -61,8 +61,7 @@ const PasswordRest = () => {
           </label>
           <div className="relative">
             <LockKeyhole className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="password"
+            <PasswordInput
               placeholder="••••••••"
               className="h-11 w-full rounded-xl border border-border bg-background/60 pl-10 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary/20"
             />
