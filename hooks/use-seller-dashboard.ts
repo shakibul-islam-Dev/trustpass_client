@@ -93,7 +93,10 @@ export function useSellerDashboardData(
         const productGroups = await Promise.all(
           ownedBusinesses.map(async (business) => {
             const result = await getBusinessProducts(business.id, controller.signal);
-            return result.ok && result.data ? result.data : [];
+            if (!result.ok || !result.data) {
+              throw new Error(`Could not load products for ${business.name}: ${result.message}`);
+            }
+            return result.data;
           }),
         );
 
@@ -102,6 +105,7 @@ export function useSellerDashboardData(
       } catch (loadError) {
         if (!active) return;
         console.error("Could not load seller dashboard data:", loadError);
+        setProducts([]);
         setError(
           loadError instanceof Error
             ? loadError.message

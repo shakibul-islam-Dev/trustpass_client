@@ -157,6 +157,7 @@ export default function SellerProductManagement({
       if (!active) return;
       setLoading(true);
       setLoadError(null);
+      setServerProducts(null);
     });
 
     void getBusinessProducts(businessId)

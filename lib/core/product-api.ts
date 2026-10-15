@@ -181,9 +181,11 @@ export async function getBusinessProducts(
   for (let page = 1; ; page += 1) {
     const result = await sendJson<ProductRecord[]>("GET", path(page), undefined, signal);
     if (!result.ok) {
-      // Surface the error only if we have nothing yet; otherwise return what we
-      // could load rather than dropping the whole list.
-      return page === 1 ? result : { ok: true, message: result.message, data: products };
+      return {
+        ok: false,
+        message: `Could not finish loading products on page ${page}: ${result.message}`,
+        data: null,
+      };
     }
 
     const batch = result.data ?? [];

@@ -79,7 +79,10 @@ export default function SellerAnalytics() {
         const productGroups = await Promise.all(
           ownedBusinesses.map(async (business) => {
             const result = await getBusinessProducts(business.id);
-            return result.ok && result.data ? result.data : [];
+            if (!result.ok || !result.data) {
+              throw new Error(`Could not load products for ${business.name}: ${result.message}`);
+            }
+            return result.data;
           }),
         );
 
@@ -89,6 +92,8 @@ export default function SellerAnalytics() {
       } catch (loadError) {
         console.error("Could not load seller analytics:", loadError);
         if (active) {
+          setBusinesses([]);
+          setProducts([]);
           setError(loadError instanceof Error ? loadError.message : "Could not load analytics.");
         }
       } finally {

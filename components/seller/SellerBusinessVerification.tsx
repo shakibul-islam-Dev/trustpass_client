@@ -112,9 +112,10 @@ export default function SellerBusinessVerification({
   const [businesses, setBusinesses] = useState<IBusiness[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [documents, setDocuments] = useState<BusinessDocument[]>([]);
+  const [documentsBusinessId, setDocumentsBusinessId] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingDocs, setIsLoadingDocs] = useState(false);
+  const [isRefreshingDocs, setIsRefreshingDocs] = useState(false);
   const [uploadingType, setUploadingType] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -123,6 +124,7 @@ export default function SellerBusinessVerification({
   const [message, setMessage] = useState<Message | null>(null);
 
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
+  const documentRequestId = useRef(0);
 
   const business = useMemo(
     () => businesses.find((item) => item.id === selectedId) ?? null,
@@ -165,23 +167,38 @@ export default function SellerBusinessVerification({
   // --- Load documents whenever the selected business changes -----------------
   const loadDocuments = useCallback(async (businessId: string) => {
     if (!businessId) {
-      setDocuments([]);
       return;
     }
-    setIsLoadingDocs(true);
+
+    const requestId = ++documentRequestId.current;
     const result = await getBusinessDocuments(businessId);
+    if (requestId !== documentRequestId.current) return;
+
     if (result.ok && result.data) {
       setDocuments(result.data);
     } else {
       setDocuments([]);
       setMessage({ tone: "error", text: result.message });
     }
-    setIsLoadingDocs(false);
+    setDocumentsBusinessId(businessId);
   }, []);
 
   useEffect(() => {
+    if (!selectedId) return;
     void loadDocuments(selectedId);
+    return () => {
+      documentRequestId.current += 1;
+    };
   }, [selectedId, loadDocuments]);
+
+  const refreshDocuments = async () => {
+    setIsRefreshingDocs(true);
+    try {
+      await loadDocuments(selectedId);
+    } finally {
+      setIsRefreshingDocs(false);
+    }
+  };
 
   const handleFileSelect = async (
     documentType: BusinessDocumentType,
@@ -269,11 +286,15 @@ export default function SellerBusinessVerification({
     }
   };
 
+  const selectedDocuments =
+    documentsBusinessId === selectedId ? documents : [];
+  const isLoadingDocs =
+    (Boolean(selectedId) && documentsBusinessId !== selectedId) || isRefreshingDocs;
   const latestOfType = (type: BusinessDocumentType) =>
-    documents.find((doc) => doc.documentType === type) ?? null;
+    selectedDocuments.find((doc) => doc.documentType === type) ?? null;
 
-  const approvedCount = documents.filter((doc) => doc.status === "APPROVED").length;
-  const otherDocuments = documents.filter(
+  const approvedCount = selectedDocuments.filter((doc) => doc.status === "APPROVED").length;
+  const otherDocuments = selectedDocuments.filter(
     (doc) => !REQUIRED_TYPES.includes(doc.documentType),
   );
 
@@ -454,7 +475,7 @@ export default function SellerBusinessVerification({
             size="sm"
             className="gap-2"
             disabled={isLoadingDocs}
-            onClick={() => void loadDocuments(selectedId)}
+            onClick={() => void refreshDocuments()}
           >
             {isLoadingDocs ? (
               <Loader2 className="size-4 animate-spin" />
@@ -466,6 +487,11 @@ export default function SellerBusinessVerification({
         </CardHeader>
 
         <CardContent className="space-y-3">
+          {isLoadingDocs && (
+            <p role="status" className="text-sm text-muted-foreground">
+              Loading documents for this business…
+            </p>
+          )}
           {requiredBusinessDocuments.map((item) => {
             const documentType = REQUIRED_DOC_TYPES[item.id];
             if (!documentType) return null;

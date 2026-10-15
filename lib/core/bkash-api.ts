@@ -34,6 +34,12 @@ export interface ListingQuota {
     remainingSlots: number;
 }
 
+export interface PaymentApiResult<T> {
+    ok: boolean;
+    message: string;
+    data: T | null;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -101,30 +107,58 @@ export async function getPaymentById(paymentId: string): Promise<PaymentRecord |
 // GET /api/v1/payments/my-payments  — authenticated seller's payment history
 // ---------------------------------------------------------------------------
 
-export async function getMyPayments(): Promise<PaymentRecord[]> {
-    const response = await apiFetch(apiUrl("/api/v1/payments/my-payments"), {
-        method: "GET",
-        credentials: "include",
-    });
+export async function getMyPayments(): Promise<PaymentApiResult<PaymentRecord[]>> {
+    try {
+        const response = await apiFetch(apiUrl("/api/v1/payments/my-payments"), {
+            method: "GET",
+            credentials: "include",
+        });
+        const body = await parseBody<PaymentRecord[]>(response);
 
-    const body = await parseBody<PaymentRecord[]>(response);
-
-    if (!response.ok || !body.success) return [];
-    return body.data ?? [];
+        if (!response.ok || !body.success || !Array.isArray(body.data)) {
+            return {
+                ok: false,
+                message: body.message ?? `Could not load payment history (${response.status}).`,
+                data: null,
+            };
+        }
+        return { ok: true, message: body.message ?? "Payment history loaded.", data: body.data };
+    } catch (error) {
+        console.error("[bKash] payment history request failed:", error);
+        return {
+            ok: false,
+            message: error instanceof Error ? error.message : "Could not load payment history.",
+            data: null,
+        };
+    }
 }
 
 // ---------------------------------------------------------------------------
 // GET /api/v1/payments/quota  — listing slot quota
 // ---------------------------------------------------------------------------
 
-export async function getListingQuota(): Promise<ListingQuota | null> {
-    const response = await apiFetch(apiUrl("/api/v1/payments/quota"), {
-        method: "GET",
-        credentials: "include",
-    });
+export async function getListingQuota(): Promise<PaymentApiResult<ListingQuota>> {
+    try {
+        const response = await apiFetch(apiUrl("/api/v1/payments/quota"), {
+            method: "GET",
+            credentials: "include",
+        });
+        const body = await parseBody<ListingQuota>(response);
 
-    const body = await parseBody<ListingQuota>(response);
-
-    if (!response.ok || !body.success) return null;
-    return body.data ?? null;
+        if (!response.ok || !body.success || !body.data) {
+            return {
+                ok: false,
+                message: body.message ?? `Could not load listing quota (${response.status}).`,
+                data: null,
+            };
+        }
+        return { ok: true, message: body.message ?? "Listing quota loaded.", data: body.data };
+    } catch (error) {
+        console.error("[bKash] listing quota request failed:", error);
+        return {
+            ok: false,
+            message: error instanceof Error ? error.message : "Could not load listing quota.",
+            data: null,
+        };
+    }
 }
