@@ -23,6 +23,11 @@ import {
   type ProductRecord as ApiProductRecord,
 } from "@/lib/core/product-api";
 
+/**
+ * A product as the seller UI models it. Deliberately has no status field: a
+ * posted product goes straight to the server and is shown as-is — no draft,
+ * no approval step.
+ */
 export interface ProductRecord {
   id: string;
   name: string;
@@ -30,8 +35,6 @@ export interface ProductRecord {
   categoryId: string;
   price: string;
   stock: number;
-  /** There is no draft state anymore: a product is either live or held (unavailable). */
-  status: "Published" | "Unavailable";
   description: string;
   /** Image URLs the server returned — the first one is shown in the list. */
   images: string[];
@@ -44,9 +47,6 @@ const emptyProduct: ProductRecord = {
   categoryId: "",
   price: "",
   stock: 0,
-  // Products are sent straight to the server approved (ACTIVE), never as a draft,
-  // so they appear in the catalog immediately.
-  status: "Published",
   description: "",
   images: [],
 };
@@ -61,16 +61,12 @@ const MAX_IMAGES = 10; // server caps a product at 10 images total
 /** Looks like a UUID — the server's categoryId column is a UUID. */
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const toApiStatus = (status: ProductRecord["status"]): "ACTIVE" | "INACTIVE" =>
-  status === "Published" ? "ACTIVE" : "INACTIVE";
-
 const toInput = (draft: ProductRecord): ProductInput => ({
   name: draft.name.trim(),
   categoryId: UUID_PATTERN.test(draft.categoryId.trim()) ? draft.categoryId.trim() : undefined,
   price: Number(draft.price),
   description: draft.description.trim() || undefined,
   stock: draft.stock,
-  status: toApiStatus(draft.status),
 });
 
 const toRecord = (
@@ -86,9 +82,6 @@ const toRecord = (
     "",
   price: String(product.price),
   stock: product.stock,
-  // Drafts no longer exist: anything the server still reports as DRAFT is
-  // treated as approved/published so it can never sit in a draft bucket.
-  status: product.status === "INACTIVE" || product.status === "DELETED" ? "Unavailable" : "Published",
   description: product.description ?? "",
   images: productImageUrls(product.images),
 });
@@ -434,7 +427,6 @@ export default function SellerProductManagement({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-medium text-foreground">{product.name}</h3>
-                    <Badge variant={product.status === "Published" ? "success" : "outline"}>{product.status}</Badge>
                     {product.stock === 0 && <Badge variant="warning">Out of stock</Badge>}
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">{product.category || "Uncategorized"} · {product.stock} in stock</p>

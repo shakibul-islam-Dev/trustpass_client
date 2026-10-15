@@ -101,8 +101,6 @@ export interface ProductInput {
   price?: number;
   currency?: string;
   stock?: number;
-  /** Drafts are gone — a product is stored approved (ACTIVE) or held (INACTIVE). */
-  status?: "ACTIVE" | "INACTIVE" | "DELETED";
 }
 
 /**
@@ -225,7 +223,9 @@ export async function createProduct(
       price,
       currency: input.currency || "BDT",
       stock: input.stock ?? 0,
-      status: input.status ?? "ACTIVE",
+      // The UI has no product-status field: a product the seller posts is
+      // approved (ACTIVE) the moment it reaches the server — never a draft.
+      status: "ACTIVE",
     });
   }
 
@@ -238,7 +238,8 @@ export async function createProduct(
     formData.set("price", String(price));
     formData.set("currency", input.currency || "BDT");
     formData.set("stock", String(input.stock ?? 0));
-    formData.set("status", input.status ?? "ACTIVE");
+    // The UI has no product-status field — approved on arrival, never a draft.
+    formData.set("status", "ACTIVE");
     for (const file of files) {
       formData.append("images", file);
     }
@@ -273,7 +274,6 @@ export async function updateProduct(
     if (price !== undefined && !Number.isNaN(price)) formData.set("price", String(price));
     if (input.currency) formData.set("currency", input.currency);
     if (input.stock !== undefined) formData.set("stock", String(input.stock));
-    if (input.status) formData.set("status", input.status);
     if (imageChange.retainImagePublicIds && imageChange.retainImagePublicIds.length > 0) {
       formData.set("retainImagePublicIds", imageChange.retainImagePublicIds.join(","));
     }

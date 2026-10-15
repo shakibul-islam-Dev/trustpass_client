@@ -61,8 +61,8 @@ export default function SellerDashboard() {
   const {
     businesses,
     stats,
-    productStatusSegments,
-    publishedPercentage,
+    stockSegments,
+    inStockPercentage,
     isBusinessesLoading,
     isProductsLoading,
     error,
@@ -90,7 +90,7 @@ export default function SellerDashboard() {
       bgColor: "bg-primary-soft",
       caption: isProductsLoading
         ? undefined
-        : `${stats.publishedCount} published · ${stats.outOfStockCount} out of stock`,
+        : `${stats.inStockCount} in stock · ${stats.outOfStockCount} out of stock`,
     },
     {
       id: "notifications",
@@ -275,7 +275,7 @@ export default function SellerDashboard() {
         </div>
       </section>
 
-      {/* 2. Catalog status — real product-status breakdown (full width) */}
+      {/* 2. Stock breakdown — real in-stock / out-of-stock split (full width) */}
       <section>
         {isProductsLoading ? (
           <div
@@ -284,10 +284,10 @@ export default function SellerDashboard() {
           />
         ) : (
           <AnalyticsChart
-            title="Catalog status"
-            segments={productStatusSegments}
-            centerValue={`${publishedPercentage}%`}
-            centerLabel="Published"
+            title="Stock status"
+            segments={stockSegments}
+            centerValue={`${inStockPercentage}%`}
+            centerLabel="In stock"
             pendingMessage="Add products to your catalog and the breakdown will show up here."
           />
         )}

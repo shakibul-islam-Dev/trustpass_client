@@ -108,7 +108,7 @@ export default function SellerAnalytics() {
   }, [reloadKey]);
 
   const stats = useMemo(() => {
-    const published = products.filter((product) => product.status === "ACTIVE").length;
+    const inStock = products.filter((product) => product.stock > 0).length;
     const outOfStock = products.filter((product) => product.stock === 0).length;
     const inventoryValue = products.reduce(
       (total, product) => total + product.price * product.stock,
@@ -129,7 +129,7 @@ export default function SellerAnalytics() {
         )
       : null;
 
-    return { published, outOfStock, inventoryValue, verified, averageTrust };
+    return { inStock, outOfStock, inventoryValue, verified, averageTrust };
   }, [businesses, products]);
 
   const businessChartData = useMemo(
@@ -162,17 +162,17 @@ export default function SellerAnalytics() {
     [products],
   );
 
-  // Real catalog-status breakdown for the shared AnalyticsChart.
-  const statusSegments = useMemo(
+  // Real stock breakdown for the shared AnalyticsChart.
+  const stockSegments = useMemo(
     () => [
-      { name: "Published", value: stats.published, color: "var(--color-primary)" },
+      { name: "In stock", value: stats.inStock, color: "var(--color-primary)" },
       { name: "Out of stock", value: stats.outOfStock, color: "var(--color-danger)" },
     ],
-    [stats.published, stats.outOfStock],
+    [stats.inStock, stats.outOfStock],
   );
 
-  const publishedPercentage = products.length
-    ? Math.round((stats.published / products.length) * 100)
+  const inStockPercentage = products.length
+    ? Math.round((stats.inStock / products.length) * 100)
     : 0;
 
   return (
@@ -196,9 +196,9 @@ export default function SellerAnalytics() {
         }
       />
       <AnalyticsChart
-        segments={statusSegments}
-        centerValue={`${publishedPercentage}%`}
-        centerLabel="Published"
+        segments={stockSegments}
+        centerValue={`${inStockPercentage}%`}
+        centerLabel="In stock"
         pendingMessage="Add products to your catalog and the breakdown will show up here."
       />
 
@@ -236,7 +236,7 @@ export default function SellerAnalytics() {
               icon={Boxes}
               label="Products"
               value={products.length}
-              hint={`${stats.published} published`}
+              hint={`${stats.inStock} in stock`}
               tone="neutral"
             />
             <SellerStatCard

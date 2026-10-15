@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, BarChart3, Package, PackageCheck, PackageX } from "lucide-react";
+import { AlertTriangle, BarChart3, Package } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
@@ -81,8 +81,6 @@ export default function SellerProductCatalog() {
     };
   }, []);
 
-  const published = products.filter((product) => product.status === "Published").length;
-  const unavailable = products.length - published;
   const outOfStock = products.filter((product) => product.stock === 0).length;
   const selectedBusiness = businesses.find((business) => business.id === selectedBusinessId);
 
@@ -130,10 +128,8 @@ export default function SellerProductCatalog() {
         />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <SellerStatCard icon={Package} label="Total products" value={products.length} hint="Across the selected business" />
-            <SellerStatCard icon={PackageCheck} label="Published" value={published} tone="success" hint="Visible to customers" />
-            <SellerStatCard icon={PackageX} label="Unavailable" value={unavailable} tone="neutral" hint="Hidden from customers" />
             <SellerStatCard icon={AlertTriangle} label="Out of stock" value={outOfStock} tone="warning" hint="Need restocking" />
           </div>
 
