@@ -19,6 +19,7 @@ import {
   getBusinessProducts,
   updateProduct,
   type ProductInput,
+  productImageUrls,
   type ProductRecord as ApiProductRecord,
 } from "@/lib/core/product-api";
 
@@ -29,8 +30,11 @@ export interface ProductRecord {
   categoryId: string;
   price: string;
   stock: number;
-  status: "Published" | "Draft";
+  /** There is no draft state anymore: a product is either live or held (unavailable). */
+  status: "Published" | "Unavailable";
   description: string;
+  /** Image URLs the server returned — the first one is shown in the list. */
+  images: string[];
 }
 
 const emptyProduct: ProductRecord = {
@@ -40,8 +44,11 @@ const emptyProduct: ProductRecord = {
   categoryId: "",
   price: "",
   stock: 0,
-  status: "Draft",
+  // Products are sent straight to the server approved (ACTIVE), never as a draft,
+  // so they appear in the catalog immediately.
+  status: "Published",
   description: "",
+  images: [],
 };
 const emptyProducts: ProductRecord[] = [];
 const emptyCategories: { id: string; name: string }[] = [];
@@ -54,8 +61,8 @@ const MAX_IMAGES = 10; // server caps a product at 10 images total
 /** Looks like a UUID — the server's categoryId column is a UUID. */
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const toApiStatus = (status: ProductRecord["status"]): "ACTIVE" | "DRAFT" =>
-  status === "Published" ? "ACTIVE" : "DRAFT";
+const toApiStatus = (status: ProductRecord["status"]): "ACTIVE" | "INACTIVE" =>
+  status === "Published" ? "ACTIVE" : "INACTIVE";
 
 const toInput = (draft: ProductRecord): ProductInput => ({
   name: draft.name.trim(),
@@ -79,8 +86,11 @@ const toRecord = (
     "",
   price: String(product.price),
   stock: product.stock,
-  status: product.status === "ACTIVE" ? "Published" : product.status === "DRAFT" ? "Draft" : "Draft",
+  // Drafts no longer exist: anything the server still reports as DRAFT is
+  // treated as approved/published so it can never sit in a draft bucket.
+  status: product.status === "INACTIVE" || product.status === "DELETED" ? "Unavailable" : "Published",
   description: product.description ?? "",
+  images: productImageUrls(product.images),
 });
 
 interface SellerProductManagementProps {
@@ -167,9 +177,9 @@ export default function SellerProductManagement({
     };
   }, [businessId, reloadKey, categoriesSignature]);
 
-  const [localProducts, setLocalProducts] = useState<ProductRecord[] | null>(null);
-  const products =
-    (businessId ? serverProducts : localProducts) ?? incomingProducts ?? emptyProducts;
+  // Product data always lives on the server (or is supplied by the parent).
+  // Nothing is kept in a local "draft" copy inside the browser.
+  const products = (businessId ? serverProducts : null) ?? incomingProducts ?? emptyProducts;
 
   // Let a parent page show stats without fetching the products a second time.
   useEffect(() => {
@@ -297,14 +307,12 @@ export default function SellerProductManagement({
         await onSave(productInput, id || undefined);
         setActionMessage("Product saved.");
         toast.success("Product saved.");
-      } else if (draft.id) {
-        setLocalProducts((current) => (current ?? incomingProducts ?? []).map((product) => product.id === draft.id ? { ...draft, id: draft.id } : product));
-        setActionMessage("Product updated (local preview).");
-        toast.success("Product updated (local preview).");
       } else {
-        setLocalProducts((current) => [{ ...draft, id: `local-${Date.now()}` }, ...(current ?? incomingProducts ?? [])]);
-        setActionMessage("Product added (local preview).");
-        toast.success("Product added (local preview).");
+        // No server target: never store the product data locally as a draft.
+        const message = "Select a business before saving products.";
+        setActionError(message);
+        toast.error(message);
+        return;
       }
       setEditorOpen(false);
     } catch (error) {
@@ -338,9 +346,11 @@ export default function SellerProductManagement({
           setActionMessage("Product deleted.");
           toast.success("Product deleted.");
         } else {
-          setLocalProducts((current) => (current ?? incomingProducts ?? []).filter((product) => product.id !== deleteTarget.id));
-          setActionMessage("Product deleted (local preview).");
-          toast.success("Product deleted (local preview).");
+          // No server target: never mutate a local "draft" copy.
+          const message = "Select a business before deleting products.";
+          setActionError(message);
+          toast.error(message);
+          return;
         }
         setDeleteTarget(null);
       } catch (error) {
@@ -406,9 +416,20 @@ export default function SellerProductManagement({
           <div className="space-y-3">
             {filteredProducts.map((product) => (
               <article key={product.id} className="flex flex-col gap-4 rounded-xl border border-border bg-background/40 p-4 sm:flex-row sm:items-center">
-                <div className="flex size-16 shrink-0 items-center justify-center rounded-xl bg-surface-secondary text-muted-foreground">
-                  <ImagePlus className="size-6" />
-                </div>
+                {product.images[0] ? (
+                  <div className="relative size-16 shrink-0 overflow-hidden rounded-xl border border-border bg-surface-secondary">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={product.images[0]}
+                      alt={product.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex size-16 shrink-0 items-center justify-center rounded-xl bg-surface-secondary text-muted-foreground">
+                    <ImagePlus className="size-6" />
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-medium text-foreground">{product.name}</h3>
@@ -449,7 +470,6 @@ export default function SellerProductManagement({
             )}
           </div>
           )}
-          {!businessId && !onSave && !onDelete && <p className="mt-4 text-xs text-muted-foreground">Local preview mode. Connect a business to save changes to your account.</p>}
         </CardContent>
       </Card>
 
@@ -559,7 +579,7 @@ export default function SellerProductManagement({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete this product?</DialogTitle>
-            <DialogDescription>{deleteTarget?.name} will be removed {businessId ? "from your catalog on the server" : "from this local preview"}.</DialogDescription>
+            <DialogDescription>{deleteTarget?.name} will be removed from your catalog on the server.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>Keep product</Button>

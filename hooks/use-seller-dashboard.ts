@@ -19,7 +19,6 @@ export interface SellerDashboardStats {
   businessCount: number;
   productCount: number;
   publishedCount: number;
-  draftCount: number;
   outOfStockCount: number;
   averageTrustScore: number | null;
   unreadNotifications: number;
@@ -129,7 +128,6 @@ export function useSellerDashboardData(
 
   const stats = useMemo<SellerDashboardStats>(() => {
     const published = products.filter((product) => product.status === "ACTIVE").length;
-    const drafts = products.filter((product) => product.status === "DRAFT").length;
     const outOfStock = products.filter((product) => product.stock === 0).length;
     // The API writes `trustScoreUpdatedAt` whenever it calculates a score, so
     // `null` means "never scored", not "scored zero". Averaging those in would
@@ -148,7 +146,6 @@ export function useSellerDashboardData(
       businessCount: businesses.length,
       productCount: products.length,
       publishedCount: published,
-      draftCount: drafts,
       outOfStockCount: outOfStock,
       averageTrustScore: averageTrust,
       unreadNotifications,
@@ -158,11 +155,10 @@ export function useSellerDashboardData(
   const productStatusSegments = useMemo<AnalyticsSegment[]>(() => {
     const segments: AnalyticsSegment[] = [
       { name: "Published", value: stats.publishedCount, color: "var(--color-primary)" },
-      { name: "Draft", value: stats.draftCount, color: "var(--color-warning)" },
       { name: "Out of stock", value: stats.outOfStockCount, color: "var(--color-danger)" },
     ];
     return segments;
-  }, [stats.publishedCount, stats.draftCount, stats.outOfStockCount]);
+  }, [stats.publishedCount, stats.outOfStockCount]);
 
   const publishedPercentage = stats.productCount
     ? Math.round((stats.publishedCount / stats.productCount) * 100)

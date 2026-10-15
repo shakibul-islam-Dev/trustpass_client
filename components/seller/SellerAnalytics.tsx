@@ -158,14 +158,13 @@ export default function SellerAnalytics() {
   );
 
   // Real catalog-status breakdown for the shared AnalyticsChart.
-  const statusSegments = useMemo(() => {
-    const drafts = products.filter((product) => product.status === "DRAFT").length;
-    return [
+  const statusSegments = useMemo(
+    () => [
       { name: "Published", value: stats.published, color: "var(--color-primary)" },
-      { name: "Draft", value: drafts, color: "var(--color-warning)" },
       { name: "Out of stock", value: stats.outOfStock, color: "var(--color-danger)" },
-    ];
-  }, [products, stats.published, stats.outOfStock]);
+    ],
+    [stats.published, stats.outOfStock],
+  );
 
   const publishedPercentage = products.length
     ? Math.round((stats.published / products.length) * 100)

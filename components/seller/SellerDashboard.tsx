@@ -90,7 +90,7 @@ export default function SellerDashboard() {
       bgColor: "bg-primary-soft",
       caption: isProductsLoading
         ? undefined
-        : `${stats.publishedCount} published · ${stats.draftCount} draft`,
+        : `${stats.publishedCount} published · ${stats.outOfStockCount} out of stock`,
     },
     {
       id: "notifications",

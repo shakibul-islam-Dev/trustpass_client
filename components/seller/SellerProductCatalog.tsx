@@ -75,7 +75,7 @@ export default function SellerProductCatalog() {
   }, []);
 
   const published = products.filter((product) => product.status === "Published").length;
-  const drafts = products.length - published;
+  const unavailable = products.length - published;
   const outOfStock = products.filter((product) => product.stock === 0).length;
   const selectedBusiness = businesses.find((business) => business.id === selectedBusinessId);
 
@@ -121,7 +121,7 @@ export default function SellerProductCatalog() {
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <SellerStatCard icon={Package} label="Total products" value={products.length} hint="Across the selected business" />
             <SellerStatCard icon={PackageCheck} label="Published" value={published} tone="success" hint="Visible to customers" />
-            <SellerStatCard icon={PackageX} label="Drafts" value={drafts} tone="neutral" hint="Still being worked on" />
+            <SellerStatCard icon={PackageX} label="Unavailable" value={unavailable} tone="neutral" hint="Hidden from customers" />
             <SellerStatCard icon={AlertTriangle} label="Out of stock" value={outOfStock} tone="warning" hint="Need restocking" />
           </div>
 
