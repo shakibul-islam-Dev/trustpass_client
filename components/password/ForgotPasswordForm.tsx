@@ -261,6 +261,7 @@ export default function ForgotPasswordForm() {
   return (
     <AuthShell
       size="lg"
+      className="max-w-md lg:max-w-5xl"
       title={
         done
           ? "Password reset"

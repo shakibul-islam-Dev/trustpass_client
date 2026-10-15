@@ -61,10 +61,19 @@ const PAYMENT_METHODS: {
 // Helper: map API status → display
 // ---------------------------------------------------------------------------
 
-function mapStatus(status: string): "Paid" | "Pending" | "Failed" {
-    if (status === "SUCCESS") return "Paid";
-    if (status === "PENDING") return "Pending";
-    return "Failed";
+function mapStatus(status: PaymentRecord["status"]): "Paid" | "Pending" | "Failed" | "Cancelled" | "Refunded" {
+    switch (status) {
+        case "SUCCESS":
+            return "Paid";
+        case "PENDING":
+            return "Pending";
+        case "CANCELLED":
+            return "Cancelled";
+        case "REFUNDED":
+            return "Refunded";
+        case "FAILED":
+            return "Failed";
+    }
 }
 
 function formatDate(iso?: string) {
@@ -314,10 +323,12 @@ function PaymentHistoryTable({
                                     <td className="px-4 py-4">
                                         <Badge
                                             variant={
-                                                displayStatus === "Paid"
-                                                    ? "success"
+                                                    displayStatus === "Paid"
+                                                        ? "success"
                                                     : displayStatus === "Pending"
                                                         ? "warning"
+                                                    : displayStatus === "Cancelled" || displayStatus === "Refunded"
+                                                        ? "outline"
                                                         : "danger"
                                             }
                                             className="gap-1.5"
@@ -326,6 +337,8 @@ function PaymentHistoryTable({
                                                 <CheckCircle2 className="size-3" />
                                             ) : displayStatus === "Pending" ? (
                                                 <Clock3 className="size-3" />
+                                            ) : displayStatus === "Cancelled" || displayStatus === "Refunded" ? (
+                                                <History className="size-3" />
                                             ) : (
                                                 <XCircle className="size-3" />
                                             )}
@@ -355,33 +368,68 @@ export default function SellerPayments() {
     // Business
     const [businessId, setBusinessId] = useState<string | null>(null);
     const [loadingBusiness, setLoadingBusiness] = useState(true);
+    const [quotaError, setQuotaError] = useState<string | null>(null);
 
     // Payment history
     const [payments, setPayments] = useState<PaymentRecord[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
+    const [historyError, setHistoryError] = useState<string | null>(null);
 
     // Quota
     const [quota, setQuota] = useState<ListingQuota | null>(null);
 
     // Load business + quota on mount
     useEffect(() => {
-        getMyBusinesses().then((result) => {
-            if (result.ok && result.data && result.data.length > 0) {
-                setBusinessId(result.data[0].id);
+        let active = true;
+        const load = async () => {
+            const [businessResult, quotaResult] = await Promise.all([
+                getMyBusinesses(),
+                getListingQuota(),
+            ]);
+            if (!active) return;
+
+            if (!businessResult.ok || !businessResult.data) {
+                setError(businessResult.message);
+            } else if (businessResult.data.length > 0) {
+                setBusinessId(businessResult.data[0].id);
+            } else {
+                setError("No business found. Please create a business before making a payment.");
+            }
+
+            if (quotaResult.ok && quotaResult.data) {
+                setQuota(quotaResult.data);
+                setQuotaError(null);
+            } else {
+                setQuota(null);
+                setQuotaError(quotaResult.message);
             }
             setLoadingBusiness(false);
-        });
-
-        getListingQuota().then((q) => setQuota(q));
+        };
+        void load();
+        return () => {
+            active = false;
+        };
     }, []);
 
     // Load history when switching to that tab
-    const loadHistory = () => {
+    const loadHistory = async () => {
         setLoadingHistory(true);
-        getMyPayments().then((records) => {
-            setPayments(records);
+        setHistoryError(null);
+        try {
+            const result = await getMyPayments();
+            if (!result.ok || !result.data) {
+                setHistoryError(result.message);
+                return;
+            }
+            setPayments(result.data);
+        } catch (loadError) {
+            console.error("Could not load payment history:", loadError);
+            setHistoryError(
+                loadError instanceof Error ? loadError.message : "Could not load payment history.",
+            );
+        } finally {
             setLoadingHistory(false);
-        });
+        }
     };
 
     const handleTabChange = (tab: Tab) => {
@@ -422,6 +470,11 @@ export default function SellerPayments() {
 
             {/* Quota banner */}
             {quota && <QuotaBanner quota={quota} />}
+            {quotaError && (
+                <div role="alert" className="rounded-xl border border-danger/30 bg-danger/5 p-4 text-sm text-danger">
+                    {quotaError}
+                </div>
+            )}
 
             {/* Tab switcher */}
             <div className="flex rounded-xl border border-border bg-surface p-1 w-fit">
@@ -507,11 +560,21 @@ export default function SellerPayments() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <PaymentHistoryTable
-                            records={payments}
-                            loading={loadingHistory}
-                            onRefresh={loadHistory}
-                        />
+                        {historyError && (
+                            <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-danger/30 bg-danger/5 p-4 text-sm text-danger">
+                                <span>{historyError}</span>
+                                <Button type="button" variant="outline" size="sm" onClick={() => void loadHistory()}>
+                                    Try again
+                                </Button>
+                            </div>
+                        )}
+                        {historyError && payments.length === 0 ? null : (
+                            <PaymentHistoryTable
+                                records={payments}
+                                loading={loadingHistory}
+                                onRefresh={() => void loadHistory()}
+                            />
+                        )}
                     </CardContent>
                 </Card>
             )}
