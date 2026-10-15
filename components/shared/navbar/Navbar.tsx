@@ -65,8 +65,8 @@ export default function Navbar() {
             <NavLink href="/businessesExplore">Explore Businesses</NavLink>
             <NavLink href="/products">Products</NavLink>
             {isAuthenticated && (role === "MODERATOR" || role === "ADMIN") && (
-              <NavLink href="/dashboard/moderator/verification-queue">
-                Moderator Queue
+              <NavLink href="/dashboard">
+                Dashboard
               </NavLink>
             )}
           </nav>
@@ -126,8 +126,8 @@ export default function Navbar() {
             <NavLink href="/businessesExplore">Explore Businesses</NavLink>
             <NavLink href="/businesses?verified=true">Verified Only</NavLink>
             {isAuthenticated && (role === "MODERATOR" || role === "ADMIN") && (
-              <NavLink href="/dashboard/moderator/verification-queue">
-                Moderator Queue
+              <NavLink href="/dashboard">
+                  Dashboard
               </NavLink>
             )}
 

@@ -129,14 +129,6 @@ export const ProfileDropdown = ({ user, onLogout }: ProfileDropdownProps) => {
             <User className="mr-2 h-4 w-4" />
             My Profile
           </DropdownMenuItem>
-
-          <DropdownMenuItem 
-            onClick={() => router.push("/settings")}
-            className="cursor-pointer"
-          >
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-          </DropdownMenuItem>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
