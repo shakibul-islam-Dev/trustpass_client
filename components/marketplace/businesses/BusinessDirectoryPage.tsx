@@ -50,7 +50,6 @@ export default async function BusinessDirectoryPage({
     search: query || undefined,
     categoryId,
     businessType,
-    verificationStatus: 'VERIFIED',
   });
   const businesses: IBusiness[] = response.success && Array.isArray(response.data)
     ? response.data

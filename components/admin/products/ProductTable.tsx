@@ -8,10 +8,10 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  Package,
   Copy,
   Check,
   ImageOff,
+  Store,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +46,8 @@ const getStatusVariant = (
   switch (String(status || "ACTIVE").toUpperCase()) {
     case "ACTIVE":
       return "default";
+    case "DRAFT":
+      return "outline";
     case "INACTIVE":
       return "secondary";
     case "OUT_OF_STOCK":
@@ -66,41 +68,6 @@ const formatPrice = (price: number, currency: string = "BDT") => {
   } catch {
     return `${currency} ${price.toLocaleString()}`;
   }
-};
-
-// ── Copyable Business ID ──
-const CopyableBusinessId = ({ id }: { id: string }) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await navigator.clipboard.writeText(id);
-      setCopied(true);
-      toast.success("Business ID copied!");
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Failed to copy");
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      title="Click to copy Business ID"
-      className="group inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground hover:text-foreground transition"
-    >
-      <span className="truncate max-w-[100px]">
-        {id.slice(0, 8)}...{id.slice(-4)}
-      </span>
-      {copied ? (
-        <Check className="h-3 w-3 text-success shrink-0" />
-      ) : (
-        <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition shrink-0" />
-      )}
-    </button>
-  );
 };
 
 export const ProductTable = ({
@@ -127,7 +94,8 @@ export const ProductTable = ({
             <TableRow className="hover:bg-transparent">
               <TableHead className="w-[60px]">#</TableHead>
               <TableHead>Product</TableHead>
-              <TableHead>Business ID</TableHead>
+              <TableHead>Business</TableHead>
+              <TableHead>Owner</TableHead>
               <TableHead>Price</TableHead>
               <TableHead>Stock</TableHead>
               <TableHead>Status</TableHead>
@@ -138,112 +106,134 @@ export const ProductTable = ({
             {paginated.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="text-center py-8 text-muted-foreground"
                 >
                   No products found.
                 </TableCell>
               </TableRow>
             ) : (
-              paginated.map((product, index) => (
-                <TableRow key={product.id}>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {startIndex + index + 1}
-                  </TableCell>
+              paginated.map((product, index) => {
+                const primaryImage = product.images?.[0];
 
-                  {/* Product + image */}
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-3">
-                      <div className="relative size-10 rounded-md bg-muted border border-border overflow-hidden flex items-center justify-center shrink-0">
-                        {product.images?.[0] ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={product.images[0]}
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <ImageOff className="h-4 w-4 text-muted-foreground" />
+                return (
+                  <TableRow key={product.id}>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {startIndex + index + 1}
+                    </TableCell>
+
+                    {/* Product — image + name + slug */}
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-3">
+                        <div className="relative size-10 rounded-md bg-muted border border-border overflow-hidden flex items-center justify-center shrink-0">
+                          {primaryImage ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={primaryImage}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <ImageOff className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="truncate max-w-[180px]">
+                            {product.name}
+                          </span>
+                          <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                            {product.slug || "-"}
+                          </span>
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    {/* Business — logo + name + slug (NO ID) */}
+                    {/* Business — name + slug (NO logo) */}
+                    <TableCell>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-medium truncate max-w-[180px]">
+                          {product.businessName || "-"}
+                        </span>
+                        {product.businessSlug && (
+                          <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                            @{product.businessSlug}
+                          </span>
                         )}
                       </div>
+                    </TableCell>
+
+                    {/* Owner — name + email (NO ID) */}
+                    <TableCell>
                       <div className="flex flex-col min-w-0">
-                        <span className="truncate max-w-[200px]">
-                          {product.name}
+                        <span className="text-sm font-medium truncate max-w-[180px]">
+                          {product.ownerName || "-"}
                         </span>
-                        <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-                          {product.slug || "-"}
+                        <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                          {product.ownerEmail || "-"}
                         </span>
                       </div>
-                    </div>
-                  </TableCell>
+                    </TableCell>
 
-                  {/* Business ID — copyable */}
-                  <TableCell>
-                    <CopyableBusinessId id={product.businessId} />
-                  </TableCell>
+                    {/* Price */}
+                    <TableCell className="font-medium">
+                      {formatPrice(product.price, product.currency)}
+                    </TableCell>
 
-                  {/* Price */}
-                  <TableCell className="font-medium">
-                    {formatPrice(product.price, product.currency)}
-                  </TableCell>
+                    {/* Stock */}
+                    <TableCell>
+                      <Badge
+                        variant={product.stock > 0 ? "outline" : "destructive"}
+                      >
+                        {product.stock}
+                      </Badge>
+                    </TableCell>
 
-                  {/* Stock */}
-                  <TableCell>
-                    <Badge
-                      variant={
-                        product.stock > 0
-                          ? "outline"
-                          : "destructive"
-                      }
-                    >
-                      {product.stock}
-                    </Badge>
-                  </TableCell>
+                    {/* Status */}
+                    <TableCell>
+                      <Badge variant={getStatusVariant(product.status)}>
+                        {String(product.status || "ACTIVE").replace(/_/g, " ")}
+                      </Badge>
+                    </TableCell>
 
-                  {/* Status */}
-                  <TableCell>
-                    <Badge variant={getStatusVariant(product.status)}>
-                      {String(product.status || "ACTIVE").replace(/_/g, " ")}
-                    </Badge>
-                  </TableCell>
-
-                  {/* Actions */}
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8"
+                    {/* Actions */}
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          }
+                        />
+                        <DropdownMenuContent align="end" className="w-[180px]">
+                          <DropdownMenuItem
+                            onClick={() => onViewDetails(product)}
                           >
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Open menu</span>
-                          </Button>
-                        }
-                      />
-                      <DropdownMenuContent align="end" className="w-[180px]">
-                        <DropdownMenuItem
-                          onClick={() => onViewDetails(product)}
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Details
-                        </DropdownMenuItem>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Details
+                          </DropdownMenuItem>
 
-                        <DropdownMenuSeparator />
+                          <DropdownMenuSeparator />
 
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={() => onDelete(product)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete Product
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => onDelete(product)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Product
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

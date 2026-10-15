@@ -13,7 +13,7 @@ export const metadata = createPageMetadata(
 );
 
 const getProducts = cache(() =>
-  fetchAllProducts({ page: 1, limit: 100, status: "ACTIVE" })
+  fetchAllProducts({ page: 1, limit: 100 })
 );
 
 type ProductsPageProps = {

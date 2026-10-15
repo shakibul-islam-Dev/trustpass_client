@@ -179,7 +179,7 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
       },
       {
         name: "Profile Settings",
-        href: "/dashboard/customer/profile",
+        href: "/dashboard/profile",
         icon: User,
       },
       {

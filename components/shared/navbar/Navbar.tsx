@@ -19,19 +19,13 @@ export default function Navbar() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const { user, role, isAuthenticated } = useAuth();
+  const { user, role, isAuthenticated, refresh } = useAuth();
 
   // Don't show navbar inside dashboard
   if (path.startsWith("/dashboard")) {
     return null;
   }
-  /**
-   * Revokes the session on the API, then leaves.
-   *
-   * The cookie is httpOnly on the API's own domain, so there is nothing to
-   * clear locally — the redirect drops this app's view of the session and the
-   * server has already invalidated it.
-   */
+
   const handleLogout = async () => {
     const ok = await signOut();
     if (!ok) {
@@ -42,6 +36,8 @@ export default function Navbar() {
     router.replace("/auth/login");
     router.refresh();
   };
+
+  const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -83,17 +79,16 @@ export default function Navbar() {
           {/* Notification Dropdown (only if logged in) */}
           {isAuthenticated && <NotificationDropdown />}
 
-          {/* Profile Dropdown. Renders a "Sign In" button when signed out. */}
+          {/* Profile Dropdown */}
           <ProfileDropdown
             user={
               user
                 ? {
-                  name: user.name ?? "Signed in",
-                  email: user.email,
-                  role: user.role ?? undefined,
-                  // The API stores the avatar as `image`, not `avatar`.
-                  avatar: user.image ?? undefined,
-                }
+                    name: user.name ?? "Signed in",
+                    email: user.email,
+                    role: user.role ?? undefined,
+                    avatar: user.image ?? undefined,
+                  }
                 : undefined
             }
             onLogout={handleLogout}
@@ -118,27 +113,31 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-background">
-          <nav className="flex flex-col gap-1 p-4">
-            <NavLink href="/" exact>
+        <div className="border-t border-border bg-background md:hidden">
+          <nav className="flex flex-col gap-2 p-4 text-base">
+            <NavLink href="/" exact onClick={closeMobileMenu}>
               Home
             </NavLink>
-            <NavLink href="/businessesExplore">Explore Businesses</NavLink>
-            <NavLink href="/businesses?verified=true">Verified Only</NavLink>
+            <NavLink href="/businessesExplore" onClick={closeMobileMenu}>
+              Explore Businesses
+            </NavLink>
+            <NavLink href="/products" onClick={closeMobileMenu}>
+              Products
+            </NavLink>
             {isAuthenticated && (role === "MODERATOR" || role === "ADMIN") && (
-              <NavLink href="/dashboard">
-                  Dashboard
+              <NavLink href="/dashboard" onClick={closeMobileMenu}>
+                Dashboard
               </NavLink>
             )}
 
-
             {!isAuthenticated && (
-              <div className="mt-2 flex items-center gap-3 border-t border-border pt-3">
+              <div className="mt-3 flex items-center gap-3 border-t border-border pt-4">
                 <Link
                   href="/auth/login"
+                  onClick={closeMobileMenu}
                   className={cn(
                     buttonVariants({ variant: "outline", size: "sm" }),
-                    "flex-1",
+                    "flex-1"
                   )}
                 >
                   Sign In

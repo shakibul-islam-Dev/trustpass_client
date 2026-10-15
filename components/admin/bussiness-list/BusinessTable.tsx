@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
 import {
   MoreHorizontal,
   Eye,
@@ -10,8 +9,6 @@ import {
   ChevronRight,
   Store,
   Star,
-  Copy,
-  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +43,15 @@ const getStatusVariant = (
   }
 };
 
+const getTrustVariant = (
+  score: number
+): "default" | "secondary" | "destructive" | "outline" => {
+  if (score >= 80) return "default";
+  if (score >= 50) return "secondary";
+  if (score > 0) return "destructive";
+  return "outline";
+};
+
 const PAGE_SIZE = 20;
 
 interface BusinessTableProps {
@@ -53,41 +59,6 @@ interface BusinessTableProps {
   onViewDetails: (business: IBusinessResponse) => void;
   onDelete: (business: IBusinessResponse) => void;
 }
-
-// ── Copyable Business ID component ──
-const CopyableId = ({ id }: { id: string }) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await navigator.clipboard.writeText(id);
-      setCopied(true);
-      toast.success("Business ID copied!");
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Failed to copy");
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      title="Click to copy ID"
-      className="group inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground hover:text-foreground transition"
-    >
-      <span className="truncate max-w-[100px]">
-        {id.slice(0, 8)}...{id.slice(-4)}
-      </span>
-      {copied ? (
-        <Check className="h-3 w-3 text-success shrink-0" />
-      ) : (
-        <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition shrink-0" />
-      )}
-    </button>
-  );
-};
 
 export const BusinessTable = ({
   businesses,
@@ -113,9 +84,8 @@ export const BusinessTable = ({
             <TableRow className="hover:bg-transparent">
               <TableHead className="w-[60px]">#</TableHead>
               <TableHead>Business</TableHead>
-              <TableHead>Business ID</TableHead>
               <TableHead>Owner</TableHead>
-              <TableHead>Trust</TableHead>
+              <TableHead>Trust Score</TableHead>
               <TableHead>Products</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -125,7 +95,7 @@ export const BusinessTable = ({
             {paginated.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={7}
                   className="text-center py-8 text-muted-foreground"
                 >
                   No businesses found.
@@ -161,46 +131,28 @@ export const BusinessTable = ({
                           )}
                         </span>
                         <span className="text-xs text-muted-foreground truncate">
-                          {business.slug || "-"}
+                          {business.slug ? `@${business.slug}` : "-"}
                         </span>
                       </div>
                     </div>
                   </TableCell>
 
-                  {/* ✅ Business ID — copyable */}
+                  {/* Owner — name + email */}
                   <TableCell>
-                    <CopyableId id={business.id} />
-                  </TableCell>
-
-                  {/* Owner */}
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span>{business.ownerName || "Business Owner"}</span>
-                      <span className="text-xs text-muted-foreground">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-medium truncate max-w-[180px]">
+                        {business.ownerName || "-"}
+                      </span>
+                      <span className="text-xs text-muted-foreground truncate max-w-[180px]">
                         {business.ownerEmail || "-"}
                       </span>
                     </div>
                   </TableCell>
 
-                  {/* Trust */}
+                  {/* ✅ Trust Score — direct dekhaw */}
                   <TableCell>
-                    <Badge
-                      variant={
-                        // The API leaves `trustScoreUpdatedAt` null until it
-                        // calculates a score — a red "0" would read as a failed
-                        // business rather than one that was never evaluated.
-                        business.trustScoreUpdatedAt == null
-                          ? "outline"
-                          : business.trustScore >= 80
-                            ? "default"
-                            : business.trustScore >= 50
-                              ? "secondary"
-                              : "destructive"
-                      }
-                    >
-                      {business.trustScoreUpdatedAt == null
-                        ? "—"
-                        : business.trustScore}
+                    <Badge variant={getTrustVariant(business.trustScore)}>
+                      {business.trustScore}
                     </Badge>
                   </TableCell>
 
