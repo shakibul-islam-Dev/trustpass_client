@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import Link from "next/link";
-import { AlertCircle, Eye, ImagePlus, PencilLine, Plus, Search, Trash2 } from "lucide-react";
+import { AlertCircle, Eye, ImagePlus, PencilLine, Plus, Search, Trash2, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -45,6 +45,11 @@ const emptyProduct: ProductRecord = {
 const emptyProducts: ProductRecord[] = [];
 const emptyCategories: { id: string; name: string }[] = [];
 
+/** Image rules — kept identical to ProductUpdateComponent so create and edit match. */
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB — matches the server's multer limit
+const MAX_IMAGES = 10; // server caps a product at 10 images total
+
 /** Looks like a UUID — the server's categoryId column is a UUID. */
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -53,7 +58,7 @@ const toApiStatus = (status: ProductRecord["status"]): "ACTIVE" | "DRAFT" =>
 
 const toInput = (draft: ProductRecord): ProductInput => ({
   name: draft.name.trim(),
-  categoryId: UUID_PATTERN.test(draft.category.trim()) ? draft.category.trim() : undefined,
+  categoryId: UUID_PATTERN.test(draft.categoryId.trim()) ? draft.categoryId.trim() : undefined,
   price: Number(draft.price),
   description: draft.description.trim() || undefined,
   stock: draft.stock,
@@ -117,6 +122,19 @@ export default function SellerProductManagement({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
+  // Keep the latest categories in a ref and only reload when their CONTENT
+  // changes. Depending on the array itself is unsafe: parents commonly pass a
+  // fresh `categories.map(...)` on every render, which would re-run the fetch
+  // on each render and make the list flicker between data and "Loading…".
+  const categoriesRef = useRef(categories);
+  useEffect(() => {
+    categoriesRef.current = categories;
+  }, [categories]);
+  const categoriesSignature = useMemo(
+    () => categories.map((category) => `${category.id}:${category.name}`).join("|"),
+    [categories],
+  );
+
   // Load from the server whenever there is a business to manage.
   useEffect(() => {
     if (!businessId) return;
@@ -137,7 +155,7 @@ export default function SellerProductManagement({
           setLoadError(result.message);
           return;
         }
-        setServerProducts(result.data.map((product) => toRecord(product, categories)));
+        setServerProducts(result.data.map((product) => toRecord(product, categoriesRef.current)));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -146,7 +164,7 @@ export default function SellerProductManagement({
     return () => {
       active = false;
     };
-  }, [businessId, reloadKey, categories]);
+  }, [businessId, reloadKey, categoriesSignature]);
 
   const [localProducts, setLocalProducts] = useState<ProductRecord[] | null>(null);
   const products =
@@ -165,6 +183,60 @@ export default function SellerProductManagement({
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
+  // Images picked while creating a product. Full image management (add/remove
+  // existing images) lives on the product detail page.
+  const [newImages, setNewImages] = useState<File[]>([]);
+  const [newImageUrls, setNewImageUrls] = useState<string[]>([]);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  // Revoke the preview object URLs when the component unmounts.
+  useEffect(() => {
+    return () => newImageUrls.forEach((url) => URL.revokeObjectURL(url));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const clearNewImages = () => {
+    newImageUrls.forEach((url) => URL.revokeObjectURL(url));
+    setNewImages([]);
+    setNewImageUrls([]);
+    if (imageInputRef.current) imageInputRef.current.value = "";
+  };
+
+  const handleAddImages = (event: ChangeEvent<HTMLInputElement>) => {
+    const incoming = Array.from(event.target.files ?? []);
+    const valid: File[] = [];
+    let validationError: string | null = null;
+
+    for (const file of incoming) {
+      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        validationError = `"${file.name}" isn't a supported image type. Use PNG, JPG, or WEBP.`;
+        continue;
+      }
+      if (file.size > MAX_IMAGE_SIZE) {
+        validationError = `"${file.name}" is larger than 5 MB.`;
+        continue;
+      }
+      valid.push(file);
+    }
+
+    const room = MAX_IMAGES - newImages.length;
+    if (valid.length > room) {
+      validationError = `A product can have at most ${MAX_IMAGES} images.`;
+      valid.length = Math.max(0, room);
+    }
+
+    setActionError(validationError);
+    setNewImages((current) => [...current, ...valid]);
+    setNewImageUrls((current) => [...current, ...valid.map((file) => URL.createObjectURL(file))]);
+    event.target.value = "";
+  };
+
+  const handleRemoveNewImage = (index: number) => {
+    URL.revokeObjectURL(newImageUrls[index]);
+    setNewImages((current) => current.filter((_, i) => i !== index));
+    setNewImageUrls((current) => current.filter((_, i) => i !== index));
+  };
+
   const filteredProducts = useMemo(
     () => products.filter((product) => `${product.name} ${product.category}`.toLowerCase().includes(query.toLowerCase())),
     [products, query],
@@ -172,11 +244,17 @@ export default function SellerProductManagement({
 
   const openCreate = () => {
     setDraft(emptyProduct);
+    clearNewImages();
+    setActionError(null);
+    setActionMessage(null);
     setEditorOpen(true);
   };
 
   const openEdit = (product: ProductRecord) => {
     setDraft(product);
+    clearNewImages();
+    setActionError(null);
+    setActionMessage(null);
     setEditorOpen(true);
   };
 
@@ -196,11 +274,16 @@ export default function SellerProductManagement({
             return;
           }
         } else {
-          const result = await createProduct(businessId, toInput(draft));
+          const result = await createProduct(
+            businessId,
+            toInput(draft),
+            newImages.length > 0 ? newImages : undefined,
+          );
           if (!result.ok) {
             setActionError(result.message);
             return;
           }
+          clearNewImages();
         }
         setActionMessage(draft.id ? "Product updated." : "Product added.");
         reload();
@@ -399,6 +482,55 @@ export default function SellerProductManagement({
               <Label htmlFor="product-description">Description</Label>
               <Textarea id="product-description" value={draft.description} onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))} />
             </div>
+            {!draft.id && businessId && (
+              <div className="space-y-3 sm:col-span-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <Label>Product images</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Optional · up to {MAX_IMAGES} images · PNG, JPG, WEBP · max 5 MB each
+                    </p>
+                  </div>
+                  {newImages.length > 0 && <Badge variant="outline">{newImages.length} selected</Badge>}
+                </div>
+
+                {newImages.length > 0 && (
+                  <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
+                    {newImages.map((file, index) => (
+                      <div key={`${file.name}-${index}`} className="relative aspect-square overflow-hidden rounded-xl border border-border">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={newImageUrls[index]} alt={file.name} className="h-full w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveNewImage(index)}
+                          className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-danger"
+                          aria-label={`Remove ${file.name}`}
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <input
+                  ref={imageInputRef}
+                  id="create-product-images"
+                  type="file"
+                  accept={ALLOWED_IMAGE_TYPES.join(",")}
+                  multiple
+                  className="sr-only"
+                  onChange={handleAddImages}
+                />
+                <Button type="button" variant="outline" className="gap-2" onClick={() => imageInputRef.current?.click()}>
+                  <ImagePlus className="size-4" />
+                  Add images
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Images are uploaded when you save. You can add or remove them later from the product page.
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setEditorOpen(false)} disabled={isSaving}>Cancel</Button>

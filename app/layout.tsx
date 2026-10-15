@@ -22,8 +22,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Trust Pass",
-  description: "Verified Grow and Get Trust From TrustPass",
+  metadataBase: new URL("https://trustpass-client.vercel.app"),
+  title: {
+    default: "TrustPass | Trusted Business Verification Platform",
+    template: "%s | TrustPass",
+  },
+  description:
+    "Discover verified businesses and products with TrustPass, a trusted business verification platform.",
+  applicationName: "TrustPass",
+  openGraph: {
+    type: "website",
+    siteName: "TrustPass",
+    title: "TrustPass | Trusted Business Verification Platform",
+    description:
+      "Discover verified businesses and products with TrustPass, a trusted business verification platform.",
+    url: "/",
+  },
+  twitter: {
+    card: "summary",
+    title: "TrustPass | Trusted Business Verification Platform",
+    description:
+      "Discover verified businesses and products with TrustPass, a trusted business verification platform.",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

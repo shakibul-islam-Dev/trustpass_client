@@ -82,12 +82,12 @@ export default function Navbar() {
             user={
               user
                 ? {
-                    name: user.name ?? "Signed in",
-                    email: user.email,
-                    role: user.role ?? undefined,
-                    // The API stores the avatar as `image`, not `avatar`.
-                    avatar: user.image ?? undefined,
-                  }
+                  name: user.name ?? "Signed in",
+                  email: user.email,
+                  role: user.role ?? undefined,
+                  // The API stores the avatar as `image`, not `avatar`.
+                  avatar: user.image ?? undefined,
+                }
                 : undefined
             }
             onLogout={handleLogout}
@@ -125,13 +125,7 @@ export default function Navbar() {
               </NavLink>
             )}
 
-            {/* Signed out, the small screens get the same two links the
-                desktop header shows, otherwise Sign Up is unreachable on a
-                phone.
 
-                Styled with `buttonVariants` rather than wrapped in
-                `<Button render={<Link/>}>`, which would ask Base UI's Button
-                to render an <a> and trip its native-button warning. */}
             {!isAuthenticated && (
               <div className="mt-2 flex items-center gap-3 border-t border-border pt-3">
                 <Link
@@ -144,12 +138,12 @@ export default function Navbar() {
                   Sign In
                 </Link>
 
-                <Link
+                {/* <Link
                   href="/auth/register"
                   className={cn(buttonVariants({ size: "sm" }), "flex-1")}
                 >
                   Sign Up
-                </Link>
+                </Link> */}
               </div>
             )}
           </nav>

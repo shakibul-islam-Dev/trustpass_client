@@ -1,12 +1,14 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { Package } from "lucide-react";
 import { ProductCard } from "./ProductCard";
-import type { IProduct } from "@/lib/products-api/create-products";
+import { IBusiness } from "@/types/business";
+import { IProduct } from "@/lib/products-api/create-products";
 
 interface ProductGridProps {
   products: IProduct[];
+  businesses?: IBusiness[];
 }
 
 const container = {

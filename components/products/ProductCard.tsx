@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { ImageOff, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { IProduct } from "@/lib/products-api/create-products";

@@ -1,34 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import { fetchUnreadCount } from "@/lib/customer_api/notifications";
+import { useUnreadCount } from "@/hooks/use-unread-count";
 
 /**
  * Unread notification count for the signed-in user.
  *
- * Refreshes when the tab regains focus so the badge stays in sync after the
- * notifications page marks items as read. Errors resolve to 0 rather than
- * surfacing — a missing badge is better than a broken bell.
+ * Thin wrapper over the shared `useUnreadCount` store so the sidebar and the
+ * seller dashboard share one request and one value. Refreshes when the tab
+ * regains focus; errors resolve to 0 rather than surfacing, so a missing badge
+ * never breaks the bell.
  */
 export function useUnreadNotifications(): number {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    let active = true;
-
-    const load = async () => {
-      const value = await fetchUnreadCount();
-      if (active) setCount(value);
-    };
-
-    void load();
-    window.addEventListener("focus", load);
-    return () => {
-      active = false;
-      window.removeEventListener("focus", load);
-    };
-  }, []);
-
-  return count;
+  return useUnreadCount();
 }

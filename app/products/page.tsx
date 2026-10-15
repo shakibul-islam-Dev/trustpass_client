@@ -1,34 +1,50 @@
-
-import { ProductCatalogFilters } from "@/components/products/ProductCatalogFilters";
+import { cache } from "react";
+import ProductCatalogFilters from "@/components/marketplace/products/ProductCatalogFilters";
 import ProductGrid from "@/components/products/ProductGrid";
-import ProductPagination from "@/components/products/ProductPagination";
-import { fetchProducts } from "@/lib/products-api/create-products";
+import { fetchAllProducts } from "@/lib/admin_api/get-products";
+import { createPageMetadata } from "@/lib/page-metadata";
+
+export const dynamic = "force-dynamic";
+
+export const metadata = createPageMetadata(
+  "Products",
+  "Browse authentic products from businesses listed on TrustPass."
+);
+
+const getProducts = cache(() =>
+  fetchAllProducts({ page: 1, limit: 100, status: "ACTIVE" })
+);
 
 type ProductsPageProps = {
   searchParams: Promise<{
     query?: string;
-    status?: string;
+    stock?: string;
     page?: string;
     limit?: string;
   }>;
 };
 
-const PAGE_SIZE = 12;
-
 export default async function ProductsCatalogPage({
   searchParams,
 }: ProductsPageProps) {
   const params = await searchParams;
-  const query = params.query?.trim() ?? "";
-  const statusFilter = params.status?.trim().toUpperCase() ?? "ALL";
-  const currentPage = Math.max(1, Number(params.page ?? 1));
-  const limit = Math.max(1, Number(params.limit ?? PAGE_SIZE));
+  const query = params.query?.trim().toLowerCase() ?? "";
+  const stockFilter = params.stock?.trim().toLowerCase() ?? "all";
 
-  const { products, total, totalPages } = await fetchProducts({
-    page: currentPage,
-    limit,
-    search: query || undefined,
-    status: statusFilter !== "ALL" ? statusFilter : undefined,
+  const allProducts = await getProducts();
+
+  const filteredProducts = allProducts.filter((product) => {
+    const matchesQuery = query
+      ? product.name.toLowerCase().includes(query) ||
+        (product.description ?? "").toLowerCase().includes(query)
+      : true;
+
+    const matchesStock =
+      stockFilter === "in_stock"
+        ? typeof product.stock === "number" && product.stock > 0
+        : true;
+
+    return matchesQuery && matchesStock;
   });
 
   return (
@@ -46,24 +62,8 @@ export default async function ProductsCatalogPage({
           </p>
         </div>
 
-        <ProductCatalogFilters
-          query={query}
-          statusFilter={statusFilter}
-          totalCount={total}
-          filteredCount={products.length}
-        />
-
-        <ProductGrid products={products} />
-
-        {totalPages > 1 && (
-          <ProductPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            query={query}
-            statusFilter={statusFilter}
-            limit={limit}
-          />
-        )}
+        <ProductCatalogFilters query={query} stockFilter={stockFilter} />
+        <ProductGrid products={filteredProducts} />
       </div>
     </main>
   );

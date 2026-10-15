@@ -12,10 +12,10 @@ interface NavLinkProps {
 
 export const NavLink = ({ href, children, exact = false }: NavLinkProps) => {
   const pathname = usePathname();
-  
+
   // Check if current path matches (exact or startsWith)
-  const isActive = exact 
-    ? pathname === href 
+  const isActive = exact
+    ? pathname === href
     : pathname === href || pathname.startsWith(href + "/");
 
   return (

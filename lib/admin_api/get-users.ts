@@ -1,13 +1,3 @@
-// Previous implementation by: Existing Developer
-// Kept for reference because Server Action cannot send cross-origin cookies.
-//
-// "use server";
-// import { getData } from "../core/mutations";
-// export const fetchUsers = async () => {
-//   const response = await getData("/api/v1/admin/users");
-//   // ...
-// };
-
 // Updated implementation for: User Management page (Admin)
 // Client-side fetch — cookie automatic goes via credentials: "include".
 // Developer: Aritro
@@ -15,15 +5,28 @@
 import { apiUrl } from "@/lib/core/api-url";
 import { apiFetch } from "@/lib/core/api-fetch";
 
+// ============================================================
+// Types
+// ============================================================
 export interface IUserResponse {
   id: string;
   name: string;
   email: string;
-  emailVerified: boolean;
+  emailVerified?: boolean;
   image?: string | null;
-  role: "ADMIN" | "MODERATOR" | "BUYER" | "CUSTOMER";
+
+  // 🆕 Role — safe union
+  role: "ADMIN" | "MODERATOR" | "SELLER" | "CUSTOMER";
+
+  // 🆕 Status — for block/unblock
+  status?: "ACTIVE" | "BLOCKED" | "PENDING" | "SUSPENDED" | string;
+
+  // 🆕 Optional profile
+  phone?: string | null;
+  gender?: string | null;
+
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export interface IUserFilters {
@@ -33,6 +36,9 @@ export interface IUserFilters {
   role?: string;
 }
 
+// ============================================================
+// Query builder
+// ============================================================
 const buildQuery = (filters: IUserFilters): string => {
   const params = new URLSearchParams();
   if (filters.page) params.set("page", String(filters.page));
@@ -43,6 +49,26 @@ const buildQuery = (filters: IUserFilters): string => {
   return query ? `?${query}` : "";
 };
 
+// ============================================================
+// Normalize
+// ============================================================
+const normalizeUser = (raw: any): IUserResponse => ({
+  id: raw.id,
+  name: raw.name ?? "Unknown User",
+  email: raw.email ?? "",
+  emailVerified: raw.emailVerified ?? raw.email_verified ?? false,
+  image: raw.image ?? null,
+  role: raw.role ?? "CUSTOMER",
+  status: raw.status ?? "ACTIVE",
+  phone: raw.phone ?? null,
+  gender: raw.gender ?? null,
+  createdAt: raw.createdAt ?? raw.created_at ?? "",
+  updatedAt: raw.updatedAt ?? raw.updated_at,
+});
+
+// ============================================================
+// GET /api/v1/admin/users — List users (ADMIN)
+// ============================================================
 export const fetchUsers = async (
   filters: IUserFilters = {}
 ): Promise<IUserResponse[]> => {
@@ -52,7 +78,7 @@ export const fetchUsers = async (
   try {
     const response = await apiFetch(url, {
       method: "GET",
-      credentials: "include",   // ← Cookie automatic (browser)
+      credentials: "include",
       cache: "no-store",
       headers: { Accept: "application/json" },
     });
@@ -66,16 +92,23 @@ export const fetchUsers = async (
     }
 
     const data = await response.json();
-    console.log("📥 fetchUsers data:", data);
+    console.log("📥 fetchUsers raw data:", data);
 
     // Handle different response shapes
-    if (Array.isArray(data)) return data;
-    if (Array.isArray(data?.data)) return data.data;
-    if (Array.isArray(data?.data?.data)) return data.data.data;
-    if (Array.isArray(data?.users)) return data.users;
+    let rawArray: any[] = [];
+    if (Array.isArray(data)) rawArray = data;
+    else if (Array.isArray(data?.data)) rawArray = data.data;
+    else if (Array.isArray(data?.data?.data)) rawArray = data.data.data;
+    else if (Array.isArray(data?.users)) rawArray = data.users;
 
-    console.warn("⚠️ Unexpected response shape:", data);
-    return [];
+    if (rawArray.length === 0) {
+      console.warn("⚠️ No users array found in response:", data);
+      return [];
+    }
+
+    const normalized = rawArray.map(normalizeUser);
+    console.log("✅ fetchUsers normalized:", normalized.length);
+    return normalized;
   } catch (error) {
     console.error("❌ fetchUsers exception:", error);
     return [];

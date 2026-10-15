@@ -1,11 +1,18 @@
-// Developer: Aritro
-
+// File: lib/products-api/create-products.ts
 import { apiUrl } from "@/lib/core/api-url";
 import { apiFetch } from "@/lib/core/api-fetch";
 
 // ============================================================
 // Types
 // ============================================================
+export type TProductStatus = "DRAFT" | "ACTIVE" | "INACTIVE" | "DELETED";
+export type TCurrency = "BDT" | "USD" | "INR" | "GBP" | "EUR";
+
+export interface IProductImage {
+  url: string;
+  publicId: string;
+}
+
 export interface IProduct {
   id: string;
   businessId: string;
@@ -39,8 +46,31 @@ export interface IProductFilters {
   businessId?: string;
 }
 
+export interface ICreateProductPayload {
+  businessId: string;
+  categoryId?: string;
+  name: string;
+  description?: string;
+  price: number;
+  currency?: TCurrency;
+  stock?: number;
+  images?: IProductImage[];
+  status?: TProductStatus;
+}
+
+export interface IUpdateProductPayload {
+  categoryId?: string;
+  name?: string;
+  description?: string;
+  price?: number;
+  currency?: TCurrency;
+  stock?: number;
+  retainImagePublicIds?: string[];
+  status?: TProductStatus;
+}
+
 // ============================================================
-// Normalize
+// Normalize & Query Helpers
 // ============================================================
 const normalizeProduct = (raw: any): IProduct => ({
   id: String(raw.id),
@@ -70,13 +100,12 @@ const buildQuery = (filters: IProductFilters): string => {
 };
 
 // ============================================================
-// GET /api/v1/products — paginated list
+// API Functions
 // ============================================================
 export const fetchProducts = async (
   filters: IProductFilters = {}
 ): Promise<IProductListResponse> => {
   const url = apiUrl(`/api/v1/products${buildQuery(filters)}`);
-  console.log("🔍 fetchProducts URL:", url);
 
   try {
     const res = await apiFetch(url, {
@@ -87,14 +116,12 @@ export const fetchProducts = async (
     });
 
     if (!res.ok) {
-      console.error("❌ fetchProducts error:", res.status);
+      console.error("fetchProducts error:", res.status);
       return { products: [], total: 0, page: 1, limit: 12, totalPages: 0 };
     }
 
     const json = await res.json();
-    console.log("📥 RAW products response:", json);
 
-    // Handle various shapes
     let rawArray: any[] = [];
     let total = 0;
     let page = filters.page ?? 1;
@@ -125,17 +152,12 @@ export const fetchProducts = async (
 
     return { products, total, page, limit, totalPages };
   } catch (error) {
-    console.error("❌ fetchProducts exception:", error);
+    console.error("fetchProducts exception:", error);
     return { products: [], total: 0, page: 1, limit: 12, totalPages: 0 };
   }
 };
 
-// ============================================================
-// GET /api/v1/products/:id
-// ============================================================
-export const fetchProductById = async (
-  id: string
-): Promise<IProduct | null> => {
+export const fetchProductById = async (id: string): Promise<IProduct | null> => {
   try {
     const res = await apiFetch(apiUrl(`/api/v1/products/${id}`), {
       method: "GET",
@@ -145,20 +167,14 @@ export const fetchProductById = async (
     if (!res.ok) return null;
     const json = await res.json();
     const raw = json?.data ?? json?.product ?? json;
-    if (!raw) return null;
-    return normalizeProduct(raw);
+    return raw ? normalizeProduct(raw) : null;
   } catch (error) {
     console.error("fetchProductById error:", error);
     return null;
   }
 };
 
-// ============================================================
-// GET /api/v1/products/slug/:slug
-// ============================================================
-export const fetchProductBySlug = async (
-  slug: string
-): Promise<IProduct | null> => {
+export const fetchProductBySlug = async (slug: string): Promise<IProduct | null> => {
   try {
     const res = await apiFetch(apiUrl(`/api/v1/products/slug/${slug}`), {
       method: "GET",
@@ -168,8 +184,7 @@ export const fetchProductBySlug = async (
     if (!res.ok) return null;
     const json = await res.json();
     const raw = json?.data ?? json?.product ?? json;
-    if (!raw) return null;
-    return normalizeProduct(raw);
+    return raw ? normalizeProduct(raw) : null;
   } catch (error) {
     console.error("fetchProductBySlug error:", error);
     return null;

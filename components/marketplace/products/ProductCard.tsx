@@ -1,21 +1,15 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import productDetails from '@/public/data/productDetails.json';
-import businesses from '@/public/data/businessCard.json';
-
-type Product = (typeof productDetails)[number];
-type Business = (typeof businesses)[number];
+import type { IProductResponse } from "@/lib/admin_api/get-products";
+import type { IBusiness } from "@/types/business";
 
 type ProductCardProps = {
-  product: Product;
-  business?: Business;
+  product: IProductResponse;
+  business?: IBusiness;
 };
 
 export default function ProductCard({ product, business }: ProductCardProps) {
-  const primaryImage =
-    product.images?.find((image) => image.is_primary)?.url ??
-    product.images?.[0]?.url ??
-    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80';
+  const primaryImage = product.images?.[0];
   const isInStock = typeof product.stock === 'number' && product.stock > 0;
   const productSlug = product.slug || String(product.id);
 
@@ -23,13 +17,19 @@ export default function ProductCard({ product, business }: ProductCardProps) {
     <div className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card transition-all hover:border-primary/50 hover:shadow-lg">
       <div>
         <div className="relative h-48 w-full overflow-hidden bg-muted">
-          <Image
-            src={primaryImage}
-            alt={product.name}
-            width={400}
-            height={400}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
+          {primaryImage ? (
+            <Image
+              src={primaryImage}
+              alt={product.name}
+              width={400}
+              height={400}
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              No product image
+            </div>
+          )}
           <div className="absolute top-3 right-3 flex items-center gap-1.5">
             <span
               className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold backdrop-blur ${
@@ -44,14 +44,14 @@ export default function ProductCard({ product, business }: ProductCardProps) {
         <div className="p-5">
           {business && (
             <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              {business.business_name}
+              {business.name}
             </p>
           )}
           <h2 className="mt-1.5 text-base font-bold text-card-foreground group-hover:text-primary transition-colors">
             <Link href={`/products/${productSlug}`}>{product.name}</Link>
           </h2>
           <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-            {product.description}
+            {product.description || "No description available."}
           </p>
         </div>
       </div>
