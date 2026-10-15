@@ -15,6 +15,79 @@ interface CustomerNotificationListProps {
   onDelete: (notificationId: string) => void;
 }
 
+// ── 🆕 Time formatter — user-friendly relative time ──
+const formatRelativeTime = (input?: string | Date | null): string => {
+  if (!input) return "";
+
+  let date: Date;
+  if (input instanceof Date) {
+    date = input;
+  } else {
+    const str = String(input).trim();
+    // Date-only string — treat as local midnight
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+      date = new Date(`${str}T00:00:00`);
+    } else {
+      date = new Date(str);
+    }
+  }
+
+  if (Number.isNaN(date.getTime())) return String(input);
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+
+  // Future (clock skew)
+  if (diffSec < 0) return "Just now";
+
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+
+  // Calendar day diff
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const dateStart = new Date(date);
+  dateStart.setHours(0, 0, 0, 0);
+  const dayDiff = Math.round(
+    (todayStart.getTime() - dateStart.getTime()) / (24 * 60 * 60 * 1000)
+  );
+
+  // Just now
+  if (diffSec < 60) return "Just now";
+
+  // Minutes ago (same day)
+  if (diffMin < 60 && dayDiff === 0) {
+    return `${diffMin} min ago`;
+  }
+
+  // Hours ago (same day)
+  if (diffHr < 24 && dayDiff === 0) {
+    return `${diffHr} hr${diffHr > 1 ? "s" : ""} ago`;
+  }
+
+  // Yesterday
+  if (dayDiff === 1) return "Yesterday";
+
+  // Days ago
+  if (dayDiff > 1 && dayDiff < 7) {
+    return `${dayDiff} days ago`;
+  }
+
+  // Weeks ago
+  if (dayDiff < 30) {
+    const weeks = Math.floor(dayDiff / 7);
+    return `${weeks} week${weeks > 1 ? "s" : ""} ago`;
+  }
+
+  // Older — show date
+  return date.toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+  });
+};
+
 export const CustomerNotificationList = ({
   notifications,
   onMarkAsRead,
@@ -119,7 +192,9 @@ export const CustomerNotificationList = ({
                       <div className="flex items-center gap-2 flex-wrap">
                         <p
                           className={`text-sm ${
-                            !notification.isRead ? "font-semibold" : "font-medium"
+                            !notification.isRead
+                              ? "font-semibold"
+                              : "font-medium"
                           }`}
                         >
                           {notification.title}
@@ -138,7 +213,10 @@ export const CustomerNotificationList = ({
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        <span>{notification.createdAt}</span>
+                        {/* ✅ User-friendly time */}
+                        <span title={String(notification.createdAt)}>
+                          {formatRelativeTime(notification.createdAt)}
+                        </span>
                       </div>
 
                       <div className="flex items-center gap-1">
