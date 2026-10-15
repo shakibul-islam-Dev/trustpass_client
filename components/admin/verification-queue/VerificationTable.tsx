@@ -9,7 +9,6 @@ import {
   XCircle,
   ChevronLeft,
   ChevronRight,
-  FileText,
   Copy,
   Check,
   CheckCircle2,
@@ -52,6 +51,7 @@ const formatSubmittedAt = (value?: string): string => {
 const getStatusVariant = (status: string | undefined) => {
   switch (String(status || "PENDING").toUpperCase()) {
     case "APPROVED":
+    case "VERIFIED":
       return "default";
     case "REJECTED":
     case "SUSPENDED":
@@ -62,7 +62,13 @@ const getStatusVariant = (status: string | undefined) => {
 };
 
 // ── Copyable ID ──
-const CopyableId = ({ id }: { id: string }) => {
+const CopyableId = ({
+  id,
+  label = "Owner ID",
+}: {
+  id: string;
+  label?: string;
+}) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async (e: React.MouseEvent) => {
@@ -70,7 +76,7 @@ const CopyableId = ({ id }: { id: string }) => {
     try {
       await navigator.clipboard.writeText(id);
       setCopied(true);
-      toast.success("Owner ID copied!");
+      toast.success(`${label} copied!`);
       setTimeout(() => setCopied(false), 1500);
     } catch {
       toast.error("Failed to copy");
@@ -81,10 +87,10 @@ const CopyableId = ({ id }: { id: string }) => {
     <button
       type="button"
       onClick={handleCopy}
-      title="Click to copy Owner ID"
+      title={`Click to copy ${label}`}
       className="group inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground hover:text-foreground transition"
     >
-      <span className="truncate max-w-[110px]">
+      <span className="truncate max-w-[100px]">
         {id.slice(0, 8)}...{id.slice(-4)}
       </span>
       {copied ? (
@@ -121,8 +127,8 @@ export const VerificationTable = ({
             <TableRow className="hover:bg-transparent">
               <TableHead className="w-[60px]">#</TableHead>
               <TableHead>Business</TableHead>
+              <TableHead>Owner</TableHead>
               <TableHead>Owner ID</TableHead>
-              <TableHead>Documents</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Submitted</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -140,16 +146,9 @@ export const VerificationTable = ({
               </TableRow>
             ) : (
               paginated.map((req, index) => {
-                const docs = req.documents ?? [];
-                const approvedDocs = docs.filter(
-                  (d) => String(d.status).toUpperCase() === "APPROVED"
-                ).length;
-
                 const isApproved = req.status === "APPROVED";
                 const isRejected = req.status === "REJECTED";
                 const isSuspended = req.status === "SUSPENDED";
-                const isPending =
-                  !isApproved && !isRejected && !isSuspended;
 
                 return (
                   <TableRow key={req.id}>
@@ -157,6 +156,7 @@ export const VerificationTable = ({
                       {startIndex + index + 1}
                     </TableCell>
 
+                    {/* Business */}
                     <TableCell className="font-medium">
                       <div className="flex flex-col">
                         <span>{req.businessName}</span>
@@ -166,31 +166,40 @@ export const VerificationTable = ({
                       </div>
                     </TableCell>
 
+                    {/* Owner — name + email */}
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">
+                          {req.ownerName || "-"}
+                        </span>
+                        <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                          {req.ownerEmail || "-"}
+                        </span>
+                      </div>
+                    </TableCell>
+
+                    {/* Owner ID — copyable */}
                     <TableCell>
                       {req.ownerId ? (
-                        <CopyableId id={req.ownerId} />
+                        <CopyableId id={req.ownerId} label="Owner ID" />
                       ) : (
                         <span className="text-xs text-muted-foreground">-</span>
                       )}
                     </TableCell>
 
-                    <TableCell>
-                      <Badge variant="outline" className="gap-1">
-                        <FileText className="h-3 w-3" />
-                        {approvedDocs}/{docs.length}
-                      </Badge>
-                    </TableCell>
-
+                    {/* Status */}
                     <TableCell>
                       <Badge variant={getStatusVariant(req.status)}>
                         {String(req.status || "PENDING").replace(/_/g, " ")}
                       </Badge>
                     </TableCell>
 
+                    {/* Submitted */}
                     <TableCell className="text-muted-foreground">
                       {formatSubmittedAt(req.submittedAt)}
                     </TableCell>
 
+                    {/* Actions */}
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger
@@ -206,15 +215,14 @@ export const VerificationTable = ({
                           }
                         />
                         <DropdownMenuContent align="end" className="w-[240px]">
-                          {/* View — always enabled */}
                           <DropdownMenuItem onClick={() => onViewDetails(req)}>
                             <Eye className="mr-2 h-4 w-4" />
-                            View Documents
+                            View Details
                           </DropdownMenuItem>
 
                           <DropdownMenuSeparator />
 
-                          {/* ✅ APPROVE — disabled + faded if already approved */}
+                          {/* APPROVE */}
                           {isApproved ? (
                             <DropdownMenuItem
                               disabled
@@ -245,7 +253,7 @@ export const VerificationTable = ({
                             </DropdownMenuItem>
                           )}
 
-                          {/* ✅ REJECT — disabled + faded if already rejected */}
+                          {/* REJECT */}
                           {isRejected ? (
                             <DropdownMenuItem
                               disabled
@@ -287,6 +295,7 @@ export const VerificationTable = ({
         </Table>
       </div>
 
+      {/* Pagination */}
       {requests.length > 0 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
