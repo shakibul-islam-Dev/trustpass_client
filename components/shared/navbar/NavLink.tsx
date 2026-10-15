@@ -1,19 +1,31 @@
+// components/shared/navbar/NavLink.tsx
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface NavLinkProps {
   href: string;
   children: React.ReactNode;
   exact?: boolean;
+  className?: string;
+  onClick?: () => void;
 }
 
-export const NavLink = ({ href, children, exact = false }: NavLinkProps) => {
+export const NavLink = ({
+  href,
+  children,
+  exact = false,
+  className,
+  onClick,
+}: NavLinkProps) => {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
 
-  // Check if current path matches (exact or startsWith)
+ 
+
   const isActive = exact
     ? pathname === href
     : pathname === href || pathname.startsWith(href + "/");
@@ -21,15 +33,16 @@ export const NavLink = ({ href, children, exact = false }: NavLinkProps) => {
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={cn(
         "relative transition-colors hover:text-primary",
-        isActive && "text-primary font-semibold"
+        isActive && "text-primary font-semibold",
+        className
       )}
     >
       {children}
-      {/* Active indicator - bottom border */}
-      {isActive && (
-        <span className="absolute -bottom-[21px] left-0 right-0 h-0.5 bg-primary" />
+      {mounted && isActive && (
+        <span className="hidden md:block absolute -bottom-[21px] left-0 right-0 h-0.5 bg-primary" />
       )}
     </Link>
   );

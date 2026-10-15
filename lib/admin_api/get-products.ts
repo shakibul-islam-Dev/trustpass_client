@@ -53,7 +53,11 @@ const normalizeProduct = (raw: any): IProductResponse => ({
   price: Number(raw.price ?? 0),
   currency: raw.currency || "BDT",
   stock: Number(raw.stock ?? 0),
-  images: Array.isArray(raw.images) ? raw.images : [],
+  images: Array.isArray(raw.images)
+    ? raw.images
+        .map((img: any) => (typeof img === "string" ? img : img?.url || ""))
+        .filter(Boolean)
+    : [],
   status: raw.status || "ACTIVE",
   createdAt: raw.createdAt ?? raw.created_at ?? "",
   updatedAt: raw.updatedAt ?? raw.updated_at,
