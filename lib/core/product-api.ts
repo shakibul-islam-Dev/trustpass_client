@@ -54,6 +54,27 @@ export interface ProductImage {
   publicId: string;
 }
 
+/**
+ * Normalize a product's `images` field down to plain URLs.
+ *
+ * The single-product endpoint (`GET /api/v1/products/:id`) returns
+ * `[{ url, publicId }]`, while the list endpoints (`GET /api/v1/products`,
+ * `GET /api/v1/businesses/:id/products`) return plain URL strings. Accepting
+ * both means a product thumbnail renders no matter which endpoint fed it.
+ */
+export function productImageUrls(images: unknown): string[] {
+  if (!Array.isArray(images)) return [];
+  return images
+    .map((image) => {
+      if (typeof image === "string") return image;
+      if (image && typeof image === "object" && "url" in image) {
+        return String((image as { url?: unknown }).url ?? "");
+      }
+      return "";
+    })
+    .filter((url) => url.trim().length > 0);
+}
+
 /** A product exactly as the server stores/returns it. */
 export interface ProductRecord {
   id: string;
@@ -80,7 +101,8 @@ export interface ProductInput {
   price?: number;
   currency?: string;
   stock?: number;
-  status?: "DRAFT" | "ACTIVE" | "INACTIVE" | "DELETED";
+  /** Drafts are gone — a product is stored approved (ACTIVE) or held (INACTIVE). */
+  status?: "ACTIVE" | "INACTIVE" | "DELETED";
 }
 
 /**
@@ -159,9 +181,11 @@ export async function getBusinessProducts(
   for (let page = 1; ; page += 1) {
     const result = await sendJson<ProductRecord[]>("GET", path(page), undefined, signal);
     if (!result.ok) {
-      // Surface the error only if we have nothing yet; otherwise return what we
-      // could load rather than dropping the whole list.
-      return page === 1 ? result : { ok: true, message: result.message, data: products };
+      return {
+        ok: false,
+        message: `Could not finish loading products on page ${page}: ${result.message}`,
+        data: null,
+      };
     }
 
     const batch = result.data ?? [];
@@ -201,7 +225,7 @@ export async function createProduct(
       price,
       currency: input.currency || "BDT",
       stock: input.stock ?? 0,
-      status: input.status ?? "DRAFT",
+      status: input.status ?? "ACTIVE",
     });
   }
 
@@ -214,7 +238,7 @@ export async function createProduct(
     formData.set("price", String(price));
     formData.set("currency", input.currency || "BDT");
     formData.set("stock", String(input.stock ?? 0));
-    formData.set("status", input.status ?? "DRAFT");
+    formData.set("status", input.status ?? "ACTIVE");
     for (const file of files) {
       formData.append("images", file);
     }

@@ -30,6 +30,7 @@ export default function SellerProductCatalog() {
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -55,7 +56,13 @@ export default function SellerProductCatalog() {
           if (ownedBusinesses.some((business) => business.id === current)) return current;
           return ownedBusinesses[0]?.id ?? "";
         });
-        setCategories(categoryResult.success && categoryResult.data ? categoryResult.data : []);
+        if (categoryResult.success && categoryResult.data) {
+          setCategories(categoryResult.data);
+          setCategoryError(null);
+        } else {
+          setCategories([]);
+          setCategoryError(categoryResult.message || "Could not load product categories.");
+        }
       } catch (loadError) {
         console.error("Could not load product catalog:", loadError);
         if (active) {
@@ -75,7 +82,7 @@ export default function SellerProductCatalog() {
   }, []);
 
   const published = products.filter((product) => product.status === "Published").length;
-  const drafts = products.length - published;
+  const unavailable = products.length - published;
   const outOfStock = products.filter((product) => product.stock === 0).length;
   const selectedBusiness = businesses.find((business) => business.id === selectedBusinessId);
 
@@ -108,6 +115,11 @@ export default function SellerProductCatalog() {
           {error}
         </div>
       )}
+      {categoryError && (
+        <div role="alert" className="rounded-xl border border-danger/30 bg-danger/5 p-4 text-sm text-danger">
+          {categoryError} Product creation is disabled until categories are available.
+        </div>
+      )}
 
       {!isLoading && businesses.length === 0 ? (
         <SellerEmptyState
@@ -121,9 +133,15 @@ export default function SellerProductCatalog() {
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <SellerStatCard icon={Package} label="Total products" value={products.length} hint="Across the selected business" />
             <SellerStatCard icon={PackageCheck} label="Published" value={published} tone="success" hint="Visible to customers" />
-            <SellerStatCard icon={PackageX} label="Drafts" value={drafts} tone="neutral" hint="Still being worked on" />
+            <SellerStatCard icon={PackageX} label="Unavailable" value={unavailable} tone="neutral" hint="Hidden from customers" />
             <SellerStatCard icon={AlertTriangle} label="Out of stock" value={outOfStock} tone="warning" hint="Need restocking" />
           </div>
+
+          {!isLoading && businesses.length > 0 && categories.length === 0 && !categoryError && (
+            <p role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
+              No product categories are available yet. Product creation will be enabled when categories are added.
+            </p>
+          )}
 
           {businesses.length > 1 && (
             <label className="block max-w-md space-y-2 text-sm font-medium text-foreground">
@@ -146,6 +164,7 @@ export default function SellerProductCatalog() {
             <SellerProductManagement
               businessId={selectedBusinessId}
               categories={categoryOptions}
+              allowCreate={categoryOptions.length > 0}
               onProductsChange={setProducts}
               detailHref={(product) => `/dashboard/seller/products/${product.id}`}
             />

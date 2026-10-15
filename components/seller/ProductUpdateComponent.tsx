@@ -17,9 +17,9 @@ import type { ICategory } from "@/types/categories";
 
 /** The exact values the server's updateProductSchema accepts. */
 const CURRENCIES = ["BDT", "USD", "INR", "GBP", "EUR"] as const;
-const STATUS_OPTIONS: { value: "ACTIVE" | "DRAFT" | "INACTIVE"; label: string }[] = [
+/** Drafts no longer exist — a product is either published or held as unavailable. */
+const STATUS_OPTIONS: { value: "ACTIVE" | "INACTIVE"; label: string }[] = [
   { value: "ACTIVE", label: "Published" },
-  { value: "DRAFT", label: "Draft" },
   { value: "INACTIVE", label: "Unavailable" },
 ];
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -95,7 +95,9 @@ export default function ProductUpdateComponent({
         setPrice(loaded.price !== null && loaded.price !== undefined ? String(loaded.price) : "");
         setStock(loaded.stock !== null && loaded.stock !== undefined ? String(loaded.stock) : "");
         setCurrency((CURRENCIES as readonly string[]).includes(loaded.currency) ? (loaded.currency as (typeof CURRENCIES)[number]) : "BDT");
-        setStatus(loaded.status === "ACTIVE" || loaded.status === "DRAFT" || loaded.status === "INACTIVE" ? loaded.status : "ACTIVE");
+        // Drafts no longer exist, so a product the server still reports as DRAFT
+        // is loaded as published (auto-approved) and saved back as ACTIVE.
+        setStatus(loaded.status === "INACTIVE" ? "INACTIVE" : "ACTIVE");
         setDescription(loaded.description ?? "");
         setExistingImages(loaded.images ?? []);
         setRemovedPublicIds(new Set());

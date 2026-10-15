@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { getMyBusinesses } from "@/lib/core/business-api";
 import { getCategories } from "@/lib/categories-api";
-import { deleteProduct, getProduct, type ProductRecord } from "@/lib/core/product-api";
+import { deleteProduct, getProduct, productImageUrls, type ProductRecord } from "@/lib/core/product-api";
 import type { IBusiness } from "@/types/business";
 import type { ICategory } from "@/types/categories";
 import SellerEmptyState from "./SellerEmptyState";
@@ -169,11 +169,10 @@ export default function SellerProductDetail() {
   }
 
   const statusLabel =
-    product.status === "ACTIVE"
-      ? "Published"
-      : product.status === "DRAFT"
-        ? "Draft"
-        : "Unavailable";
+    product.status === "INACTIVE" || product.status === "DELETED"
+      ? "Unavailable"
+      : "Published";
+  const primaryImage = productImageUrls(product.images)[0] ?? null;
   const categoryName =
     categories.find((item) => item.id === product.categoryId)?.name ??
     product.categoryId ??
@@ -231,9 +230,20 @@ export default function SellerProductDetail() {
             <CardDescription>How this product looks to customers.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
-            <div className="flex size-24 items-center justify-center rounded-2xl bg-surface-secondary text-muted-foreground">
-              <ImagePlus className="size-10" />
-            </div>
+            {primaryImage ? (
+              <div className="relative size-24 overflow-hidden rounded-2xl border border-border bg-surface-secondary">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={primaryImage}
+                  alt={product.name}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="flex size-24 items-center justify-center rounded-2xl bg-surface-secondary text-muted-foreground">
+                <ImagePlus className="size-10" />
+              </div>
+            )}
 
             <div>
               <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">

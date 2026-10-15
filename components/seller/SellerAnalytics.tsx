@@ -79,7 +79,10 @@ export default function SellerAnalytics() {
         const productGroups = await Promise.all(
           ownedBusinesses.map(async (business) => {
             const result = await getBusinessProducts(business.id);
-            return result.ok && result.data ? result.data : [];
+            if (!result.ok || !result.data) {
+              throw new Error(`Could not load products for ${business.name}: ${result.message}`);
+            }
+            return result.data;
           }),
         );
 
@@ -89,6 +92,8 @@ export default function SellerAnalytics() {
       } catch (loadError) {
         console.error("Could not load seller analytics:", loadError);
         if (active) {
+          setBusinesses([]);
+          setProducts([]);
           setError(loadError instanceof Error ? loadError.message : "Could not load analytics.");
         }
       } finally {
@@ -158,14 +163,13 @@ export default function SellerAnalytics() {
   );
 
   // Real catalog-status breakdown for the shared AnalyticsChart.
-  const statusSegments = useMemo(() => {
-    const drafts = products.filter((product) => product.status === "DRAFT").length;
-    return [
+  const statusSegments = useMemo(
+    () => [
       { name: "Published", value: stats.published, color: "var(--color-primary)" },
-      { name: "Draft", value: drafts, color: "var(--color-warning)" },
       { name: "Out of stock", value: stats.outOfStock, color: "var(--color-danger)" },
-    ];
-  }, [products, stats.published, stats.outOfStock]);
+    ],
+    [stats.published, stats.outOfStock],
+  );
 
   const publishedPercentage = products.length
     ? Math.round((stats.published / products.length) * 100)
