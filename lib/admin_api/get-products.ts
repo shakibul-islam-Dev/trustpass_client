@@ -5,6 +5,26 @@ import { apiUrl } from "@/lib/core/api-url";
 import { apiFetch } from "@/lib/core/api-fetch";
 
 // ============================================================
+// Nested types (new backend response)
+// ============================================================
+export interface IProductImage {
+  url: string;
+  publicId?: string;
+}
+
+export interface IProductBusiness {
+  id: string;
+  name?: string;
+  slug?: string;
+  logoUrl?: string | null;
+  owner?: {
+    id: string;
+    name?: string;
+    email?: string;
+  } | null;
+}
+
+// ============================================================
 // Product Response
 // ============================================================
 export interface IProductResponse {
@@ -17,10 +37,20 @@ export interface IProductResponse {
   price: number;
   currency: string;
   stock: number;
-  images: string[];
-  status: "ACTIVE" | "INACTIVE" | "OUT_OF_STOCK" | string;
+  images: string[];              // ← normalized to string[]
+  status: "ACTIVE" | "INACTIVE" | "OUT_OF_STOCK" | "DRAFT" | string;
   createdAt: string;
   updatedAt?: string;
+
+  // 🆕 Nested business info (for table display)
+  businessName?: string;
+  businessSlug?: string;
+  businessLogo?: string | null;
+
+  // 🆕 Owner info (for notification)
+  ownerId?: string;
+  ownerName?: string;
+  ownerEmail?: string;
 }
 
 export interface IProductFilters {
@@ -38,6 +68,22 @@ const buildQuery = (filters: IProductFilters): string => {
   if (filters.status) params.set("status", filters.status);
   const q = params.toString();
   return q ? `?${q}` : "";
+};
+
+// ============================================================
+// Image normalizer — handle both string[] and { url, publicId }[]
+// ============================================================
+const normalizeImages = (raw: any): string[] => {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((img) => {
+      if (typeof img === "string") return img;
+      if (img && typeof img === "object") {
+        return img.url || img.secureUrl || img.src || null;
+      }
+      return null;
+    })
+    .filter((u): u is string => typeof u === "string" && u.trim().length > 0);
 };
 
 // ============================================================

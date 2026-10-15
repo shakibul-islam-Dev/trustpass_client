@@ -27,8 +27,10 @@ export interface IVerificationResponse {
   businessSlug?: string;
   businessVerificationStatus?: string;
 
-  // 🔑 Owner ID (submittedBy) — notification er jonno
+  // 🔑 Owner info (from business.owner)
   ownerId?: string;
+  ownerName?: string;
+  ownerEmail?: string;
 
   status: TVerificationStatus;
   reviewedBy?: string | null;
@@ -36,7 +38,6 @@ export interface IVerificationResponse {
   submittedAt?: string;
 
   trustScore?: number;
-  /** `null` when the API has never calculated a score for this business. */
   trustScoreUpdatedAt?: string | null;
   documents: IVerificationDocument[];
 }
@@ -69,6 +70,7 @@ const normalizeDocument = (doc: any): IVerificationDocument => ({
 
 const normalizeVerification = (raw: any): IVerificationResponse => {
   const business = raw.business || {};
+  const owner = business.owner || raw.owner || {};
 
   const rawDocs = Array.isArray(business.documents)
     ? business.documents
@@ -83,8 +85,10 @@ const normalizeVerification = (raw: any): IVerificationResponse => {
     businessSlug: business.slug,
     businessVerificationStatus: business.verificationStatus,
 
-    // 🔑 ownerId = submittedBy (backend theke)
-    ownerId: raw.submittedBy || business.ownerId,
+    // 🔑 Owner info
+    ownerId: raw.submittedBy || business.ownerId || owner.id,
+    ownerName: owner.name || raw.ownerName || "-",
+    ownerEmail: owner.email || raw.ownerEmail || "-",
 
     status: raw.status || "PENDING",
     reviewedBy: raw.reviewedBy,
