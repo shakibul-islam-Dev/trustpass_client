@@ -35,7 +35,7 @@ export default function AdminNotificationsPage() {
         <Card className="border-border/80 hover:border-primary/40 transition-colors">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
+              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-soft text-primary">
                 <Send className="h-6 w-6" />
               </span>
               <div>
@@ -62,7 +62,7 @@ export default function AdminNotificationsPage() {
         <Card className="border-border/80 hover:border-primary/40 transition-colors">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/10 text-purple-500">
+              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
                 <Megaphone className="h-6 w-6" />
               </span>
               <div>
@@ -88,8 +88,8 @@ export default function AdminNotificationsPage() {
       </div>
 
       {/* Info box */}
-      <Card className="border-border/60 bg-muted/30">
-        <CardContent className="p-5 flex items-start gap-3">
+      <Card className="border-border/60 bg-muted/30 [--card-spacing:--spacing(5)]">
+        <CardContent className="flex items-start gap-3">
           <Bell className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
           <div className="text-sm text-muted-foreground space-y-1">
             <p>

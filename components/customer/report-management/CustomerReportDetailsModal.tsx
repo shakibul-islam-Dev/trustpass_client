@@ -21,9 +21,9 @@ export const CustomerReportDetailsModal = ({
   const getStatusIcon = () => {
     switch (report.status) {
       case 'PENDING':
-        return <Clock className="h-5 w-5 text-yellow-500" />;
+        return <Clock className="h-5 w-5 text-warning" />;
       case 'RESOLVED':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
+        return <CheckCircle className="h-5 w-5 text-success" />;
       case 'REJECTED':
         return <XCircle className="h-5 w-5 text-destructive" />;
     }
@@ -44,9 +44,9 @@ export const CustomerReportDetailsModal = ({
 
         <div className="py-4 space-y-4">
           {/* Status Banner */}
-          <div className={`p-3 rounded-md border flex items-center gap-2 ${report.status === 'RESOLVED' ? 'bg-green-500/10 border-green-500/20' :
-              report.status === 'REJECTED' ? 'bg-destructive/10 border-destructive/20' :
-                'bg-yellow-500/10 border-yellow-500/20'
+          <div className={`p-3 rounded-md border flex items-center gap-2 ${report.status === 'RESOLVED' ? 'bg-success-soft border-success/30' :
+              report.status === 'REJECTED' ? 'bg-danger-soft border-danger/30' :
+                'bg-warning-soft border-warning/30'
             }`}>
             {getStatusIcon()}
             <div>
@@ -60,7 +60,7 @@ export const CustomerReportDetailsModal = ({
           </div>
 
           {/* Info Grid */}
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-muted-foreground">Business</p>
               <p className="font-medium">{report.businessName}</p>

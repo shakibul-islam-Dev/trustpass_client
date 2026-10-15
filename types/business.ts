@@ -39,6 +39,12 @@ export interface IBusiness {
   contactPhone: string | null;
   verificationStatus: TVerificationStatus;
   trustScore: number;
+  /**
+   * When the API last wrote `trustScore` (`BUSINESS_SELECT` on the server).
+   * `null` means the business has **never** been scored — distinguish that from
+   * a business that was actually calculated and came out at 0.
+   */
+  trustScoreUpdatedAt: string | null;
   isFeatured: boolean;
   createdAt: string;
   updatedAt: string;

@@ -48,8 +48,8 @@ export const RecentActivityList = ({
                 <div
                   className={`p-2 rounded-full shrink-0 ${
                     activity.type === "REPORT"
-                      ? "bg-blue-500/10 text-blue-500"
-                      : "bg-purple-500/10 text-purple-500"
+                      ? "bg-primary-soft text-primary"
+                      : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {activity.type === "REPORT" ? (

@@ -47,12 +47,11 @@ export async function generateMetadata({ params }: ProductDetailPageProps) {
     `View ${product.name}, listed by a business on TrustPass.`;
   const canonicalSlug = product.slug || product.id;
 
-  return {
-    ...createPageMetadata(product.name, description),
-    alternates: {
-      canonical: `/products/${encodeURIComponent(canonicalSlug)}`,
-    },
-  };
+  return createPageMetadata(
+    product.name,
+    description,
+    `/products/${encodeURIComponent(canonicalSlug)}`,
+  );
 }
 
 export default async function ProductDetailPage({
@@ -162,8 +161,8 @@ export default async function ProductDetailPage({
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${
                     isInStock
-                      ? "bg-emerald-500/10 text-emerald-600"
-                      : "bg-rose-500/10 text-rose-600"
+                      ? "bg-success-soft text-success"
+                      : "bg-danger-soft text-danger"
                   }`}
                 >
                   {isInStock ? `In Stock (${product.stock} units)` : "Out of Stock"}
@@ -202,12 +201,20 @@ export default async function ProductDetailPage({
                       <div>
                         <p className="text-sm font-bold">{business.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {business.businessType} · Verified Vendor
+                          {business.businessType} ·{" "}
+                          {/* Read the real status off the API — this used to be
+                              hard-coded to "Verified Vendor" for every seller. */}
+                          {business.verificationStatus.charAt(0) +
+                            business.verificationStatus.slice(1).toLowerCase()}
                         </p>
                       </div>
                     </div>
                     <span className="inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
-                      {business.trustScore} Trust
+                      {/* `trustScoreUpdatedAt` is null until the API scores the
+                          business — showing "0 Trust" there invents a verdict. */}
+                      {business.trustScoreUpdatedAt != null
+                        ? `${business.trustScore} Trust`
+                        : "Not scored yet"}
                     </span>
                   </div>
                 </div>

@@ -88,7 +88,7 @@ export const RoleChangeModal = ({
           </Button>
           <Button
             onClick={handleSave}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             Save Changes
           </Button>

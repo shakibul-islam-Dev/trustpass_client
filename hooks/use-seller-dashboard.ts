@@ -131,10 +131,16 @@ export function useSellerDashboardData(
     const published = products.filter((product) => product.status === "ACTIVE").length;
     const drafts = products.filter((product) => product.status === "DRAFT").length;
     const outOfStock = products.filter((product) => product.stock === 0).length;
-    const averageTrust = businesses.length
+    // The API writes `trustScoreUpdatedAt` whenever it calculates a score, so
+    // `null` means "never scored", not "scored zero". Averaging those in would
+    // drag the average down for businesses the API has never evaluated.
+    const scored = businesses.filter(
+      (business) => business.trustScoreUpdatedAt != null,
+    );
+    const averageTrust = scored.length
       ? Math.round(
-          businesses.reduce((total, business) => total + business.trustScore, 0) /
-            businesses.length,
+          scored.reduce((total, business) => total + business.trustScore, 0) /
+            scored.length,
         )
       : null;
 

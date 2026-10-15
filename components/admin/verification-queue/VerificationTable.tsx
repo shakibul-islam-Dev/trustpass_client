@@ -88,7 +88,7 @@ const CopyableId = ({ id }: { id: string }) => {
         {id.slice(0, 8)}...{id.slice(-4)}
       </span>
       {copied ? (
-        <Check className="h-3 w-3 text-green-500 shrink-0" />
+        <Check className="h-3 w-3 text-success shrink-0" />
       ) : (
         <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition shrink-0" />
       )}
@@ -218,7 +218,7 @@ export const VerificationTable = ({
                           {isApproved ? (
                             <DropdownMenuItem
                               disabled
-                              className="opacity-60 cursor-not-allowed text-green-600 dark:text-green-500 focus:bg-transparent"
+                              className="opacity-60 cursor-not-allowed text-success focus:bg-transparent"
                             >
                               <CheckCircle2 className="mr-2 h-4 w-4" />
                               <span>Already Approved</span>
@@ -230,7 +230,7 @@ export const VerificationTable = ({
                               className={
                                 isSuspended || isRejected
                                   ? "opacity-50 cursor-not-allowed"
-                                  : "text-green-600 focus:text-green-600 focus:bg-green-50 dark:focus:bg-green-950"
+                                  : "text-success focus:text-success focus:bg-success-soft"
                               }
                               title={
                                 isSuspended

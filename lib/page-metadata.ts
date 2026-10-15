@@ -5,6 +5,7 @@ const siteName = "TrustPass";
 export function createPageMetadata(
   title: string,
   description: string,
+  canonicalPath?: string,
 ): Metadata {
   const brandedTitle = `${title} | ${siteName}`;
 
@@ -13,11 +14,15 @@ export function createPageMetadata(
       absolute: brandedTitle,
     },
     description,
+    ...(canonicalPath
+      ? { alternates: { canonical: canonicalPath } }
+      : {}),
     openGraph: {
       title: brandedTitle,
       description,
       siteName,
       type: "website",
+      ...(canonicalPath ? { url: canonicalPath } : {}),
     },
     twitter: {
       card: "summary",

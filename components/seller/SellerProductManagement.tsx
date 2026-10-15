@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { AlertCircle, Eye, ImagePlus, PencilLine, Plus, Search, Trash2, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -271,6 +272,7 @@ export default function SellerProductManagement({
           const result = await updateProduct(draft.id, toInput(draft));
           if (!result.ok) {
             setActionError(result.message);
+            toast.error(result.message);
             return;
           }
         } else {
@@ -281,27 +283,35 @@ export default function SellerProductManagement({
           );
           if (!result.ok) {
             setActionError(result.message);
+            toast.error(result.message);
             return;
           }
           clearNewImages();
         }
-        setActionMessage(draft.id ? "Product updated." : "Product added.");
+        const message = draft.id ? "Product updated." : "Product added.";
+        setActionMessage(message);
+        toast.success(message);
         reload();
       } else if (onSave) {
         const { id, ...productInput } = draft;
         await onSave(productInput, id || undefined);
         setActionMessage("Product saved.");
+        toast.success("Product saved.");
       } else if (draft.id) {
         setLocalProducts((current) => (current ?? incomingProducts ?? []).map((product) => product.id === draft.id ? { ...draft, id: draft.id } : product));
         setActionMessage("Product updated (local preview).");
+        toast.success("Product updated (local preview).");
       } else {
         setLocalProducts((current) => [{ ...draft, id: `local-${Date.now()}` }, ...(current ?? incomingProducts ?? [])]);
         setActionMessage("Product added (local preview).");
+        toast.success("Product added (local preview).");
       }
       setEditorOpen(false);
     } catch (error) {
       console.error("Could not save product:", error);
-      setActionError(error instanceof Error ? error.message : "Could not save this product.");
+      const message = error instanceof Error ? error.message : "Could not save this product.";
+      setActionError(message);
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }
@@ -317,21 +327,27 @@ export default function SellerProductManagement({
           const result = await deleteProduct(deleteTarget.id);
           if (!result.ok) {
             setActionError(result.message);
+            toast.error(result.message);
             return;
           }
           setActionMessage("Product deleted.");
+          toast.success("Product deleted.");
           reload();
         } else if (onDelete) {
           await onDelete(deleteTarget.id);
           setActionMessage("Product deleted.");
+          toast.success("Product deleted.");
         } else {
           setLocalProducts((current) => (current ?? incomingProducts ?? []).filter((product) => product.id !== deleteTarget.id));
           setActionMessage("Product deleted (local preview).");
+          toast.success("Product deleted (local preview).");
         }
         setDeleteTarget(null);
       } catch (error) {
         console.error("Could not delete product:", error);
-        setActionError(error instanceof Error ? error.message : "Could not delete this product.");
+        const message = error instanceof Error ? error.message : "Could not delete this product.";
+        setActionError(message);
+        toast.error(message);
       } finally {
         setIsDeleting(false);
       }
