@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Search, ShieldCheck, Star } from "lucide-react";
 
 const steps = [
@@ -40,6 +41,17 @@ export default function HowItWorks() {
                         From discovery to transaction — every step on TrustPass is designed
                         to give you verified confidence.
                     </p>
+                </div>
+
+                {/* Illustration */}
+                <div className="mx-auto mt-8 max-w-2xl overflow-hidden rounded-2xl border border-border shadow-sm">
+                    <Image
+                        src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=900&auto=format&fit=crop&q=80"
+                        alt="Business professionals collaborating and verifying documents"
+                        width={900}
+                        height={400}
+                        className="h-48 w-full object-cover sm:h-64"
+                    />
                 </div>
 
                 {/* Steps */}

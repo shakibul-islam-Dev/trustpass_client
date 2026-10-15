@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { BadgeCheck, FileSearch, MessageSquareWarning, TrendingUp } from "lucide-react";
 
 const features = [
@@ -68,9 +69,21 @@ export default function WhyTrustPass() {
                         </ul>
                     </div>
 
-                    {/* Right: Visual card stack */}
-                    <div className="relative flex items-center justify-center">
-                        <div className="relative w-full max-w-sm">
+                    {/* Right: Visual */}
+                    <div className="flex flex-col items-center gap-6">
+                        {/* Photo */}
+                        <div className="w-full overflow-hidden rounded-2xl border border-border shadow-md">
+                            <Image
+                                src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&auto=format&fit=crop&q=80"
+                                alt="Verified business owner with documents"
+                                width={800}
+                                height={360}
+                                className="h-44 w-full object-cover sm:h-56"
+                            />
+                        </div>
+
+                        {/* Card stack */}
+                        <div className="relative flex w-full items-center justify-center">
                             {/* Background card */}
                             <div className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl border border-border bg-card" />
                             {/* Foreground card */}
