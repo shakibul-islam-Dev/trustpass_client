@@ -20,6 +20,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Shield, LogOut, Home } from "lucide-react";
+import { toast } from "sonner";
 import ToggleBar from "../ToggleBar/ToggleBar";
 
 
@@ -48,7 +49,12 @@ export default function DashboardSideBar({ role, name }: SidebarProps) {
   };
 
   const handleLogout = async () => {
-    await signOut();
+    const ok = await signOut();
+    if (!ok) {
+      toast.error("Could not sign you out. Please try again.");
+      return;
+    }
+    toast.success("Signed out.");
     router.replace("/auth/login");
     router.refresh();
   };
@@ -59,28 +65,31 @@ export default function DashboardSideBar({ role, name }: SidebarProps) {
     .join("") || "?";
 
   return (
-    <Sidebar className="border-r border-border/60 bg-card text-card-foreground">
-      {/* 1. Header - Only Brand */}
-      <SidebarHeader className="p-4 border-b border-border/40">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold shadow-sm shadow-indigo-500/20 shrink-0">
+    <Sidebar
+      collapsible="icon"
+      className="border-r border-border/60 bg-card text-card-foreground"
+    >
+      {/* 1. Header - Brand. Collapses to just the shield icon. */}
+      <SidebarHeader className="border-b border-border/40 p-4 group-data-[collapsible=icon]:p-2">
+        <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold shadow-surface shrink-0">
             <Shield className="h-5 w-5 fill-current" />
           </div>
-          <div className="flex flex-col min-w-0">
+          <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
             <span className="font-bold text-base tracking-tight text-foreground flex items-center gap-2">
               <Link href="/">TrustPass</Link>
-              <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 rounded-md">
+              <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase bg-primary-soft text-primary rounded-md">
                 {label}
               </span>
             </span>
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               Digital Trust Platform
             </span>
           </div>
         </div>
       </SidebarHeader>
 
-      {/* 2. Content - Navigation */}
+      {/* 2. Content - Navigation. Becomes an icon rail when collapsed. */}
       <SidebarContent className="p-2">
         <SidebarGroup>
           {currentSidebar.title && (
@@ -99,34 +108,37 @@ export default function DashboardSideBar({ role, name }: SidebarProps) {
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       isActive={isActive}
+                      tooltip={item.name}
                       onClick={handleLinkClick}
-                      className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-(--duration-base) ease-(--ease) ${
                         isActive
-                          ? "bg-indigo-600/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 font-semibold"
+                          ? "bg-primary-soft text-primary font-semibold"
                           : "text-muted-foreground hover:bg-muted hover:text-foreground"
                       }`}
                     >
                       <Link
                         href={item.href}
-                        className="flex items-center gap-3 w-full"
+                        className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                       >
                         <Icon
                           className={`h-4 w-4 shrink-0 transition-colors ${
                             isActive
-                              ? "text-indigo-600 dark:text-indigo-400"
+                              ? "text-primary"
                               : "text-muted-foreground"
                           }`}
                         />
-                        <span className="flex-1 text-left">{item.name}</span>
+                        <span className="flex-1 text-left group-data-[collapsible=icon]:hidden">
+                          {item.name}
+                        </span>
 
                         {isNotifications && unreadNotifications > 0 && (
-                          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-[10px] font-semibold text-white dark:bg-indigo-500">
+                          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground group-data-[collapsible=icon]:hidden">
                             {unreadNotifications > 99 ? "99+" : unreadNotifications}
                           </span>
                         )}
 
                         {isActive && (
-                          <div className="ml-auto w-1.5 h-4 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
+                          <div className="ml-auto w-1.5 h-4 bg-primary rounded-full group-data-[collapsible=icon]:hidden" />
                         )}
                       </Link>
                     </SidebarMenuButton>
@@ -138,42 +150,43 @@ export default function DashboardSideBar({ role, name }: SidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* 3. Footer - Home + Theme, then User + Logout */}
-      <SidebarFooter className="p-3 border-t border-border/40 space-y-2">
+      {/* 3. Footer - Home + Theme, then User + Logout. Stacks into icons when
+          collapsed so nothing is clipped or overflows the rail. */}
+      <SidebarFooter className="gap-2 border-t border-border/40 p-3 group-data-[collapsible=icon]:p-2">
 
         {/* 3a. Quick Actions Row (Home + Theme Toggle) */}
-        <div className="flex items-center justify-between p-2 rounded-xl bg-muted/40">
+        <div className="flex items-center justify-between gap-1 rounded-xl bg-muted/40 p-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1 group-data-[collapsible=icon]:p-1">
           {/* Home Button */}
           <Link
             href="/"
             onClick={handleLinkClick}
-            className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors flex-1"
+            className="flex flex-1 items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground group-data-[collapsible=icon]:flex-none group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
             title="Go to Homepage"
           >
             <Home className="h-4 w-4 shrink-0" />
-            <span>Home</span>
+            <span className="group-data-[collapsible=icon]:hidden">Home</span>
           </Link>
 
           {/* Divider */}
-          <div className="w-px h-5 bg-border/60 mx-1" />
+          <div className="w-px h-5 bg-border/60 mx-1 group-data-[collapsible=icon]:hidden" />
 
           {/* Theme Toggle */}
-          <div className="flex items-center justify-center px-2">
+          <div className="flex items-center justify-center px-2 group-data-[collapsible=icon]:px-0">
             <ToggleBar />
           </div>
         </div>
 
         {/* 3b. User Info Row */}
-        <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+        <div className="flex items-center justify-between gap-2 rounded-xl bg-muted/50 p-2.5 transition-colors hover:bg-muted group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1.5 group-data-[collapsible=icon]:p-1.5">
+          <div className="flex items-center gap-2.5 min-w-0 group-data-[collapsible=icon]:justify-center">
+            <div className="h-8 w-8 rounded-full bg-linear-to-tr from-primary to-primary-deep text-primary-foreground flex items-center justify-center text-xs font-bold shrink-0">
               {initials}
             </div>
-            <div className="flex flex-col min-w-0">
+            <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
               <span className="text-xs font-semibold text-foreground truncate">
                 {name ?? "Signed in"}
               </span>
-              <span className="text-[10px] text-muted-foreground truncate capitalize">
+              <span className="text-xs text-muted-foreground truncate capitalize">
                 {label} Account
               </span>
             </div>
@@ -183,7 +196,7 @@ export default function DashboardSideBar({ role, name }: SidebarProps) {
             title="Log out"
             aria-label="Log out"
             onClick={handleLogout}
-            className="text-muted-foreground hover:text-destructive p-1.5 rounded-lg transition-colors"
+            className="text-muted-foreground hover:text-destructive p-1.5 rounded-lg transition-colors group-data-[collapsible=icon]:mx-auto"
           >
             <LogOut className="h-4 w-4" />
           </button>

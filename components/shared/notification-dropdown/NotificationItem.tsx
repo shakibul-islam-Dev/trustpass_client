@@ -1,7 +1,3 @@
-// Previous implementation by: Existing Developer
-// Updated by: Aritro
-// Reason: Added optional onDelete prop + Delete button.
-
 import { Bell, Clock, Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Notification } from "@/types/customer";
@@ -13,19 +9,67 @@ interface NotificationItemProps {
   onDelete?: (id: string) => void;
 }
 
+// ── Time formatter — user-friendly relative time ──
+const formatRelativeTime = (input?: string | Date | null): string => {
+  if (!input) return "";
+
+  const date = input instanceof Date ? input : new Date(input);
+  if (Number.isNaN(date.getTime())) return String(input);
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+
+  // Just now (< 1 min)
+  if (diffSec < 60) return "Just now";
+
+  // Minutes ago (< 1 hour)
+  if (diffMin < 60) {
+    return `${diffMin} min ago`;
+  }
+
+  // Hours ago (< 24 hours)
+  if (diffHr < 24) {
+    return `${diffHr} hr${diffHr > 1 ? "s" : ""} ago`;
+  }
+
+  // Yesterday
+  if (diffDay === 1) return "Yesterday";
+
+  // Days ago (< 7 days)
+  if (diffDay < 7) {
+    return `${diffDay} days ago`;
+  }
+
+  // Weeks ago (< 30 days)
+  if (diffDay < 30) {
+    const weeks = Math.floor(diffDay / 7);
+    return `${weeks} week${weeks > 1 ? "s" : ""} ago`;
+  }
+
+  // Older — show date
+  return date.toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+  });
+};
+
 export const NotificationItem = ({
   notification,
   onMarkAsRead,
   onItemClick,
   onDelete,
 }: NotificationItemProps) => {
-  // Icon color based on type
   const getIconColor = () => {
     switch (notification.type) {
       case "REPORT_UPDATE":
-        return "text-blue-500 bg-blue-500/10";
+        return "text-primary bg-primary-soft";
       case "TRUST_SCORE":
-        return "text-green-500 bg-green-500/10";
+        return "text-success bg-success-soft";
       case "SYSTEM":
         return "text-muted-foreground bg-muted";
       default:
@@ -67,7 +111,10 @@ export const NotificationItem = ({
         <div className="flex items-center justify-between mt-1.5">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="h-3 w-3" />
-            <span>{notification.createdAt}</span>
+            {/* ✅ User-friendly time */}
+            <span title={notification.createdAt}>
+              {formatRelativeTime(notification.createdAt)}
+            </span>
           </div>
 
           <div className="flex items-center gap-1">

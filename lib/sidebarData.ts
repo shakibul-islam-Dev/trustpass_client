@@ -14,7 +14,6 @@ import {
   CreditCard,
   BarChart3,
   Package,
-  ShoppingBag,
   ShieldCheck,
   ShoppingBagIcon,
   User2,
@@ -138,19 +137,9 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
 
       },
       {
-        name: "Orders",
-        href: "/dashboard/seller/orders",
-        icon: ShoppingBag,
-      },
-      {
         name: "Payments",
         href: "/dashboard/seller/payments",
         icon: CreditCard,
-      },
-      {
-        name: "My Reports",
-        href: "/dashboard/customer/reports",
-        icon: Flag,
       },
       {
         name: "Notifications",
@@ -201,6 +190,8 @@ export const roleSidebars: Record<ApiRole, { title: string; items: SidebarItem[]
     ],
   },
 };
+
+
 
 export type SidebarItem = {
   name: string;

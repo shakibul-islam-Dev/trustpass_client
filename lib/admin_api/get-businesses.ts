@@ -40,6 +40,8 @@ export interface IBusinessResponse {
 
   verificationStatus: TVerificationStatus;
   trustScore: number;
+  /** `null` when the API has never calculated a score for this business. */
+  trustScoreUpdatedAt?: string | null;
   productsCount: number;
   documentsCount: number;
   reportsCount: number;
@@ -100,6 +102,7 @@ const normalizeBusiness = (raw: any): IBusinessResponse => {
 
     verificationStatus: raw.verificationStatus || "PENDING",
     trustScore: Number(raw.trustScore ?? 0),
+    trustScoreUpdatedAt: raw.trustScoreUpdatedAt ?? null,
     productsCount: Number(raw._count?.products ?? raw.productsCount ?? 0),
     documentsCount: Number(raw._count?.documents ?? 0),
     reportsCount: Number(raw._count?.reports ?? 0),
@@ -132,6 +135,9 @@ const mergeFullDetails = (
     contactEmail: full.contactEmail ?? base.contactEmail,
     contactPhone: full.contactPhone ?? base.contactPhone,
     categoryId: full.categoryId ?? base.categoryId,
+
+    trustScore: Number(full.trustScore ?? base.trustScore ?? 0),
+    trustScoreUpdatedAt: full.trustScoreUpdatedAt ?? base.trustScoreUpdatedAt ?? null,
 
     websiteUrl: full.websiteUrl ?? base.websiteUrl,
     instaUrl: full.instaUrl ?? base.instaUrl,

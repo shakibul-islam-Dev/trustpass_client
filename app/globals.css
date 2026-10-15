@@ -63,6 +63,10 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
+  /* Text colors for badges/chips sitting on a solid semantic background */
+  --color-success-foreground: var(--success-foreground);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger-foreground: var(--danger-foreground);
   --color-separator: var(--separator);
   --color-focus: var(--focus);
   --color-backdrop: var(--backdrop);
@@ -210,6 +214,13 @@
   --warning: oklch(0.7819 0.1585 72.33);
   --danger: oklch(0.6532 0.2328 25.74);
   --destructive: var(--danger);
+
+  /* Contrast pairings for solid semantic fills: green/yellow need dark text,
+     red needs light text. Same value in both themes because the base colors
+     do not shift between light and dark. */
+  --success-foreground: oklch(0.2103 0.0059 285.89);
+  --warning-foreground: oklch(0.2103 0.0059 285.89);
+  --danger-foreground: oklch(0.9911 0 0);
 
   --border: oklch(0.92 0.004 286.32);
   --separator: var(--border);

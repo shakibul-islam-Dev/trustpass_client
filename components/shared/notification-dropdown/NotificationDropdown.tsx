@@ -70,7 +70,7 @@ export const NotificationDropdown = ({
         }
       />
 
-      <DropdownMenuContent align="end" className="w-[380px] p-0">
+      <DropdownMenuContent align="end" className="w-[min(380px,calc(100vw-2rem))] p-0">
         {/* Header */}
         <div className="flex items-center justify-between p-4 pb-3">
           <div className="flex items-center gap-2">

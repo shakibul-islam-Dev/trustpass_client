@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import SearchHero from "@/components/marketplace/SearchHero";
 import Categories from "@/components/marketplace/Categories";
 import HomeTrustGuide from "@/components/marketplace/HomeTrustGuide";
