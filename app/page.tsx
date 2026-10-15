@@ -7,11 +7,6 @@ import HowItWorks from "@/components/home/HowItWorks";
 import WhyTrustPass from "@/components/home/WhyTrustPass";
 import CTABanner from "@/components/home/CTABanner";
 
-export const metadata: Metadata = {
-  alternates: {
-    canonical: "/",
-  },
-};
 
 export const dynamic = "force-dynamic";
 
