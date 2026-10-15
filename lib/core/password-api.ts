@@ -44,6 +44,16 @@ const RESET_PASSWORD_PATH = "/api/auth/reset-password";
 const CHANGE_PASSWORD_PATH = "/api/auth/change-password";
 const REQUEST_PASSWORD_RESET_PATH = "/api/auth/request-password-reset";
 
+// The email-OTP reset flow. The link flow above is what the Live API *used*
+// to offer, but that server answers `RESET_PASSWORD_DISABLED` for
+// `/request-password-reset` (no `sendResetPassword` callback is configured),
+// so a link can never be sent. The `emailOTP` plugin IS enabled, and these
+// two endpoints are the reset path that actually works end to end:
+//   1. request a code  -> POST /api/auth/email-otp/request-password-reset
+//   2. set the password -> POST /api/auth/email-otp/reset-password
+const REQUEST_RESET_OTP_PATH = "/api/auth/email-otp/request-password-reset";
+const RESET_PASSWORD_OTP_PATH = "/api/auth/email-otp/reset-password";
+
 /** What both functions return. Narrow with `if (!result.ok)`. */
 export type PasswordApiResult =
   | { ok: true }
@@ -207,4 +217,65 @@ export async function requestPasswordReset(input: {
     email: input.email,
     redirectTo: input.redirectTo,
   });
+}
+
+/**
+ * POST /api/auth/email-otp/request-password-reset
+ *
+ * Body: { email }
+ *
+ * Emails a 6-digit reset code. This is the endpoint the "Forgot password?"
+ * form uses — see the note next to `REQUEST_RESET_OTP_PATH` at the top of this
+ * file for why the LINK flow is not used.
+ *
+ * Returns the raw Response so the caller decides what to show. The server
+ * answers success for both a known and an unknown address, so a success is
+ * NOT proof the address exists.
+ */
+export async function requestPasswordResetOtp(
+  email: string,
+): Promise<Response> {
+  return postJson(REQUEST_RESET_OTP_PATH, {
+    email: email.trim().toLowerCase(),
+  });
+}
+
+/**
+ * POST /api/auth/email-otp/reset-password
+ *
+ * Body: { email, otp, password }
+ *
+ * Verifies the code AND sets the new password in a single call (better-auth's
+ * email-OTP plugin). A wrong or expired code answers 400 — `readApiError`
+ * turns that into "Invalid OTP" for the user. The code is single use.
+ */
+export async function resetPasswordWithOtp(input: {
+  email: string;
+  otp: string;
+  password: string;
+}): Promise<PasswordApiResult> {
+  try {
+    const response = await postJson(RESET_PASSWORD_OTP_PATH, {
+      email: input.email.trim().toLowerCase(),
+      otp: input.otp.trim(),
+      password: input.password,
+    });
+
+    return await toResult(
+      RESET_PASSWORD_OTP_PATH,
+      response,
+      "Could not reset your password. Check the code and try again.",
+    );
+  } catch (error) {
+    // fetch only rejects when no answer came back at all.
+    return {
+      ok: false,
+      status: 0,
+      message: safeThrownError(
+        "reset-password-otp",
+        error,
+        "Could not reach the server. Please check your connection and try again.",
+      ),
+    };
+  }
 }
