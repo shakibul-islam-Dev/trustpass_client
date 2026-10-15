@@ -185,11 +185,23 @@ export default function SellerBusinessVerification({
 
   useEffect(() => {
     if (!selectedId) return;
-    void loadDocuments(selectedId);
+    let active = true;
+    const requestId = ++documentRequestId.current;
+    void getBusinessDocuments(selectedId).then((result) => {
+      if (!active || requestId !== documentRequestId.current) return;
+      if (result.ok && result.data) {
+        setDocuments(result.data);
+      } else {
+        setDocuments([]);
+        setMessage({ tone: "error", text: result.message });
+      }
+      setDocumentsBusinessId(selectedId);
+    });
     return () => {
+      active = false;
       documentRequestId.current += 1;
     };
-  }, [selectedId, loadDocuments]);
+  }, [selectedId]);
 
   const refreshDocuments = async () => {
     setIsRefreshingDocs(true);
