@@ -21,10 +21,12 @@ export default async function Home() {
 
   return (
     <div>
-
       <SearchHero categories={categories} />
       <HomeTrustGuide />
       <Categories categories={categories} error={error} />
+      <HowItWorks />
+      <WhyTrustPass />
+      <CTABanner />
     </div>
   );
 }
