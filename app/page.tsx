@@ -1,9 +1,6 @@
 import SearchHero from "@/components/marketplace/SearchHero";
 import Categories from "@/components/marketplace/Categories";
-import HowItWorks from "@/components/home/HowItWorks";
-import TrustStats from "@/components/home/TrustStats";
-import WhyTrustPass from "@/components/home/WhyTrustPass";
-import CTABanner from "@/components/home/CTABanner";
+import HomeTrustGuide from "@/components/marketplace/HomeTrustGuide";
 import { getCategories } from "@/lib/categories-api";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +15,7 @@ export default async function Home() {
   return (
     <div>
       <SearchHero categories={categories} />
-      <TrustStats />
+      <HomeTrustGuide />
       <Categories categories={categories} error={error} />
       <HowItWorks />
       <WhyTrustPass />

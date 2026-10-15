@@ -35,8 +35,9 @@ export const DeleteBusinessDialog = ({
             Delete Business
           </DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete <strong>{businessName}</strong>?
-            This action cannot be undone.
+            Are you sure you want to delete{" "}
+            <strong className="text-foreground">{businessName}</strong>? This
+            action cannot be undone.
           </DialogDescription>
         </DialogHeader>
 

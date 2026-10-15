@@ -1,26 +1,21 @@
 import Link from 'next/link';
-import productDetails from '@/public/data/productDetails.json';
-import businesses from '@/public/data/businessCard.json';
 import ProductCard from './ProductCard';
-
-type Product = (typeof productDetails)[number];
-type Business = (typeof businesses)[number];
+import type { IProductResponse } from "@/lib/admin_api/get-products";
+import type { IBusiness } from "@/types/business";
 
 type ProductGridProps = {
-  products: Product[];
-  businesses: Business[];
+  products: IProductResponse[];
+  businesses: IBusiness[];
   totalCount: number;
   query: string;
   stockFilter: string;
 };
 
-const getProductBusiness = (product: Product, businessList: Business[]): Business | undefined => {
-  return businessList.find(
-    (business) =>
-      business.owner_id === product.business_id ||
-      String(business.id) === product.business_id ||
-      business.category_id === product.category_id,
-  );
+const getProductBusiness = (
+  product: IProductResponse,
+  businessList: IBusiness[],
+): IBusiness | undefined => {
+  return businessList.find((business) => business.id === product.businessId);
 };
 
 export default function ProductGrid({

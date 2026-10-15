@@ -1,15 +1,43 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
+import { cache } from "react";
 import { getCategoryById } from '@/lib/categories-api';
+import { createPageMetadata } from "@/lib/page-metadata";
 
 type CategoryPageProps = {
   params: Promise<{ id: string }>;
 };
 
+const getCategory = cache((id: string) => getCategoryById(id));
+
+export async function generateMetadata({ params }: CategoryPageProps) {
+  const { id } = await params;
+  const response = await getCategory(id);
+
+  if (!response.success || !response.data) {
+    return createPageMetadata(
+      "Category",
+      "Explore businesses and products in a TrustPass category.",
+    );
+  }
+
+  const category = response.data;
+  const description =
+    category.description?.trim() ||
+    `Explore TrustPass businesses and products in the ${category.name} category.`;
+
+  return {
+    ...createPageMetadata(category.name, description),
+    alternates: {
+      canonical: `/categories/${encodeURIComponent(category.id)}`,
+    },
+  };
+}
+
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { id } = await params;
-  const response = await getCategoryById(id);
+  const response = await getCategory(id);
 
   if (!response.success || !response.data) {
     notFound();
