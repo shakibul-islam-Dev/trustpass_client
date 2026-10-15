@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import { LockKeyhole, Mail, Phone, ShoppingBag, Store, UserRound } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
@@ -91,6 +92,7 @@ export default function RegistrationForm() {
 
     if (!isApiConfigured()) {
       setErrorMessage("API URL is not configured.");
+      toast.error("API URL is not configured.");
       return;
     }
 
@@ -120,51 +122,53 @@ export default function RegistrationForm() {
         // sign in.
         if (response.status === 409) {
           setEmailTaken(true);
-          setErrorMessage(
+          const message =
             "That email already has an account. Try signing in instead, or use " +
-              "a different email address.",
-          );
+            "a different email address.";
+          setErrorMessage(message);
+          toast.error(message);
           return;
         }
 
         setEmailTaken(false);
-        setErrorMessage(
-          await readApiError(
-            "register",
-            response,
-            "Registration could not be completed.",
-          ),
+        const message = await readApiError(
+          "register",
+          response,
+          "Registration could not be completed.",
         );
+        setErrorMessage(message);
+        toast.error(message);
         return;
       }
 
       const body = await response.clone().json().catch(() => null);
 
       if (!body?.success) {
-        setErrorMessage(
-          safeApiMessage({
-            status: response.status,
-            fallback: "Registration could not be completed.",
-          }),
-        );
+        const message = safeApiMessage({
+          status: response.status,
+          fallback: "Registration could not be completed.",
+        });
+        setErrorMessage(message);
+        toast.error(message);
         return;
       }
 
       // The account exists but cannot sign in until it is verified, so go
       // straight to the OTP step rather than bouncing to login.
       setOtpEmail(email);
-      setNotice(
+      const message =
         "Account created. Enter the 6-digit code we sent to your email to " +
-          "finish setting up your account.",
-      );
+        "finish setting up your account.";
+      setNotice(message);
+      toast.success("Account created. Check your email for the code.");
     } catch (error: unknown) {
-      setErrorMessage(
-        safeThrownError(
-          "register",
-          error,
-          "Something went wrong while registering.",
-        ),
+      const message = safeThrownError(
+        "register",
+        error,
+        "Something went wrong while registering.",
       );
+      setErrorMessage(message);
+      toast.error(message);
     }
   };
 
@@ -183,31 +187,32 @@ export default function RegistrationForm() {
       const result = await verifyOtp(otpEmail, otp);
 
       if (!result.ok) {
-        setErrorMessage(
-          result.invalidCode
-            ? "That code is not right or has expired. Request a new one below."
-            : await readApiError(
-                "verify-otp",
-                result.response,
-                "Could not verify that code.",
-              ),
-        );
+        const message = result.invalidCode
+          ? "That code is not right or has expired. Request a new one below."
+          : await readApiError(
+              "verify-otp",
+              result.response,
+              "Could not verify that code.",
+            );
+        setErrorMessage(message);
+        toast.error(message);
         return;
       }
 
       // A correct code verifies the address AND signs the user in, so there is no
       // need to ask for the password again.
       setNotice("Email verified. Taking you to your dashboard...");
+      toast.success("Email verified. Welcome to TrustPass.");
       router.replace(homeForRole(result.user?.role as ApiRole | undefined));
       router.refresh();
     } catch (error: unknown) {
-      setErrorMessage(
-        safeThrownError(
-          "verify-otp",
-          error,
-          "Could not verify that code.",
-        ),
+      const message = safeThrownError(
+        "verify-otp",
+        error,
+        "Could not verify that code.",
       );
+      setErrorMessage(message);
+      toast.error(message);
     } finally {
       setIsVerifying(false);
     }
@@ -224,23 +229,28 @@ export default function RegistrationForm() {
       const response = await resendOtp(otpEmail);
 
       if (!response.ok) {
-        setErrorMessage(
-          await readApiError(
-            "resend-otp",
-            response,
-            "Could not send a new code. Try again in a moment.",
-          ),
+        const message = await readApiError(
+          "resend-otp",
+          response,
+          "Could not send a new code. Try again in a moment.",
         );
+        setErrorMessage(message);
+        toast.error(message);
         return;
       }
 
       setNotice(
         "If that account is still unverified, a new code is on its way.",
       );
+      toast.success("A new verification code is on its way.");
     } catch (error: unknown) {
-      setErrorMessage(
-        safeThrownError("resend-otp", error, "Could not send a new code."),
+      const message = safeThrownError(
+        "resend-otp",
+        error,
+        "Could not send a new code.",
       );
+      setErrorMessage(message);
+      toast.error(message);
     } finally {
       setIsResending(false);
     }

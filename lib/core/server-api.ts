@@ -1,21 +1,3 @@
-/**
- * Server-side API helper.
- *
- * The browser calls the API through the `/api/*` rewrite in `next.config.ts`,
- * so the session cookie is first-party and travels automatically. Server
- * Components do not pass through that rewrite, so they must (a) use the
- * absolute API origin and (b) forward the incoming request's cookies
- * themselves.
- *
- * Importing `next/headers` here makes this module server-only: any accidental
- * import from a Client Component fails the build rather than shipping a broken
- * fetch. Server Components use this to load data before the browser renders,
- * removing the client-side "mount, then fetch" round-trip.
- *
- * Like the browser helpers, every call returns `{ ok, message, data }` and
- * never throws — a failed read is data the caller can render around.
- */
-
 import { cookies } from "next/headers";
 
 import { SERVER_URL } from "@/lib/core/env";

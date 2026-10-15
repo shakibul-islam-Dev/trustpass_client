@@ -96,7 +96,7 @@ export default function HomeTrustGuide() {
       <section className="bg-muted/30 px-4 py-16 text-foreground sm:px-6 sm:py-20 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-10 overflow-hidden rounded-3xl border border-border/80 bg-card shadow-sm lg:grid-cols-[1fr_0.9fr] lg:items-stretch">
           <div className="p-6 sm:p-10 lg:py-12">
-            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+            <span className="inline-flex items-center gap-2 rounded-full bg-success-soft px-3 py-1 text-xs font-semibold uppercase tracking-wider text-success">
               <BadgeCheck className="size-3.5" aria-hidden="true" />
               Your quick review
             </span>
@@ -118,7 +118,7 @@ export default function HomeTrustGuide() {
             </Link>
           </div>
 
-          <div className="relative overflow-hidden border-t border-border bg-gradient-to-br from-primary/5 via-background to-emerald-500/10 p-6 sm:p-10 lg:border-l lg:border-t-0">
+          <div className="relative overflow-hidden border-t border-border bg-gradient-to-br from-primary/5 via-background to-success/10 p-6 sm:p-10 lg:border-l lg:border-t-0">
             <div
               aria-hidden="true"
               className="absolute -right-16 -top-20 size-56 rounded-full border border-primary/10"
@@ -129,14 +129,14 @@ export default function HomeTrustGuide() {
             />
             <div className="relative mx-auto max-w-md space-y-3">
               <div className="animate-rise flex items-center gap-3 rounded-xl border border-border/80 bg-card/90 p-4 shadow-sm backdrop-blur-sm motion-reduce:animate-none">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-success-soft text-success">
                   <BadgeCheck className="size-5" aria-hidden="true" />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-semibold">Verification status</span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">Check the business profile</span>
                 </span>
-                <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                <span className="rounded-full bg-success-soft px-2.5 py-1 text-xs font-semibold text-success">
                   Review
                 </span>
               </div>
@@ -151,7 +151,7 @@ export default function HomeTrustGuide() {
                 <span className="text-xs font-medium text-muted-foreground">/ 100</span>
               </div>
               <div className="animate-rise flex items-center gap-3 rounded-xl border border-border/80 bg-card/90 p-4 shadow-sm backdrop-blur-sm motion-reduce:animate-none [animation-delay:240ms]">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-warning-soft text-warning">
                   <Search className="size-5" aria-hidden="true" />
                 </span>
                 <span className="min-w-0 flex-1">

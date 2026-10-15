@@ -74,7 +74,7 @@ export const TrustRuleTable = ({
                 {/* Points */}
                 <TableCell>
                   <span className={`font-semibold ${
-                    rule.points > 0 ? 'text-green-500' : 'text-destructive'
+                    rule.points > 0 ? 'text-success' : 'text-destructive'
                   }`}>
                     {rule.points > 0 ? `+${rule.points}` : rule.points}
                   </span>

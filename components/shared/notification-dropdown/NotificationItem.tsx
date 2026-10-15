@@ -23,9 +23,9 @@ export const NotificationItem = ({
   const getIconColor = () => {
     switch (notification.type) {
       case "REPORT_UPDATE":
-        return "text-blue-500 bg-blue-500/10";
+        return "text-primary bg-primary-soft";
       case "TRUST_SCORE":
-        return "text-green-500 bg-green-500/10";
+        return "text-success bg-success-soft";
       case "SYSTEM":
         return "text-muted-foreground bg-muted";
       default:

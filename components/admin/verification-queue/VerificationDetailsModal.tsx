@@ -33,6 +33,7 @@ import {
   type IVerificationDocument,
 } from "@/lib/admin_api/get-verifications";
 import { reviewDocument } from "@/lib/admin_action/documents_action";
+import { TrustScorePanel } from "@/components/admin/verification-queue/TrustScorePanel";
 
 interface VerificationDetailsModalProps {
   isOpen: boolean;
@@ -45,10 +46,12 @@ interface VerificationDetailsModalProps {
 const getStatusVariant = (status: string | undefined) => {
   switch (String(status || "PENDING").toUpperCase()) {
     case "APPROVED":
-      return "default";
+      return "success";
     case "REJECTED":
     case "SUSPENDED":
-      return "destructive";
+      return "danger";
+    case "PENDING":
+      return "warning";
     default:
       return "secondary";
   }
@@ -90,7 +93,7 @@ const CopyableId = ({ id, label }: { id: string; label: string }) => {
     >
       <span>{id}</span>
       {copied ? (
-        <Check className="h-3 w-3 text-green-500 shrink-0" />
+        <Check className="h-3 w-3 text-success shrink-0" />
       ) : (
         <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition shrink-0" />
       )}
@@ -178,6 +181,9 @@ export const VerificationDetailsModal = ({
   };
 
   const trustScore = request.trustScore ?? 0;
+  // The API only stamps `trustScoreUpdatedAt` once it calculates a score, so
+  // null means "never scored" — not "scored 0".
+  const hasTrustScore = request.trustScoreUpdatedAt != null;
   const approvedCount = documents.filter(
     (d) => String(d.status).toUpperCase() === "APPROVED"
   ).length;
@@ -213,14 +219,16 @@ export const VerificationDetailsModal = ({
             </Badge>
             <Badge
               variant={
-                trustScore >= 80
-                  ? "default"
-                  : trustScore >= 50
-                  ? "secondary"
-                  : "destructive"
+                hasTrustScore
+                  ? trustScore >= 80
+                    ? "success"
+                    : trustScore >= 50
+                    ? "warning"
+                    : "danger"
+                  : "outline"
               }
             >
-              Trust: {trustScore}
+              Trust: {hasTrustScore ? trustScore : "—"}
             </Badge>
             {hasDocuments && (
               <Badge variant="outline">
@@ -228,6 +236,14 @@ export const VerificationDetailsModal = ({
               </Badge>
             )}
           </div>
+
+          {/* Trust score — real API reads + MODERATOR/ADMIN recalculation */}
+          {request.businessId && (
+            <TrustScorePanel
+              key={request.businessId}
+              businessId={request.businessId}
+            />
+          )}
 
           {/* Business Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -288,7 +304,7 @@ export const VerificationDetailsModal = ({
               {/* Document summary */}
               <div className="flex gap-2 flex-wrap text-xs">
                 <Badge variant="outline" className="gap-1">
-                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  <CheckCircle2 className="h-3 w-3 text-success" />
                   {approvedCount} Approved
                 </Badge>
                 <Badge variant="outline" className="gap-1">
@@ -335,9 +351,9 @@ export const VerificationDetailsModal = ({
                           key={doc.id}
                           className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-md transition ${
                             isApproved
-                              ? "bg-green-50/50 border-green-200 dark:bg-green-950/20 dark:border-green-900"
+                              ? "bg-success-soft border-success/30"
                               : isRejected
-                              ? "bg-red-50/50 border-red-200 dark:bg-red-950/20 dark:border-red-900"
+                              ? "bg-danger-soft border-danger/30"
                               : "bg-muted/30 border-border"
                           }`}
                         >
@@ -386,8 +402,8 @@ export const VerificationDetailsModal = ({
                               }
                               className={
                                 isApproved
-                                  ? "opacity-40 cursor-not-allowed text-green-600"
-                                  : "text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                                  ? "opacity-40 cursor-not-allowed text-success"
+                                  : "text-success hover:bg-success-soft"
                               }
                             >
                               {isReviewing ? (
@@ -444,8 +460,8 @@ export const VerificationDetailsModal = ({
             <div
               className={`text-xs p-3 rounded-md border flex items-start gap-2 ${
                 isRequestApproved
-                  ? "bg-green-50 border-green-200 text-green-900 dark:bg-green-950/30 dark:border-green-900 dark:text-green-100"
-                  : "bg-red-50 border-red-200 text-red-900 dark:bg-red-950/30 dark:border-red-900 dark:text-red-100"
+                  ? "bg-success-soft border-success/30 text-success"
+                  : "bg-danger-soft border-danger/30 text-danger"
               }`}
             >
               {isRequestApproved ? (

@@ -84,7 +84,7 @@ const CopyableId = ({ id, label }: { id: string; label: string }) => {
     >
       <span>{id}</span>
       {copied ? (
-        <Check className="h-3 w-3 text-green-500 shrink-0" />
+        <Check className="h-3 w-3 text-success shrink-0" />
       ) : (
         <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition shrink-0" />
       )}

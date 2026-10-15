@@ -28,9 +28,9 @@ export const CustomerNotificationList = ({
   const getNotificationIcon = (type: Notification["type"]) => {
     switch (type) {
       case "REPORT_UPDATE":
-        return <Bell className="h-4 w-4 text-blue-500" />;
+        return <Bell className="h-4 w-4 text-primary" />;
       case "TRUST_SCORE":
-        return <Bell className="h-4 w-4 text-green-500" />;
+        return <Bell className="h-4 w-4 text-success" />;
       case "SYSTEM":
         return <Bell className="h-4 w-4 text-muted-foreground" />;
       default:
@@ -95,13 +95,14 @@ export const CustomerNotificationList = ({
           {notifications.map((notification) => (
             <Card
               key={notification.id}
+              size="sm"
               className={`transition-colors ${
                 !notification.isRead
                   ? "border-primary/30 bg-primary/5"
                   : "hover:bg-muted/50"
               }`}
             >
-              <CardContent className="p-4">
+              <CardContent>
                 <div className="flex items-start gap-3">
                   {/* Icon */}
                   <div

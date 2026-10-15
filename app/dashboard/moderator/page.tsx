@@ -82,26 +82,26 @@ export default function ModeratorOverviewPage() {
           title="Total Verifications"
           value={isLoading ? "..." : stats.totalVerifications}
           icon={ShieldCheck}
-          colorClass="bg-blue-500/10 text-blue-500"
+          colorClass="bg-primary-soft text-primary"
         />
         <StatCard
           title="Pending Verifications"
           value={isLoading ? "..." : stats.pendingVerifications}
           icon={Clock}
-          colorClass="bg-yellow-500/10 text-yellow-500"
+          colorClass="bg-warning-soft text-warning"
           description="Awaiting your review"
         />
         <StatCard
           title="Total Reports"
           value={isLoading ? "..." : stats.totalReports}
           icon={Flag}
-          colorClass="bg-purple-500/10 text-purple-500"
+          colorClass="bg-muted text-muted-foreground"
         />
         <StatCard
           title="Pending Reports"
           value={isLoading ? "..." : stats.pendingReports}
           icon={TrendingUp}
-          colorClass="bg-destructive/10 text-destructive"
+          colorClass="bg-danger-soft text-danger"
           description="Awaiting action"
         />
       </div>
@@ -263,16 +263,16 @@ function StatCard({
 }: StatCardProps) {
   return (
     <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
+      <CardContent>
+        <div className="flex items-center justify-between gap-4">
           <div className="space-y-1">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-3xl font-bold">{value}</p>
+            <p className="text-2xl font-bold tracking-tight tabular-nums sm:text-3xl">{value}</p>
             {description && (
               <p className="text-xs text-muted-foreground">{description}</p>
             )}
           </div>
-          <div className={`p-3 rounded-full ${colorClass}`}>
+          <div className={`shrink-0 rounded-full p-3 ${colorClass}`}>
             <Icon className="h-5 w-5" />
           </div>
         </div>
