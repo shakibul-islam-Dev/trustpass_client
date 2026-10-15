@@ -1,7 +1,17 @@
+import type { Metadata } from "next";
 import SearchHero from "@/components/marketplace/SearchHero";
 import Categories from "@/components/marketplace/Categories";
 import HomeTrustGuide from "@/components/marketplace/HomeTrustGuide";
 import { getCategories } from "@/lib/categories-api";
+import HowItWorks from "@/components/home/HowItWorks";
+import WhyTrustPass from "@/components/home/WhyTrustPass";
+import CTABanner from "@/components/home/CTABanner";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/",
+  },
+};
 
 export const dynamic = "force-dynamic";
 

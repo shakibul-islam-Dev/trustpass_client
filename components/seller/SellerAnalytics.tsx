@@ -112,12 +112,17 @@ export default function SellerAnalytics() {
     const verified = businesses.filter(
       (business) => business.verificationStatus === "VERIFIED",
     ).length;
-    const averageTrust = businesses.length
+    // `trustScoreUpdatedAt` is null until the API calculates a score, so only
+    // scored businesses belong in the average — never-scored ones are not 0s.
+    const scored = businesses.filter(
+      (business) => business.trustScoreUpdatedAt != null,
+    );
+    const averageTrust = scored.length
       ? Math.round(
-          businesses.reduce((total, business) => total + business.trustScore, 0) /
-            businesses.length,
+          scored.reduce((total, business) => total + business.trustScore, 0) /
+            scored.length,
         )
-      : 0;
+      : null;
 
     return { published, outOfStock, inventoryValue, verified, averageTrust };
   }, [businesses, products]);
@@ -240,8 +245,8 @@ export default function SellerAnalytics() {
             <SellerStatCard
               icon={ShieldCheck}
               label="Average trust"
-              value={`${stats.averageTrust}/100`}
-              hint="Across all businesses"
+              value={stats.averageTrust == null ? "—" : `${stats.averageTrust}/100`}
+              hint="Across scored businesses"
               tone="warning"
             />
           </div>
@@ -346,30 +351,43 @@ export default function SellerAnalytics() {
                 <CardDescription>Verification status and trust score of each business.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {businesses.map((business) => (
-                  <div
-                    key={business.id}
-                    className="rounded-xl border border-border bg-background/40 p-3"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {business.name}
-                      </p>
-                      <SellerStatusBadge status={business.verificationStatus} />
-                    </div>
-                    <div className="mt-3 flex items-center gap-3">
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full rounded-full bg-primary transition-all"
-                          style={{ width: `${Math.min(100, Math.max(0, business.trustScore))}%` }}
-                        />
+                {businesses.map((business) => {
+                  // `trustScoreUpdatedAt` is null until the API calculates at
+                  // least once — that is "not scored yet", not a score of 0.
+                  const hasScore = business.trustScoreUpdatedAt != null;
+                  const score = Math.min(100, Math.max(0, business.trustScore));
+                  return (
+                    <div
+                      key={business.id}
+                      className="rounded-xl border border-border bg-background/40 p-3"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {business.name}
+                        </p>
+                        <SellerStatusBadge status={business.verificationStatus} />
                       </div>
-                      <span className="shrink-0 text-xs font-semibold tabular-nums text-foreground">
-                        {business.trustScore}/100
-                      </span>
+                      <div className="mt-3 flex items-center gap-3">
+                        <div
+                          className="h-2 w-full overflow-hidden rounded-full bg-muted"
+                          role={hasScore ? "meter" : undefined}
+                          aria-label={hasScore ? `${business.name} trust score` : undefined}
+                          aria-valuemin={hasScore ? 0 : undefined}
+                          aria-valuemax={hasScore ? 100 : undefined}
+                          aria-valuenow={hasScore ? score : undefined}
+                        >
+                          <div
+                            className="h-full rounded-full bg-primary transition-all"
+                            style={{ width: hasScore ? `${score}%` : "0%" }}
+                          />
+                        </div>
+                        <span className="shrink-0 text-xs font-semibold tabular-nums text-foreground">
+                          {hasScore ? `${score}/100` : "Not scored yet"}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
           </div>

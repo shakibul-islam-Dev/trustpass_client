@@ -33,7 +33,7 @@ export default function ProductCard({ product, business }: ProductCardProps) {
           <div className="absolute top-3 right-3 flex items-center gap-1.5">
             <span
               className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold backdrop-blur ${
-                isInStock ? 'bg-emerald-500/90 text-white' : 'bg-rose-500/90 text-white'
+                isInStock ? 'bg-success/90 text-success-foreground' : 'bg-danger/90 text-danger-foreground'
               }`}
             >
               {isInStock ? `In Stock (${product.stock})` : 'Out of Stock'}

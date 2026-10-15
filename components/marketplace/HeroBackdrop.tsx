@@ -108,8 +108,8 @@ export default function HeroBackdrop() {
 
       {/* Aurora blobs */}
       <div className="absolute -left-24 -top-28 h-[24rem] w-[24rem] animate-drift rounded-full bg-primary/25 blur-[100px] motion-reduce:animate-none" />
-      <div className="absolute -right-20 top-8 h-[28rem] w-[28rem] animate-drift-alt rounded-full bg-sky-500/20 blur-[110px] motion-reduce:animate-none" />
-      <div className="absolute bottom-[-6rem] left-1/3 h-64 w-64 animate-drift rounded-full bg-indigo-400/15 blur-[90px] motion-reduce:animate-none" />
+      <div className="absolute -right-20 top-8 h-[28rem] w-[28rem] animate-drift-alt rounded-full bg-primary/20 blur-[110px] motion-reduce:animate-none" />
+      <div className="absolute bottom-[-6rem] left-1/3 h-64 w-64 animate-drift rounded-full bg-primary-deep/20 blur-[90px] motion-reduce:animate-none" />
 
       {/* Cursor spotlight — position and opacity are driven by the rAF lerp */}
       <div className="absolute inset-0 bg-[radial-gradient(460px_circle_at_var(--spot-x,-500px)_var(--spot-y,-500px),color-mix(in_oklab,var(--primary)_18%,transparent),transparent_72%)] opacity-[var(--spot,0)] transition-opacity duration-500" />

@@ -1,350 +1,377 @@
-# 🌿 TrustPass — Design Blueprint (HeroUI v3-inspired, Pure Tailwind v4)
+# TrustPass — Complete Project-Wide UI/UX Modernization Context
 
-> Owner: **Shakibul** · Branch: `shakibul`
-> Scope: UI/UX for the features listed in `PROJECT_CONTEXT.md` §15.
-> Constraint: **Do NOT install the HeroUI package.** Everything below is built with the
-> project's existing `tailwindcss@4` + `@shadcn/react` primitives (base-ui powered) and hand-written classes.
->
-> This document is the single source of truth. Each phase is implemented one file at a
-> time, tested with `next build`, and never touches another developer's files without permission.
+## 1. Project Objective
 
----
+I want to modernize the entire TrustPass project into a polished, premium, modern, and exceptionally smooth user interface inspired by Instagram's fluid user experience and HeroUI v3's clean design philosophy.
 
-## 1. Design Direction
+This is a **full-project UI/UX consistency and responsiveness task**, not an isolated component redesign.
 
-**"Calm, confident, trustworthy."** We mirror HeroUI v3's philosophy:
+Every existing page, section, layout, component, modal, dialog, CTA, button, form, input, dropdown, navigation item, card, table, badge, notification, heading, paragraph, icon, and interactive element must follow a unified design system.
 
-1. **Semantic intent over visual style** — variants are named by hierarchy
-   (`primary`, `secondary`, `tertiary`, `danger`), never by texture (`solid`, `flat`).
-2. **One accent, used sparingly** — a single blue accent drives attention to exactly one
-   primary action per screen. Everything else is a quiet neutral.
-3. **Neutral backbone, elevation by surface, not color** — hierarchy comes from
-   `surface`, `surface-secondary`, `surface-tertiary` and soft shadows.
-4. **Smooth + eye-catching without noise** — every interaction has a 150–200ms eased
-   transition; pressed controls scale to `0.97`; focus is a 2px ring.
-5. **Accessibility as foundation** — WCAG-AA contrast, keyboard focus rings, semantic HTML.
-6. **Responsive by default** — mobile-first grids, fluid type (clamp), wrap-friendly controls.
-7. **Composition over configuration** — reuse the existing `components/ui/*` primitives.
-8. **Predictable** — same size set (`sm`, `md`, `lg`), same states everywhere.
+The final product should feel professional, trustworthy, lightweight, visually consistent, mobile-friendly, and smooth on every supported screen size.
 
-### Why this looks "HeroUI"
-- Barely-there neutral background, white/`surface` cards, hairline `--border`.
-- A saturated-but-deep blue accent with a subtle colored focus ring.
-- Soft layered shadows in light mode; **no shadows in dark mode** (HeroUI does this too).
-- Rounded radius (`0.5rem` base, fields `0.75rem`), generous padding, tight headings.
+Use Instagram as inspiration for interaction smoothness and responsive behavior, not as a request to copy its branding or exact interface. TrustPass must retain its own identity as a digital trust platform.
 
----
+## 2. Mandatory Technical Constraints
 
-## 2. Design Tokens (Tailwind v4 `@theme`)
+- Use the project's existing `tailwindcss@4` setup.
+- Reuse the existing `@shadcn/react` primitives and current UI component architecture.
+- Use Tailwind CSS utilities and shared CSS design tokens wherever appropriate.
+- Do NOT install the HeroUI package.
+- Do NOT replace the existing framework, styling architecture, or component library without permission.
+- Do NOT introduce unnecessary dependencies.
+- Preserve existing API integrations, authentication, business logic, routes, permissions, form validation, and functional behavior.
+- Do NOT modify backend/server code as part of this UI-only task.
+- Keep the code readable, maintainable, reusable, and easy for a junior developer to understand.
+- Reuse existing shared components instead of creating duplicate implementations.
+- Preserve existing project conventions and established functionality.
 
-> Format follows the existing `app/globals.css` (`@theme inline` + CSS variables), so this
-> drops into the current file without a rewrite. Colors are the **real HeroUI v3 tokens**.
+## 3. Unified Design System
 
-### 2.1 Primitives (never change between modes)
-| Token | Light & Dark |
-|---|---|
-| `--white` | `oklch(100% 0 0)` |
-| `--black` | `oklch(0% 0 0)` |
-| `--snow` | `oklch(0.9911 0 0)` |
-| `--eclipse` | `oklch(0.2103 0.0059 285.89)` |
+First, audit the existing project and establish a single source of truth for visual styling.
 
-### 2.2 Light theme
-| Token | Value |
-|---|---|
-| `--background` | `oklch(0.9702 0 0)` |
-| `--foreground` | `var(--eclipse)` |
-| `--surface` | `var(--white)` |
-| `--surface-secondary` | `oklch(0.9524 0.0013 286.37)` |
-| `--surface-tertiary` | `oklch(0.9373 0.0013 286.37)` |
-| `--muted` | `oklch(0.5517 0.0138 285.94)` |
-| `--default` | `oklch(94% 0.001 286.375)` |
-| **`--accent`** | **`oklch(0.6204 0.195 253.83)`** |
-| `--accent-foreground` | `var(--snow)` |
-| `--success` | `oklch(0.7329 0.1935 150.81)` |
-| `--warning` | `oklch(0.7819 0.1585 72.33)` |
-| `--danger` | `oklch(0.6532 0.2328 25.74)` |
-| `--border` / `--separator` | `oklch(92% 0.004 286.32)` |
-| `--field-background` | `var(--white)` |
-| `--field-placeholder` | `var(--muted)` |
-| `--backdrop` | `rgba(0, 0, 0, 0.5)` |
-| `--focus` | `var(--accent)` |
+Define and consistently use design tokens for:
 
-### 2.3 Dark theme
-| Token | Value |
-|---|---|
-| `--background` | `oklch(12% 0.005 285.823)` |
-| `--foreground` | `var(--snow)` |
-| `--surface` | `oklch(0.2103 0.0059 285.89)` |
-| `--surface-secondary` | `oklch(0.257 0.0037 286.14)` |
-| `--surface-tertiary` | `oklch(0.2721 0.0024 247.91)` |
-| `--muted` | `oklch(70.5% 0.015 286.067)` |
-| `--default` | `oklch(27.4% 0.006 286.033)` |
-| `--default-foreground` | `var(--snow)` |
-| `--accent` | `oklch(0.6204 0.195 253.83)` |
-| `--border` / `--separator` | `oklch(22% 0.006 286.033)` |
-| `--field-background` | `var(--default)` |
-| `--backdrop` | `rgba(0, 0, 0, 0.6)` |
+- Primary brand color and accent colors.
+- Backgrounds, foregrounds, surfaces, and nested surfaces.
+- Text colors and muted text.
+- Borders, separators, and focus rings.
+- Success, warning, danger, and informational states.
+- Border radius and control shapes.
+- Spacing, padding, margins, and component gaps.
+- Typography, font sizes, line heights, and font weights.
+- Shadows and elevation.
+- Transition durations and easing functions.
+- Disabled, loading, hover, focus, pressed, and selected states.
 
-### 2.4 Shape, spacing, shadow, motion
-| Token | Value |
-|---|---|
-| `--radius` | `0.5rem` |
-| `--field-radius` | `calc(var(--radius) * 1.5)` = `0.75rem` |
-| `--spacing` | `0.25rem` |
-| `--border-width` | `1px` |
-| `--ring-offset-width` | `2px` |
-| `--disabled-opacity` | `0.5` |
-| `--surface-shadow` (light) | `0 2px 4px 0 rgb(0 0 0 / 0.04), 0 1px 2px 0 rgb(0 0 0 / 0.06), 0 0 1px 0 rgb(0 0 0 / 0.06)` |
-| `--overlay-shadow` (light) | `0 4px 16px 0 rgb(24 24 27 / 0.08), 0 8px 24px 0 rgb(24 24 27 / 0.09)` |
-| shadows (dark) | `transparent` (none) — elevation by surface only |
-| **motion** | `--duration-fast: 150ms; --duration-base: 200ms;` ease `cubic-bezier(0.4, 0, 0.2, 1)` |
-| press scale | `--press-scale: 0.97` |
+Use the existing design blueprint and CSS variables where appropriate. Map the brand blue consistently to the project's existing primary-color conventions. Avoid introducing conflicting token names or duplicating existing variables.
 
-Derived pseudo-tokens (via `color-mix(in oklab, ...)`):
-- `--accent-hover` = accent 90% + accent-foreground 10%
-- `--accent-soft` = accent 15% + transparent · `--accent-soft-hover` = 20%
-- same soft/hover recipe for `--success`, `--warning`, `--danger`
+Use a restrained, premium visual language: clean neutral surfaces, readable typography, subtle borders, carefully applied brand colors, balanced whitespace, and consistent component shapes.
 
-### 2.5 Tailwind mapping (`@theme inline`)
-```css
---color-background: var(--background);
---color-foreground: var(--foreground);
---color-surface: var(--surface);
---color-surface-secondary: var(--surface-secondary);
---color-surface-tertiary: var(--surface-tertiary);
---color-muted: var(--muted);
---color-default: var(--default);
---color-default-foreground: var(--default-foreground);
---color-accent: var(--accent);
---color-accent-foreground: var(--accent-foreground);
---color-success: var(--success);
---color-warning: var(--warning);
---color-danger: var(--danger);
---color-border: var(--border);
---color-separator: var(--separator);
---color-focus: var(--focus);
---radius-md: var(--radius);        /* 0.5rem */
---radius-lg: var(--field-radius);  /* 0.75rem */
---shadow-surface: var(--surface-shadow);
---shadow-overlay: var(--overlay-shadow);
-```
+Every color must have a clear semantic purpose. Avoid random colors, excessive gradients, unnecessary shadows, and inconsistent styling between pages.
 
-> **Migration note:** in this codebase (shadcn convention) the brand CTA is **`--primary`**
-> and `--accent` is the *neutral hover highlight* used by menus/dropdowns. So the HeroUI
-> **accent blue maps to `--primary`**, and `--accent` stays neutral. All button/chip specs
-> below use `bg-primary` (brand) / `bg-accent` (hover) accordingly.
+Support both light and dark themes if they already exist in the project.
 
----
+## 4. Complete Color and Visual Consistency
 
-## 3. Typography
+Review every color throughout the entire application.
 
-| Role | Spec |
-|---|---|
-| Base body | Geist Sans / Inter (`--font-sans`), fluid `--text-base-fluid`, `line-height ~1.5`, `antialiased` |
-| Headings | Geist Sans (`--font-heading`), `tracking -0.02em`, `text-wrap: balance`, `line-height 1.15` |
-| Display | `--text-5xl-fluid` → `clamp(2.75rem, 2.1rem + 2.5vw, 3.75rem)`, weight 800 |
-| H1 | `--text-4xl-fluid`, weight 800 · H2 `3xl`/700 · H3 `2xl`/700 · H4 `xl`/600 · H5 `base`/600 · H6 `sm`/600 |
-| Numeric / scores | `tabular-nums` + `font-mono` for trust scores, counts, prices |
-| Micro-labels | `text-xs`, `font-semibold`, `uppercase`, `tracking-wide`, `text-muted` — used above form fields |
-| Links | underline on hover only, `text-foreground`, `--link` |
+This includes:
 
-The fluid scale (already added in `globals.css`): `--text-xs-fluid` … `--text-5xl-fluid` (clamp-based).
+- Page backgrounds and section backgrounds.
+- Cards, dashboards, sidebars, navigation bars, and dropdowns.
+- Primary, secondary, outline, ghost, and destructive buttons.
+- CTA banners and highlighted sections.
+- Modal backdrops and dialog surfaces.
+- Input backgrounds, placeholders, borders, and focus states.
+- Text, headings, links, and helper descriptions.
+- Status badges, verification states, and notifications.
+- Tables, charts, empty states, loading skeletons, and error messages.
+- Icons, dividers, hover backgrounds, and selected states.
 
----
+Replace arbitrary one-off styling with reusable semantic tokens wherever possible.
 
-## 4. Component Specs
+Maintain appropriate text/background contrast. Use a consistent brand accent and keep primary actions visually distinct from secondary actions.
 
-> All classes below assume token mapping from §2.5. Existing `components/ui/*` primitives
-> stay; these are the *look* we apply.
+## 5. Smooth Interaction and Motion
 
-### 4.1 Button (semantic variants — 1 primary per screen)
-| Variant | Spec |
-|---|---|
-| `primary` (accent) | `bg-primary text-primary-foreground` (from `--primary` = HeroUI blue), radius `--field-radius`, `font-medium`, `py-2.5 px-4` (md) |
-| `secondary` (default) | `bg-default text-default-foreground hover: [96/4 mix]` |
-| `tertiary` (outline) | `border border-border bg-transparent hover:bg-surface-secondary` (cancel/skip) |
-| `danger` | `bg-danger text-danger-foreground hover:bg-danger/90` + `--danger-soft` ghost variant |
-| press state | `active:scale-[0.97]` + `transition-[transform,background-color] duration-150` |
-| disabled | `opacity-50 cursor-not-allowed` |
-| loading | inline `Spinner` + text swap, width preserved |
+All interactive components should feel fluid and predictable, similar to the responsiveness of a well-crafted modern social application.
 
-### 4.2 Form field / Input
-| Part | Spec |
-|---|---|
-| wrapper | `bg-surface` (light) / `bg-field` (dark) |
-| field | `--field-radius`, `px-3.5 py-2.5`, `text-base-fluid`, `placeholder:text-muted`, hairline `border-border` (light), **no border in dark** |
-| focus | 2px accent ring: `focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2` |
-| label | `text-sm font-medium text-foreground`, optional `text-xs uppercase` micro style |
-| helper/description | `text-sm text-muted` |
-| error | `text-danger` + field `aria-invalid` → `border-danger ring-danger/40` |
-| micro-interaction | `transition-[border-color,box-shadow] duration-150` |
+Use consistent, subtle transitions:
 
-### 4.3 Radio / select-replacement chip (this project uses radios)
-| State | Spec |
-|---|---|
-| unselected | `flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-1.5 text-sm font-medium text-foreground hover:bg-surface-secondary hover:border-separator-secondary` |
-| selected | `border-primary bg-primary text-primary-foreground shadow-surface` |
-| press | `active:scale-[0.97] transition-all duration-150` |
-| keyboard | same focus ring as field |
-| group | `flex flex-wrap gap-2` (wraps on mobile) |
+- Micro-interactions: approximately 150ms.
+- Standard hover and state changes: approximately 150–200ms.
+- Modal and popover transitions: approximately 200ms.
+- Larger transitions: up to 300ms only when justified.
 
-> Form-card variant (used in RegistrationForm): full-width row card `rounded-field border px-4 py-3`, selected → `border-primary bg-primary text-primary-foreground`.
+Use an appropriate easing curve such as `cubic-bezier(0.4, 0, 0.2, 1)`.
 
-### 4.4 Card / Surface
-| Layer | Spec |
-|---|---|
-| plain card | `bg-surface rounded-lg border border-border`, `--shadow-surface` in light / none in dark |
-| hover card | `hover:border-separator hover:shadow-overlay hover:-translate-y-0.5 transition-all duration-200` |
-| interactive row | `px-4 py-3 hover:bg-surface-secondary rounded-md` |
+Apply smooth transitions to relevant properties such as:
 
-### 4.5 Modal / Dialog
-| Part | Spec |
-|---|---|
-| window | `bg-surface rounded-xl shadow-overlay`, max-w per content |
-| backdrop | `bg-backdrop backdrop-blur-[2px]` |
-| header | title `text-lg font-semibold tracking-tight`, close ghost button |
-| enter/exit | opacity + translate-y-2 scale-95 → 100, `duration-200 ease-out` (CSS only) |
-| footer | right-aligned actions: primary + tertiary |
+- Background and text colors.
+- Border colors and shadows.
+- Opacity and transforms.
+- Button press states.
+- Dropdown and popover visibility.
+- Modal and dialog entry/exit.
+- Card hover states.
+- Navigation and tab selection.
+- Focus and validation states.
 
-### 4.6 Table
-| Part | Spec |
-|---|---|
-| container | `rounded-lg border border-border bg-surface overflow-hidden` |
-| head | `bg-surface-secondary text-xs font-semibold uppercase tracking-wide text-muted` |
-| row | `border-t border-separator hover:bg-surface-secondary/60 transition-colors` |
-| cell | `px-4 py-3 text-sm` |
-| responsive | horizontal scroll wrapper: `overflow-x-auto` |
+Use subtle pressed feedback such as `active:scale-[0.97]` when appropriate. Interactive cards may use a slight lift on hover, but avoid excessive movement.
 
-### 4.7 Status badge / chip
-| Intent | Spec |
-|---|---|
-| `default` | `bg-default/80 text-default-foreground` |
-| `success` | `bg-success-soft text-success` |
-| `warning` | `bg-warning-soft text-warning` |
-| `danger` | `bg-danger-soft text-danger` |
-| `accent` | `bg-accent-soft text-accent` |
-| shape | `inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium` |
+Important rules:
 
-### 4.8 Skeleton / loading
-- `animate-pulse bg-surface-tertiary rounded-md` (HeroUI default shimmer optional; pulse is quietest).
+- Do not animate every element unnecessarily.
+- Avoid distracting bouncing, exaggerated zooming, and heavy animations.
+- Do not animate layout properties when a transform or opacity transition is sufficient.
+- Respect `prefers-reduced-motion`.
+- Preserve keyboard interaction and visible keyboard focus.
+- Avoid adding transitions that interfere with existing component behavior.
 
----
+Every interaction should feel intentional, lightweight, and consistent.
 
-## 5. Motion & Interaction Layer
+## 6. Responsive Design — Every Element
 
-Defined once, used everywhere:
+The entire application must be mobile-first and responsive, including individual component dimensions.
 
-```css
-/* token */
---ease: cubic-bezier(0.4, 0, 0.2, 1);           /* 150ms  fast micro-move  */
---duration-fast: 150ms;
---duration-base: 200ms;
---duration-slow: 300ms;
---press-scale: 0.97;
-```
+Responsiveness applies to all of the following:
 
-Rules (in `@layer base` / as utilities):
-1. `transition-[background-color,border-color,color,box-shadow,transform,opacity] duration-150 ease-(--ease)`
-   on all interactive elements.
-2. Pressed controls scale to `0.97` (`:active` / `data-pressed`).
-3. Cards lift `-translate-y-0.5` + softer shadow on hover.
-4. Focus is **keyboard-only**: `:focus-visible` ring, never `:focus` smudges.
-5. Modals/popovers: 200ms fade + 4px vertical drift, `ease-out`.
-6. Route/loading: skeleton pulse, no layout jump.
-7. `prefers-reduced-motion: reduce` → all transitions/animations collapsed (already in `globals.css`).
+- Width and maximum width.
+- Height and minimum height.
+- Margins and padding.
+- Gaps and spacing.
+- Font size and line height.
+- Border radius and border width.
+- Button and input dimensions.
+- Card and modal layouts.
+- Grid and flex arrangements.
+- Icon sizes and alignment.
+- Navigation and sidebar behavior.
+- Tables, charts, forms, and long text.
+- Image aspect ratios and cropping.
 
----
+Use responsive Tailwind utilities such as `sm:`, `md:`, `lg:`, `xl:`, and `2xl:` when appropriate.
 
-## 6. Page-Level Blueprint (Shakibul's scope)
+Prefer fluid typography using `clamp()` and the existing fluid typography tokens. Use flexible widths, `min-w-0`, `max-w-full`, wrapping, responsive grids, and content-aware sizing.
 
-> Layout skeleton = atomic sections so each can be developed + tested alone.
+Avoid unnecessary fixed pixel dimensions. Use fixed dimensions only when there is a clear design or functional reason.
 
-### 6.1 Auth screens (login / register / forgot / reset / change-password)
-```
-┌────────────────────────────────────────────┐
-│ Center card  w-full max-w-md  mx-auto py-12 │
-│  Logo mark (trust-shield)                  │
-│  <h1>  (fluid) + 1-line sub (text-muted)    │
-│  ┌ field ───────────────────────────────┐   │
-│  │ label · input                        │   │
-│  └──────────────────────────────────────┘   │
-│  [radio group where relevant → chips]       │
-│  [options row: "forgot?" right-aligned]     │
-│  [primary button w-full]                    │
-│  [tertiary link: switch screen]             │
-└────────────────────────────────────────────┘
-```
-Responsive: card `px-6 py-8 sm:px-8`; fields full width; radios wrap.
+Test narrow screens, including widths around 320px and 360px, as well as tablet, laptop, and large desktop layouts.
 
-### 6.2 Dashboard layout (seller/buyer)
-- Sidebar `w-64` desktop / slide-over mobile (`SidebarProvider` already in place).
-- Top bar: page title (h1), search, avatar dropdown.
-- Content: `p-4 sm:p-6 lg:p-8`, `space-y-6`, max-w `7xl` centered.
-- Stat cards: 3–4 across → 1 column mobile.
+Acceptance requirements:
 
-### 6.3 Business creation wizard (items #5, #6)
-- Stepper (1 Business → 2 Category → 3 Address → 4 Documents).
-- Category selector = radio chip grid (`flex flex-wrap gap-2`), card selections on mobile.
-- Document upload = dropzone cards with status chip (Pending/Approved/Rejected).
+- No unintended horizontal page overflow.
+- No clipped text, overlapping elements, or broken layouts.
+- No buttons or form controls extending beyond their containers.
+- No unreadable typography on small screens.
+- No modal content that becomes inaccessible on mobile.
+- No dashboard cards that force desktop-width layouts on phones.
+- No navigation elements that become unusable on touch devices.
 
-### 6.4 Profile management UI (item #2, pluggable into a route)
-- Card row: avatar (with camera overlay → item #4 upload) + name/email + role chip.
-- Sections: Personal info (fields), Security (change-password link), Documents.
-- `ProfileManagement.tsx` replaced from stub to this spec.
+For data tables, use a suitable responsive strategy such as horizontal scrolling or an appropriate mobile-specific presentation. Never silently remove important information just to make a layout fit.
 
-### 6.5 Product add/edit/delete (items #10–12)
-- Reuse report-form card style; delete = `AlertDialog` tertiary/danger.
-- Tables keep §4.6 spec + pagination row (§23 later).
+Use touch-friendly interactive targets, preferably around 40–44px or larger where practical.
 
-### 6.6 Payments (items #20–22) — deferred until API contract known
-- Checkout card → success page (accent check + summary) → failure page (warning + retry).
+## 7. Typography and Text Responsiveness
 
----
+Review every text element across the project.
 
-## 7. Responsive Strategy
+This includes page titles, section headings, card titles, body text, helper text, labels, descriptions, table cells, badges, button labels, error messages, empty states, and notifications.
 
-| Breakpoint | Rule |
-|---|---|
-| base | single column, tap-sized controls (`min-h-11`), no side-by-side filters |
-| `sm` (640) | 2-col stat grids, inline nav actions |
-| `md` (768) | filters align, tables scroll horizontally, 3-col grids |
-| `lg` (1024) | sidebar visible, 4-col grids, max-w `7xl` |
-| `xl` (1280)+ | fluid type stops growing (clamp caps) |
+Requirements:
 
-Universal rules:
-- Wrap-friendly controls: `flex flex-wrap gap-2/4` for chips, filters, action rows.
-- `w-full` on touch controls; fixed widths only ≥ `sm`.
-- Fluid typography via clamp scale (done).
-- Touch target ≥ 40px (`min-h-11` / `py-2.5`).
+- Use a consistent typographic hierarchy.
+- Apply fluid heading sizes where appropriate.
+- Maintain comfortable body-text readability.
+- Use suitable line heights and letter spacing.
+- Prevent long words, URLs, and user-generated content from breaking layouts.
+- Use balanced heading wrapping where supported.
+- Keep text aligned and spaced consistently.
+- Ensure sufficient contrast between primary and muted text.
+- Use tabular numerals for appropriate financial figures, counts, and trust scores.
+- Maintain clear visual distinction between headings, descriptions, labels, and actions.
 
----
+Do not make all text the same size. Establish a deliberate hierarchy that remains readable at every breakpoint.
 
-## 8. Implementation Phases (one file at a time, build after each)
+Do not rewrite business content, change product meaning, or alter user-facing copy unnecessarily during visual refactoring.
 
-| Phase | What | Files |
-|---|---|---|
-| **P0 — Started** | Fluid type, heading font, base polish, reduced-motion | `app/globals.css` ✅ |
-| **P1 — Tokens** | Port §2 tokens (accent/surface/success/etc.), keep primary aliases, shadow/radius/motion tokens | `app/globals.css` |
-| **P2 — Primitives** | Apply component look to shared `components/ui/*` (button, input, radio-group, card, dialog, badge, table) | `components/ui/*` |
-| **P3 — Auth flows** | Refresh login/register/forgot/reset/change screens to §6.1 spec (radios already in RegistrationForm) | `components/auth/*`, `components/password/*`, `components/otp/*` |
-| **P4 — Profile** | Build profile management UI + photo upload (#2, #4) | `components/profile/*`, new `app/.../profile/page.tsx` |
-| **P5 — Business** | Business creation form + category selector + dashboard + address + documents (#5–#9) | `components/buisness/*`, `app/dashboard/seller/*` |
-| **P6 — Products** | Product add/edit/delete (#10–#12) | `components/dashboard/*` |
-| **P7 — Polish** | Doc-status indicators (#13), trust badge consistency (#14), tables/pagination (#23), responsive pass (#26) | varied (branch-owned files only) |
+## 8. Buttons, CTA, and Interactive Controls
 
-Each phase: **File → Why → What → Test** per `PROJECT_CONTEXT.md`.
+Create a consistent appearance and interaction model for all buttons and calls to action.
 
----
+Use semantic variants:
 
-## 9. Acceptance Checklist
+- Primary: the main action on a screen.
+- Secondary: an alternative action.
+- Tertiary/outline: a lower-emphasis action.
+- Ghost: subtle navigation or contextual action.
+- Danger: destructive actions.
 
-- [ ] Visual matches HeroUI-v3 mood: neutral base, single accent, soft light shadows, no dark shadows
-- [ ] Semantics over style — variant names are `primary/secondary/tertiary/danger`
-- [ ] All interactive elements: 150–200ms eased transitions + `active:scale-97`
-- [ ] Keyboard-only focus rings (2px accent, offset)
-- [ ] Every screen responsive to ≤ 360px without horizontal scroll
-- [ ] Contrast ≥ WCAG AA on all text/foreground pairs (verified against the OKLCH tokens)
-- [ ] `prefers-reduced-motion` honored
-- [ ] One primary CTA per screen
-- [ ] No HeroUI package installed; pure Tailwind v4
-- [ ] `next build` + `eslint` green after each phase
+Ensure consistent padding, height, typography, radius, icon spacing, disabled states, and loading states.
+
+Primary CTA buttons should be prominent without overpowering the surrounding content. Avoid multiple competing primary actions within the same visual region.
+
+All buttons must have clear hover, focus-visible, pressed, disabled, and loading behavior where relevant.
+
+Preserve their actual functionality. Do not replace working handlers with decorative buttons or introduce placeholder actions.
+
+## 9. Modal, Dialog, Dropdown, and Popover Design
+
+Modernize every existing modal and overlay to follow the same design language.
+
+Requirements:
+
+- Consistent surface colors and border radius.
+- Clear title, description, content, and footer hierarchy.
+- Responsive width and height.
+- Proper internal spacing.
+- Scrollable content when necessary.
+- A subtle backdrop with restrained blur when appropriate.
+- Smooth opacity and transform transitions.
+- Accessible close controls.
+- Correct keyboard and focus behavior.
+- Proper stacking and overlay handling.
+- Mobile-safe positioning and viewport constraints.
+
+Avoid dialogs that overflow the viewport or hide their primary actions below inaccessible content.
+
+Reuse the existing dialog and modal primitives instead of implementing a new modal system unnecessarily.
+
+## 10. Forms, Inputs, and Validation
+
+Apply consistent styling to every form, including authentication, profile management, business creation, document upload, product management, and reporting forms.
+
+Ensure:
+
+- Consistent labels and field spacing.
+- Responsive input widths.
+- Clear placeholder and helper text.
+- Visible keyboard focus.
+- Consistent border and radius.
+- Clear validation and error states.
+- Loading and submission feedback.
+- Disabled-state styling.
+- Proper spacing between fields and actions.
+- Accessible labels and error descriptions.
+
+Preserve all existing validation, API calls, authentication behavior, form state, and submission logic.
+
+Do not make forms visually polished at the cost of usability or accessibility.
+
+## 11. Cards, Dashboards, Tables, and Charts
+
+Standardize the styling of cards and data-heavy interfaces.
+
+Cards should use consistent surface colors, padding, borders, radii, and restrained shadows.
+
+Dashboard layouts should adapt to available space rather than forcing fixed desktop dimensions onto smaller screens.
+
+Ensure:
+
+- Stat cards form responsive grids.
+- Charts resize appropriately and remain readable.
+- Legends and labels do not overlap.
+- Tables remain usable on smaller screens.
+- Status badges use consistent semantic colors.
+- Empty, error, and loading states follow the same design system.
+- Interactive cards provide subtle, consistent feedback.
+- Long values and product names wrap or truncate appropriately without breaking layouts.
+
+Preserve real API data, sorting behavior, calculations, pagination, permissions, and existing dashboard functionality.
+
+## 12. Navigation and Responsive Layout
+
+Standardize the application's navigation, top bars, sidebars, tabs, breadcrumbs, menus, and dashboard content containers.
+
+Desktop layouts should feel spacious and organized. Mobile layouts should prioritize clarity, touch accessibility, and logical content order.
+
+Reuse the existing sidebar provider and navigation architecture. Make sure mobile navigation opens, closes, and behaves correctly without disrupting routes or permissions.
+
+Avoid duplicating navigation components or introducing inconsistent sidebar implementations across user roles.
+
+## 13. Accessibility and Performance
+
+A premium UI must also remain accessible and performant.
+
+- Maintain WCAG AA contrast wherever applicable.
+- Use semantic HTML and accessible names.
+- Preserve keyboard navigation.
+- Use `focus-visible` rather than adding distracting focus decoration to every pointer interaction.
+- Respect reduced-motion preferences.
+- Avoid unnecessary re-renders and expensive animation effects.
+- Prefer CSS transitions for simple interactions.
+- Avoid layout shifts during loading.
+- Preserve image aspect ratios and use appropriate responsive sizing.
+- Do not add heavy dependencies for effects that can be achieved with existing tools.
+
+Smoothness must not come at the expense of performance, accessibility, or functional reliability.
+
+## 14. Implementation Strategy
+
+Do not attempt a blind, massive rewrite of the entire project.
+
+Follow a controlled, incremental workflow.
+
+### Phase 1 — Audit
+
+Inspect the project structure, `app/globals.css`, Tailwind v4 configuration, existing UI primitives, shared layouts, buttons, forms, dialogs, navigation, and representative pages.
+
+Identify inconsistent colors, spacing, typography, radii, transitions, fixed dimensions, duplicated styles, and responsive issues.
+
+Read the existing project context and design blueprint before making changes.
+
+### Phase 2 — Design Tokens
+
+Establish or refine the shared design tokens and theme mappings.
+
+Avoid conflicting variables and preserve the current primary/accent conventions.
+
+### Phase 3 — Shared UI Primitives
+
+Update reusable components first, including buttons, inputs, cards, badges, dialogs, tables, and dropdowns.
+
+Ensure existing variants and component APIs continue to work.
+
+### Phase 4 — Application-Wide Rollout
+
+Apply the shared system incrementally to existing pages and features.
+
+Cover public pages, authentication, dashboards, profiles, business management, products, reports, notifications, and settings wherever these features exist in the current project.
+
+Do not invent new product features or routes just to complete the visual redesign.
+
+### Phase 5 — Responsive and Interaction Pass
+
+Test each changed page across mobile, tablet, laptop, and desktop breakpoints.
+
+Check modal behavior, navigation, hover states, button feedback, forms, tables, charts, overflow, and keyboard focus.
+
+### Phase 6 — Verification
+
+Run the available linting and build checks after each meaningful phase.
+
+Resolve errors introduced by the changes. Check existing imports, component variants, CSS variables, TypeScript types, and route behavior.
+
+Provide a concise summary of completed work, modified files, tests run, and any remaining issues.
+
+## 15. Strict Git and Code Safety Rules
+
+This project has existing development work on the `shakibul` branch.
+
+- Work only within the authorized branch and scope.
+- Never overwrite or discard existing user changes.
+- Never reset, rebase, force-push, or rewrite branch history without explicit permission.
+- Never modify another developer's unrelated files.
+- Never change backend/server code for this UI-only task.
+- Inspect Git status before editing.
+- Keep changes focused and reviewable.
+- Implement one logical phase at a time.
+- Do not claim a page is complete unless it has actually been reviewed and tested.
+
+If a shared component change could break existing consumers, inspect its usage before changing the component API.
+
+## 16. Definition of Done
+
+The task is complete only when:
+
+1. The application uses a consistent visual design system.
+2. Colors and typography are coherent across the existing project.
+3. Buttons and CTAs share consistent sizing, variants, and interaction states.
+4. Modals, dialogs, forms, cards, tables, and navigation have consistent styling.
+5. Hover, focus, pressed, loading, and overlay interactions feel smooth and predictable.
+6. Width, height, spacing, typography, and layout adapt appropriately across breakpoints.
+7. Narrow mobile screens do not have unintended horizontal overflow.
+8. Existing functionality, API integrations, authentication, and permissions remain intact.
+9. Accessibility and reduced-motion behavior are respected.
+10. The project builds successfully, or any pre-existing unrelated build failures are clearly identified.
+11. Changes remain maintainable, incremental, and easy for a junior developer to understand.
+12. A final report lists what was completed, what was tested, and what still needs attention.
+
+## Final Instruction
+
+Before editing, inspect the actual codebase and compare it against this context. Use existing components, CSS variables, and the current project architecture wherever possible.
+
+Prioritize a consistent, premium, responsive, and fluid user experience over unnecessary visual complexity.
+
+**The goal is not to make every component flashy. The goal is to make every component feel like it belongs to the same polished, modern, smooth, and trustworthy product — across the entire TrustPass application.**

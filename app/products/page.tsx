@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 export const metadata = createPageMetadata(
   "Products",
   "Browse authentic products from businesses listed on TrustPass.",
+  "/products",
 );
 
 const getProducts = cache(() =>
