@@ -16,7 +16,7 @@ type ProductDetailPageProps = {
 export const dynamic = "force-dynamic";
 
 const getProducts = cache(() =>
-  fetchAllProducts({ page: 1, limit: 100, status: "ACTIVE" })
+  fetchAllProducts({ page: 1, limit: 100 })
 );
 
 const getProductBySlug = cache(async (slug: string) => {

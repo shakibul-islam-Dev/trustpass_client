@@ -123,7 +123,7 @@ export const ProfileDropdown = ({ user, onLogout }: ProfileDropdownProps) => {
           </DropdownMenuItem>
 
           <DropdownMenuItem 
-            onClick={() => router.push("/profile")}
+            onClick={() => router.push("/dashboard/profile")}
             className="cursor-pointer"
           >
             <User className="mr-2 h-4 w-4" />
