@@ -7,6 +7,7 @@ import {
   Building2,
   ExternalLink,
   Package,
+  PencilLine,
   Sparkles,
 } from "lucide-react";
 
@@ -250,6 +251,13 @@ export default function SellerDashboard() {
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-2">
+                      <Link
+                        href={`/dashboard/seller/settings/buisnessform?id=${business.id}`}
+                        className={buttonVariants({ size: "sm", className: "gap-1.5" })}
+                      >
+                        <PencilLine className="size-4" />
+                        Edit business
+                      </Link>
                       <Link
                         href={`/businesses/${business.slug || business.id}`}
                         target="_blank"

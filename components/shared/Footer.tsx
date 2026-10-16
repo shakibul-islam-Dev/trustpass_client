@@ -9,7 +9,9 @@ export default function Footer() {
   const path = usePathname();
   const { role, isAuthenticated } = useAuth();
 
-  if (path.startsWith('/dashboard')) {
+  // Auth screens use their own branded frame; the global navbar/footer would
+  // otherwise stack on top of it and force a viewport scrollbar.
+  if (path.startsWith('/dashboard') || path.startsWith('/auth')) {
     return null;
   }
 

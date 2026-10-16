@@ -5,6 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import DashboardSideBar from "@/components/dashboard/DashboardSideBar";
 import DashboardBreadcrumb from "@/components/dashboard/DashboardBreadcrumb";
 import DashboardRoleLabel from "@/components/dashboard/DashboardRoleLabel";
+import DashboardHistoryNav from "@/components/dashboard/DashboardHistoryNav";
+import SellerTierBadge from "@/components/seller/SellerTierBadge";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -82,7 +84,11 @@ export default function DashboardLayoutClient({
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background text-foreground">
         {/* Responsive Sidebar */}
-        <DashboardSideBar role={role} name={user?.name ?? null} />
+        <DashboardSideBar
+          role={role}
+          name={user?.name ?? null}
+          avatar={user?.image ?? null}
+        />
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background">
@@ -96,6 +102,7 @@ export default function DashboardLayoutClient({
               }
             >
               <SidebarTrigger />
+              <DashboardHistoryNav />
               {role === "SELLER" ? (
                 <DashboardBreadcrumb role={role} />
               ) : (
@@ -108,9 +115,12 @@ export default function DashboardLayoutClient({
                 </div>
               )}
             </div>
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
-              Sign Out
-            </Button>
+            <div className="flex items-center gap-2">
+              {role === "SELLER" && <SellerTierBadge />}
+              <Button variant="outline" size="sm" onClick={handleSignOut}>
+                Sign Out
+              </Button>
+            </div>
           </header>
 
           {/* Main Dashboard Content */}

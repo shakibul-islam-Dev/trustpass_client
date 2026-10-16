@@ -36,6 +36,10 @@ export interface ProductRecord {
   price: string;
   stock: number;
   description: string;
+  /** Product attributes — captured in the form now, persisted once the server stores them. */
+  condition: string;
+  brand: string;
+  warranty: string;
   /** Image URLs the server returned — the first one is shown in the list. */
   images: string[];
 }
@@ -48,6 +52,9 @@ const emptyProduct: ProductRecord = {
   price: "",
   stock: 0,
   description: "",
+  condition: "",
+  brand: "",
+  warranty: "",
   images: [],
 };
 const emptyProducts: ProductRecord[] = [];
@@ -67,6 +74,9 @@ const toInput = (draft: ProductRecord): ProductInput => ({
   price: Number(draft.price),
   description: draft.description.trim() || undefined,
   stock: draft.stock,
+  condition: draft.condition.trim() || undefined,
+  brand: draft.brand.trim() || undefined,
+  warranty: draft.warranty.trim() || undefined,
 });
 
 const toRecord = (
@@ -83,6 +93,10 @@ const toRecord = (
   price: String(product.price),
   stock: product.stock,
   description: product.description ?? "",
+  // The server does not return these yet; read them defensively for when it does.
+  condition: (product as { condition?: string }).condition ?? "",
+  brand: (product as { brand?: string }).brand ?? "",
+  warranty: (product as { warranty?: string }).warranty ?? "",
   images: productImageUrls(product.images),
 });
 
@@ -470,7 +484,10 @@ export default function SellerProductManagement({
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{draft.id ? "Edit product" : "Add product"}</DialogTitle>
-            <DialogDescription>Enter a clear name, category, price, and inventory count.</DialogDescription>
+            <DialogDescription>
+              Name, category and price are required. Condition, brand and warranty
+              are captured now and sync once the server stores them.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
@@ -506,6 +523,28 @@ export default function SellerProductManagement({
             <div className="space-y-2">
               <Label htmlFor="product-stock">Stock quantity</Label>
               <Input id="product-stock" type="number" min="0" value={draft.stock} onChange={(event) => setDraft((current) => ({ ...current, stock: Math.max(0, Number(event.target.value)) }))} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="product-condition">Condition</Label>
+              <select
+                id="product-condition"
+                value={draft.condition}
+                onChange={(event) => setDraft((current) => ({ ...current, condition: event.target.value }))}
+                className="h-10 w-full rounded-field border border-border bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              >
+                <option value="">Select condition</option>
+                <option value="NEW">New</option>
+                <option value="USED">Used</option>
+                <option value="REFURBISHED">Refurbished</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="product-brand">Brand</Label>
+              <Input id="product-brand" value={draft.brand} placeholder="e.g. Samsung" onChange={(event) => setDraft((current) => ({ ...current, brand: event.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="product-warranty">Warranty</Label>
+              <Input id="product-warranty" value={draft.warranty} placeholder="e.g. 1 year official" onChange={(event) => setDraft((current) => ({ ...current, warranty: event.target.value }))} />
             </div>
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="product-description">Description</Label>

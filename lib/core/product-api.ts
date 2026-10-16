@@ -101,6 +101,15 @@ export interface ProductInput {
   price?: number;
   currency?: string;
   stock?: number;
+  /**
+   * Optional product attributes. Forward-compatible: sent when the form fills
+   * them in. The server currently ignores unknown keys (its Zod schema is not
+   * strict), so this is safe to send and starts persisting the moment the
+   * server gains matching columns.
+   */
+  condition?: string;
+  brand?: string;
+  warranty?: string;
 }
 
 /**
@@ -223,6 +232,9 @@ export async function createProduct(
       price,
       currency: input.currency || "BDT",
       stock: input.stock ?? 0,
+      condition: input.condition || undefined,
+      brand: input.brand || undefined,
+      warranty: input.warranty || undefined,
       // The UI has no product-status field: a product the seller posts is
       // approved (ACTIVE) the moment it reaches the server — never a draft.
       status: "ACTIVE",
@@ -238,6 +250,9 @@ export async function createProduct(
     formData.set("price", String(price));
     formData.set("currency", input.currency || "BDT");
     formData.set("stock", String(input.stock ?? 0));
+    if (input.condition) formData.set("condition", input.condition);
+    if (input.brand) formData.set("brand", input.brand);
+    if (input.warranty) formData.set("warranty", input.warranty);
     // The UI has no product-status field — approved on arrival, never a draft.
     formData.set("status", "ACTIVE");
     for (const file of files) {
@@ -274,6 +289,9 @@ export async function updateProduct(
     if (price !== undefined && !Number.isNaN(price)) formData.set("price", String(price));
     if (input.currency) formData.set("currency", input.currency);
     if (input.stock !== undefined) formData.set("stock", String(input.stock));
+    if (input.condition !== undefined) formData.set("condition", input.condition);
+    if (input.brand !== undefined) formData.set("brand", input.brand);
+    if (input.warranty !== undefined) formData.set("warranty", input.warranty);
     if (imageChange.retainImagePublicIds && imageChange.retainImagePublicIds.length > 0) {
       formData.set("retainImagePublicIds", imageChange.retainImagePublicIds.join(","));
     }

@@ -13,6 +13,7 @@ import type { ICategory } from "@/types/categories";
 import SellerEmptyState from "./SellerEmptyState";
 import SellerPageHeader from "./SellerPageHeader";
 import SellerProductManagement, { type ProductRecord } from "./SellerProductManagement";
+import ProductQuotaBanner from "./ProductQuotaBanner";
 import SellerStatCard from "./SellerStatCard";
 
 /**
@@ -157,13 +158,16 @@ export default function SellerProductCatalog() {
           )}
 
           {selectedBusinessId ? (
-            <SellerProductManagement
-              businessId={selectedBusinessId}
-              categories={categoryOptions}
-              allowCreate={categoryOptions.length > 0}
-              onProductsChange={setProducts}
-              detailHref={(product) => `/dashboard/seller/products/${product.id}`}
-            />
+            <div className="space-y-4">
+              <ProductQuotaBanner productCount={products.length} />
+              <SellerProductManagement
+                businessId={selectedBusinessId}
+                categories={categoryOptions}
+                allowCreate={categoryOptions.length > 0}
+                onProductsChange={setProducts}
+                detailHref={(product) => `/dashboard/seller/products/${product.id}`}
+              />
+            </div>
           ) : (
             <p role="status" className="rounded-xl border border-border bg-surface p-8 text-center text-sm text-muted-foreground">
               Loading your catalog…
