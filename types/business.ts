@@ -22,33 +22,67 @@ export interface IBusinessAddress {
   country: string;
 }
 
+export interface IBusinessReportReporter {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface IBusinessReport {
+  id: string;
+  reason: string;
+  description: string;
+  status: "PENDING" | "INVESTIGATING" | "RESOLVED" | "REJECTED" | string;
+  evidenceUrls?: string[];
+  reporter?: IBusinessReportReporter;
+  createdAt: string;
+}
+
 export interface IBusiness {
   id: string;
-  ownerId: string;
+  ownerId?: string;
   name: string;
-  slug: string;
+  slug?: string;
   description: string | null;
   logoUrl: string | null;
   coverUrl: string | null;
-  categoryId: string | null;
+  categoryId?: string | null; // categoryId যোগ করা হলো
   businessType: TBusinessType;
-  websiteUrl: string | null;
-  instaUrl: string | null;
-  tiktokUrl: string | null;
-  contactEmail: string | null;
-  contactPhone: string | null;
-  verificationStatus: TVerificationStatus;
+  verificationStatus: TVerificationStatus | string;
   trustScore: number;
-  /**
-   * When the API last wrote `trustScore` (`BUSINESS_SELECT` on the server).
-   * `null` means the business has **never** been scored — distinguish that from
-   * a business that was actually calculated and came out at 0.
-   */
   trustScoreUpdatedAt: string | null;
   isFeatured: boolean;
-  createdAt: string;
-  updatedAt: string;
-  address: IBusinessAddress | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  websiteUrl?: string | null;
+  instaUrl?: string | null;
+  tiktokUrl?: string | null;
+  address?: IBusinessAddress; // IBusinessAddress দিয়ে ফিক্স করা হলো (যাতে id থাকে)
+  reports?: IBusinessReport[];
+  createdAt?: string; // createdAt যোগ করা হলো
+  updatedAt?: string; // updatedAt যোগ করা হলো
+}
+
+
+export interface IProductImage {
+  url: string;
+  publicId?: string;
+}
+
+export interface IProduct {
+  id: string;
+  businessId?: string;
+  categoryId?: string;
+  name: string;
+  slug?: string;
+  description?: string | null;
+  price: number;
+  currency: string;
+  stock: number;
+  images: IProductImage[];
+  status: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface IBusinessesResponse {

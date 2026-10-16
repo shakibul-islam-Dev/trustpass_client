@@ -1,4 +1,3 @@
-// File: app/products/[slug]/page.tsx
 import Image from "next/image";
 import Link from "next/link";
 import { cache } from "react";
@@ -83,8 +82,13 @@ export default async function ProductDetailPage({
 
   const businessResponse = await getBusinessById(product.businessId);
   const business = businessResponse.success ? businessResponse.data : undefined;
-  const galleryImages = product.images ?? [];
-  const isInStock = product.stock > 0;
+
+  const rawImages = (product.images ?? []) as Array<string | { url: string }>;
+  const galleryImages: string[] = rawImages
+    .map((img) => (typeof img === "string" ? img : img?.url))
+    .filter(Boolean);
+
+  const isInStock = (product.stock ?? 0) > 0;
   const businessPath = business
     ? `/businesses/${encodeURIComponent(business.slug || business.id)}`
     : "/businesses";
@@ -108,14 +112,15 @@ export default async function ProductDetailPage({
           <div className="grid gap-8 p-6 lg:grid-cols-[1.1fr_0.9fr] lg:p-10">
             {/* Gallery Images */}
             <div className="space-y-4">
-              <div className="flex h-80 items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted/30 sm:h-96">
+              <div className="relative flex h-80 items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted/30 sm:h-96">
                 {galleryImages[0] ? (
                   <Image
                     src={galleryImages[0]}
                     alt={product.name}
-                    width={800}
-                    height={800}
-                    className="h-full w-full object-cover"
+                    fill
+                    unoptimized
+                    priority
+                    className="object-cover"
                   />
                 ) : (
                   <span className="text-sm text-muted-foreground">No product image</span>
@@ -126,14 +131,14 @@ export default async function ProductDetailPage({
                   {galleryImages.slice(1).map((imageUrl, index) => (
                     <div
                       key={`${imageUrl}-${index}`}
-                      className="overflow-hidden rounded-xl border border-border bg-muted/20"
+                      className="relative h-20 overflow-hidden rounded-xl border border-border bg-muted/20"
                     >
                       <Image
                         src={imageUrl}
                         alt={`${product.name} thumbnail ${index + 2}`}
-                        width={200}
-                        height={200}
-                        className="h-20 w-full object-cover"
+                        fill
+                        unoptimized
+                        className="object-cover"
                       />
                     </div>
                   ))}
@@ -163,8 +168,8 @@ export default async function ProductDetailPage({
 
               {/* Price & Stock */}
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-3xl font-extrabold">
-                  ${Number(product.price).toFixed(2)}{" "}
+                <span className="text-3xl font-extrabold text-foreground">
+                  {Number(product.price).toLocaleString()}{" "}
                   <span className="text-sm font-normal text-muted-foreground">
                     {product.currency}
                   </span>
@@ -172,8 +177,8 @@ export default async function ProductDetailPage({
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${
                     isInStock
-                      ? "bg-success-soft text-success"
-                      : "bg-danger-soft text-danger"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                      : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
                   }`}
                 >
                   {isInStock ? `In Stock (${product.stock} units)` : "Out of Stock"}
@@ -188,7 +193,7 @@ export default async function ProductDetailPage({
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                   Description
                 </h2>
-                <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+                <p className="text-sm leading-relaxed text-muted-foreground sm:text-base whitespace-pre-line">
                   {product.description || "No description available."}
                 </p>
               </div>
@@ -204,6 +209,7 @@ export default async function ProductDetailPage({
                           alt={business.name}
                           width={40}
                           height={40}
+                          unoptimized
                           className="h-10 w-10 rounded-full border border-border object-cover"
                         />
                       ) : (
@@ -212,19 +218,16 @@ export default async function ProductDetailPage({
                         </div>
                       )}
                       <div>
-                        <p className="text-sm font-bold">{business.name}</p>
+                        <p className="text-sm font-bold text-foreground">{business.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {business.businessType} ·{" "}
-                          {/* Read the real status off the API — this used to be
-                              hard-coded to "Verified Vendor" for every seller. */}
-                          {business.verificationStatus.charAt(0) +
-                            business.verificationStatus.slice(1).toLowerCase()}
+                          <span className="capitalize">
+                            {business.verificationStatus?.toLowerCase() || "Unverified"}
+                          </span>
                         </p>
                       </div>
                     </div>
                     <span className="inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
-                      {/* `trustScoreUpdatedAt` is null until the API scores the
-                          business — showing "0 Trust" there invents a verdict. */}
                       {business.trustScoreUpdatedAt != null
                         ? `${business.trustScore} Trust`
                         : "Not scored yet"}
