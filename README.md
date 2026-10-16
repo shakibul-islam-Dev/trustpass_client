@@ -455,7 +455,38 @@ Defined in `lib/core/roles.ts` (`homeForRole`, `canAccessDashboardPath`). Full s
 | `npm run lint` | Run ESLint |
 
 ---
+Test Accounts
+Role
+Email / Username
+Password
+Access & Scope
+System Administrator
 
+
+admin@gmail.com
+
+12Password@$
+
+
+Full platform control, verification audit, stats
+Moderator
+
+
+yivaco4460@calirona.com
+11111111
+Review queue, evidence approval/rejection
+
+Business Seller
+shajidaakterlopaa@gmail.com
+12Password$$
+
+Seller portal, doc upload, product catalog, QR
+
+Customer / Buyer
+shajidaislam34@gmail.com
+Pa$$w0rd!
+
+Public business search, trust passport view, report issue
 ## Related
 
 - **API:** `trust-pass-server` — database, sessions, emails, authorization
