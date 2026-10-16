@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ANONYMOUS_SESSION,
   getSession,
   isApiConfigured,
+  SESSION_SIGNED_OUT_EVENT,
   type Session,
 } from "@/lib/core/session";
 import { isApiRole, type ApiRole } from "@/lib/core/roles";
@@ -35,6 +36,7 @@ export function useAuth() {
   const [error, setError] = useState<Error | null>(
     CONFIGURED ? null : CONFIG_ERROR,
   );
+  const requestId = useRef(0);
 
   const refresh = useCallback(async () => {
     // No API URL means there is no session to read, and the initial state
@@ -42,18 +44,39 @@ export function useAuth() {
     // update in here behind an `await`.
     if (!CONFIGURED) return;
 
+    const currentRequestId = ++requestId.current;
+
     try {
       const next = await getSession();
+
+      if (currentRequestId !== requestId.current) return;
 
       setSession(next);
       setError(null);
     } catch (e) {
+      if (currentRequestId !== requestId.current) return;
+
       // getSession already swallows transport errors; this only catches a
       // programming error, so surface it rather than hanging on "Loading...".
       setError(e instanceof Error ? e : new Error("Failed to read session."));
     } finally {
-      setIsPending(false);
+      if (currentRequestId === requestId.current) {
+        setIsPending(false);
+      }
     }
+  }, []);
+
+  useEffect(() => {
+    const onSignedOut = () => {
+      requestId.current += 1;
+      setSession(ANONYMOUS_SESSION);
+      setError(null);
+      setIsPending(false);
+    };
+
+    window.addEventListener(SESSION_SIGNED_OUT_EVENT, onSignedOut);
+    return () =>
+      window.removeEventListener(SESSION_SIGNED_OUT_EVENT, onSignedOut);
   }, []);
 
   useEffect(() => {

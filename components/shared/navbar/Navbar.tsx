@@ -19,7 +19,7 @@ export default function Navbar() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const { user, role, isAuthenticated, refresh } = useAuth();
+  const { user, role, isAuthenticated } = useAuth();
 
   // Don't show navbar inside dashboard
   if (path.startsWith("/dashboard")) {
