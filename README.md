@@ -34,3 +34,12 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Test Accounts
+
+| Role | Email / Username | Password | Access & Scope |
+| --- | --- | --- | --- |
+| System Administrator | `admin@gmail.com` | `12Password@$` | Full platform control, verification audit, stats |
+| Moderator | `yivaco4460@calirona.com` | `11111111` | Review queue, evidence approval/rejection |
+| Business Seller | `shajidaakterlopaa@gmail.com` | `12Password$$` | Seller portal, doc upload, product catalog, QR |
+| Customer / Buyer | `shajidaislam34@gmail.com` | `Pa$$w0rd!` | Public business search, trust passport view, report issue |

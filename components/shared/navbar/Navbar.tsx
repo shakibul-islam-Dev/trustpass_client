@@ -21,8 +21,9 @@ export default function Navbar() {
 
   const { user, role, isAuthenticated } = useAuth();
 
-  // Don't show navbar inside dashboard
-  if (path.startsWith("/dashboard")) {
+  // Don't show navbar inside the dashboard or on the branded auth screens —
+  // both render their own chrome, and the extra height caused a page scrollbar.
+  if (path.startsWith("/dashboard") || path.startsWith("/auth")) {
     return null;
   }
 

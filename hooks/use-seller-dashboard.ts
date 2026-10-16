@@ -18,7 +18,7 @@ import type { AnalyticsSegment } from "@/components/dashboard/AnalyticsChart";
 export interface SellerDashboardStats {
   businessCount: number;
   productCount: number;
-  publishedCount: number;
+  inStockCount: number;
   outOfStockCount: number;
   averageTrustScore: number | null;
   unreadNotifications: number;
@@ -28,10 +28,10 @@ export interface SellerDashboardData {
   businesses: IBusiness[];
   products: ProductRecord[];
   stats: SellerDashboardStats;
-  /** Real product-status breakdown for the Overview donut chart. */
-  productStatusSegments: AnalyticsSegment[];
-  /** Published share of the catalog (0–100), used as the donut centre value. */
-  publishedPercentage: number;
+  /** Real stock breakdown for the Overview donut chart. */
+  stockSegments: AnalyticsSegment[];
+  /** In-stock share of the catalog (0–100), used as the donut centre value. */
+  inStockPercentage: number;
   /** True until the business list has resolved. */
   isBusinessesLoading: boolean;
   /** True until the product list has resolved. */
@@ -131,7 +131,7 @@ export function useSellerDashboardData(
   const reload = useCallback(() => setReloadKey((key) => key + 1), []);
 
   const stats = useMemo<SellerDashboardStats>(() => {
-    const published = products.filter((product) => product.status === "ACTIVE").length;
+    const inStock = products.filter((product) => product.stock > 0).length;
     const outOfStock = products.filter((product) => product.stock === 0).length;
     // The API writes `trustScoreUpdatedAt` whenever it calculates a score, so
     // `null` means "never scored", not "scored zero". Averaging those in would
@@ -149,31 +149,31 @@ export function useSellerDashboardData(
     return {
       businessCount: businesses.length,
       productCount: products.length,
-      publishedCount: published,
+      inStockCount: inStock,
       outOfStockCount: outOfStock,
       averageTrustScore: averageTrust,
       unreadNotifications,
     };
   }, [businesses, products, unreadNotifications]);
 
-  const productStatusSegments = useMemo<AnalyticsSegment[]>(() => {
+  const stockSegments = useMemo<AnalyticsSegment[]>(() => {
     const segments: AnalyticsSegment[] = [
-      { name: "Published", value: stats.publishedCount, color: "var(--color-primary)" },
+      { name: "In stock", value: stats.inStockCount, color: "var(--color-primary)" },
       { name: "Out of stock", value: stats.outOfStockCount, color: "var(--color-danger)" },
     ];
     return segments;
-  }, [stats.publishedCount, stats.outOfStockCount]);
+  }, [stats.inStockCount, stats.outOfStockCount]);
 
-  const publishedPercentage = stats.productCount
-    ? Math.round((stats.publishedCount / stats.productCount) * 100)
+  const inStockPercentage = stats.productCount
+    ? Math.round((stats.inStockCount / stats.productCount) * 100)
     : 0;
 
   return {
     businesses,
     products,
     stats,
-    productStatusSegments,
-    publishedPercentage,
+    stockSegments,
+    inStockPercentage,
     isBusinessesLoading,
     isProductsLoading,
     isLoading: isBusinessesLoading || isProductsLoading,

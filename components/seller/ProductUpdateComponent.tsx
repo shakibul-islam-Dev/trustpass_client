@@ -17,11 +17,6 @@ import type { ICategory } from "@/types/categories";
 
 /** The exact values the server's updateProductSchema accepts. */
 const CURRENCIES = ["BDT", "USD", "INR", "GBP", "EUR"] as const;
-/** Drafts no longer exist — a product is either published or held as unavailable. */
-const STATUS_OPTIONS: { value: "ACTIVE" | "INACTIVE"; label: string }[] = [
-  { value: "ACTIVE", label: "Published" },
-  { value: "INACTIVE", label: "Unavailable" },
-];
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB — matches the server's multer limit
 const MAX_IMAGES = 10; // server caps a product at 10 images total
@@ -52,7 +47,6 @@ export default function ProductUpdateComponent({
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
   const [currency, setCurrency] = useState<(typeof CURRENCIES)[number]>("BDT");
-  const [status, setStatus] = useState<(typeof STATUS_OPTIONS)[number]["value"]>("ACTIVE");
   const [description, setDescription] = useState("");
 
   // Image management.
@@ -95,9 +89,6 @@ export default function ProductUpdateComponent({
         setPrice(loaded.price !== null && loaded.price !== undefined ? String(loaded.price) : "");
         setStock(loaded.stock !== null && loaded.stock !== undefined ? String(loaded.stock) : "");
         setCurrency((CURRENCIES as readonly string[]).includes(loaded.currency) ? (loaded.currency as (typeof CURRENCIES)[number]) : "BDT");
-        // Drafts no longer exist, so a product the server still reports as DRAFT
-        // is loaded as published (auto-approved) and saved back as ACTIVE.
-        setStatus(loaded.status === "INACTIVE" ? "INACTIVE" : "ACTIVE");
         setDescription(loaded.description ?? "");
         setExistingImages(loaded.images ?? []);
         setRemovedPublicIds(new Set());
@@ -220,7 +211,6 @@ export default function ProductUpdateComponent({
         price: parsedPrice,
         currency,
         stock: parsedStock,
-        status,
       },
       {
         retainImagePublicIds: removedPublicIds.size > 0 ? kept.map((image) => image.publicId) : undefined,
@@ -364,22 +354,6 @@ export default function ProductUpdateComponent({
                 onChange={(event) => setStock(event.target.value)}
                 placeholder="0"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="update-status">Status</Label>
-              <select
-                id="update-status"
-                value={status}
-                onChange={(event) => setStatus(event.target.value as typeof status)}
-                className="h-10 w-full rounded-field border border-border bg-background px-3 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
-              >
-                {STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
             </div>
 
             <div className="space-y-2 sm:col-span-2">

@@ -28,7 +28,6 @@ import type { IBusiness } from "@/types/business";
 import type { ICategory } from "@/types/categories";
 import SellerEmptyState from "./SellerEmptyState";
 import SellerPageHeader from "./SellerPageHeader";
-import SellerStatusBadge from "./SellerStatusBadge";
 import ProductUpdateComponent from "./ProductUpdateComponent";
 
 const formatCurrency = (value: number) => `৳${value.toLocaleString("en-US")}`;
@@ -168,10 +167,6 @@ export default function SellerProductDetail() {
     );
   }
 
-  const statusLabel =
-    product.status === "INACTIVE" || product.status === "DELETED"
-      ? "Unavailable"
-      : "Published";
   const primaryImage = productImageUrls(product.images)[0] ?? null;
   const categoryName =
     categories.find((item) => item.id === product.categoryId)?.name ??
@@ -183,7 +178,6 @@ export default function SellerProductDetail() {
       <SellerPageHeader
         icon={Tag}
         title={product.name}
-        badge={statusLabel}
         description="View and edit this product in your catalog."
         backHref="/dashboard/seller/products"
         backLabel="Back to products"
@@ -325,11 +319,6 @@ export default function SellerProductDetail() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-xl border border-border bg-background/40 p-4">
-              <span className="text-sm font-medium text-foreground">Status</span>
-              <SellerStatusBadge status={statusLabel} />
-            </div>
-
             {product.stock === 0 && (
               <p className="rounded-xl border border-warning/30 bg-warning/5 p-3 text-sm text-warning">
                 This product is out of stock. Restock it so customers can buy it again.
@@ -345,7 +334,7 @@ export default function SellerProductDetail() {
           <DialogHeader>
             <DialogTitle>Edit product</DialogTitle>
             <DialogDescription>
-              Update the name, category, price, inventory, status, and photos for this product.
+              Update the name, category, price, inventory, and photos for this product.
             </DialogDescription>
           </DialogHeader>
           <ProductUpdateComponent
