@@ -35,6 +35,7 @@ import {
     type ListingQuota,
 } from "@/lib/core/bkash-api";
 import { getMyBusinesses } from "@/lib/core/business-api";
+import { useSellerTier } from "@/hooks/use-seller-tier";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -365,6 +366,10 @@ export default function SellerPayments() {
     const [isPaying, setIsPaying] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Plan tier — the free listing-quota card is hidden for Pro sellers.
+    const { tier, isLoading: isLoadingTier } = useSellerTier();
+    const isPro = tier === "PRO";
+
     // Business
     const [businessId, setBusinessId] = useState<string | null>(null);
     const [loadingBusiness, setLoadingBusiness] = useState(true);
@@ -468,8 +473,8 @@ export default function SellerPayments() {
                 description="Pay your business verification fee to unlock your seller listing slots."
             />
 
-            {/* Quota banner */}
-            {quota && <QuotaBanner quota={quota} />}
+            {/* Quota banner — free sellers only (Pro sellers have no listing limit) */}
+            {quota && !isLoadingTier && !isPro && <QuotaBanner quota={quota} />}
             {quotaError && (
                 <div role="alert" className="rounded-xl border border-danger/30 bg-danger/5 p-4 text-sm text-danger">
                     {quotaError}
