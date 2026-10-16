@@ -1,52 +1,40 @@
-import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, Camera, Globe, Mail, MapPin, Music2, Phone } from 'lucide-react';
-import { cache } from "react";
-import {
-  getBusinessById,
-  getBusinessBySlug,
-} from '@/lib/business-api/all-business';
+import { ArrowLeft, MapPin } from 'lucide-react';
+import { cache } from 'react';
+import { getBusinessById, getBusinessBySlug } from '@/lib/business-api/all-business';
 import { CustomerReportFormModal } from '@/components/customer/report-management/CustomerReportFormModal';
-import { createPageMetadata } from "@/lib/page-metadata";
-import type { IBusiness } from '@/types/business';
+import type { IBusiness, IProduct } from '@/types/business';
+import { BusinessHeader } from '@/components/business-details/BusinessHeader';
+import { BusinessTrustScore } from '@/components/business-details/BusinessTrustScore';
+import { BusinessProductList } from '@/components/business-details/BusinessProductList';
+import { BusinessReportsList } from '@/components/business-details/BusinessReportsList';
+import { BusinessContactInfo, BusinessOverview } from '@/components/business-details/BusinessSidebar';
 
 type BusinessProfileProps = {
   params: Promise<{ id: string }>;
 };
 
-const isUuid = (value: string) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+const isUuid = (val: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
 
-const formatLabel = (value: string) =>
-  value.toLowerCase().replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+const formatLabel = (val: string) =>
+  val.toLowerCase().replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
 const getBusiness = cache(async (identifier: string) =>
-  isUuid(identifier)
-    ? getBusinessById(identifier)
-    : getBusinessBySlug(identifier),
+  isUuid(identifier) ? getBusinessById(identifier) : getBusinessBySlug(identifier)
 );
 
-export async function generateMetadata({ params }: BusinessProfileProps) {
-  const { id } = await params;
-  const response = await getBusiness(id);
-  const business = response.success ? response.data : undefined;
-
-  if (!business) {
-    return createPageMetadata(
-      "Business Profile",
-      "View a business profile and verification information on TrustPass.",
-    );
+// Products fetch korar function
+async function getBusinessProducts(businessId: string): Promise<IProduct[]> {
+  try {
+    const res = await fetch(`https://trust-pass-server.vercel.app/api/v1/businesses/${businessId}/products`, {
+      cache: 'no-store'
+    });
+    const json = await res.json();
+    return json.success ? json.data : [];
+  } catch {
+    return [];
   }
-
-  const description =
-    business.description?.trim() ||
-    `View the ${business.name} profile, verification status, and trust information on TrustPass.`;
-
-  return createPageMetadata(
-    business.name,
-    description,
-    `/businesses/${encodeURIComponent(business.slug || business.id)}`,
-  );
 }
 
 export default async function BusinessProfilePage({ params }: BusinessProfileProps) {
@@ -56,252 +44,96 @@ export default async function BusinessProfilePage({ params }: BusinessProfilePro
 
   if (!business) {
     return (
-      <main className="mx-auto max-w-4xl px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold">
-          {response.statusCode === 404 ? 'Business not found' : 'Business profile is unavailable'}
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {response.error || 'This business may have been removed or the link may be incorrect.'}
-        </p>
-        <Link href="/businesses" className="mt-4 inline-block text-primary hover:underline">
-          Back to directory
+      <main className="mx-auto max-w-4xl px-4 py-20 text-center">
+        <h1 className="text-2xl font-bold">Profile Unavailable</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Business not found.</p>
+        <Link href="/businesses" className="mt-4 inline-block text-primary hover:underline text-sm font-semibold">
+          Back to Directory
         </Link>
       </main>
     );
   }
 
-  const statusClasses: Record<string, string> = {
-    VERIFIED: 'border-success/30 bg-success-soft text-success',
-    PENDING: 'border-warning/30 bg-warning-soft text-warning',
-    REJECTED: 'border-danger/30 bg-danger-soft text-danger',
-    SUSPENDED: 'border-danger/30 bg-danger-soft text-danger',
-    UNVERIFIED: 'border-border bg-muted text-muted-foreground',
-  };
+  // Business product fetch
+  const products = await getBusinessProducts(business.id);
+
   const trustScore = Math.min(100, Math.max(0, business.trustScore));
-  // `trustScoreUpdatedAt` is null until the API calculates a score at least
-  // once — a business the API has never scored must not read as a red "0".
   const hasScore = business.trustScoreUpdatedAt != null;
-  const trustScoreColor = !hasScore
-    ? 'var(--muted-foreground)'
-    : trustScore >= 70
-      ? 'var(--success)'
-      : trustScore >= 40
-        ? 'var(--warning)'
-        : 'var(--danger)';
 
   return (
-    <main className="min-h-screen bg-muted/30 px-4 py-8 text-foreground sm:py-12">
-      <div className="mx-auto max-w-6xl">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link href="/businesses" className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            Directory
+    <main className="min-h-screen bg-background px-4 py-6 sm:py-8">
+      <div className="mx-auto max-w-6xl space-y-6">
+        
+        {/* Directory Back Link */}
+        <div>
+          <Link
+            href="/businesses"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="size-3.5" />
+            Back to Directory
           </Link>
         </div>
 
-        <article className="mt-5 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-          <div className="relative h-64 bg-linear-to-br from-primary-deep via-primary-deep to-primary sm:h-80">
-            {business.coverUrl && (
-              <Image
-                src={business.coverUrl}
-                alt={`${business.name} cover`}
-                fill
-                priority
-                unoptimized
-                className="object-cover"
-              />
-            )}
-            <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/15 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 flex items-end gap-4 p-5 sm:p-8">
-              {business.logoUrl ? (
-                <Image
-                  src={business.logoUrl}
-                  alt={`${business.name} logo`}
-                  width={76}
-                  height={76}
-                  unoptimized
-                  className="h-20 w-20 rounded-2xl border-2 border-white/80 bg-white object-cover shadow-lg"
-                />
-              ) : (
-                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-2 border-white/80 bg-primary text-2xl font-bold text-primary-foreground shadow-lg">
-                  {business.name.charAt(0)}
+        {/* Outer Card */}
+        <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+          {/* Header */}
+          <BusinessHeader business={business} />
+
+          {/* Grid Layout */}
+          <div className="grid gap-8 p-5 sm:p-8 lg:grid-cols-[1.65fr_1fr]">
+            
+            {/* Left Content */}
+            <div className="space-y-7">
+              <BusinessTrustScore score={trustScore} hasScore={hasScore} />
+
+              {/* About */}
+              <div className="rounded-2xl border border-border bg-card p-5 space-y-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  About Business
+                </h3>
+                <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-line">
+                  {business.description || 'No detailed background provided.'}
+                </p>
+              </div>
+
+              {/* Location */}
+              {business.address && (
+                <div className="rounded-2xl border border-border bg-card p-5 space-y-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Registered Location
+                  </h3>
+                  <div className="flex items-start gap-2.5 text-sm text-foreground/90">
+                    <MapPin className="size-4 text-primary shrink-0 mt-0.5" />
+                    <p className="text-muted-foreground">
+                      <span className="font-semibold text-foreground">{business.address.addressLine}</span>, {business.address.city}, {business.address.district} - {business.address.postalCode}, {formatLabel(business.address.division)}
+                    </p>
+                  </div>
                 </div>
               )}
-              <div className="min-w-0 text-white">
-                <p className="text-xs font-semibold uppercase tracking-wider text-white/80">
-                  {formatLabel(business.businessType)}
-                </p>
-                <h1 className="mt-1 text-2xl font-bold sm:text-4xl">{business.name}</h1>
-                {business.address && (
-                  <p className="mt-2 flex items-center gap-1.5 text-sm text-white/80">
-                    <MapPin className="size-4 shrink-0" aria-hidden="true" />
-                    {business.address.city}, {formatLabel(business.address.division)}
-                  </p>
-                )}
+
+              {/* Products Grid */}
+              <BusinessProductList products={products} />
+
+              {/* Reports List */}
+              <BusinessReportsList reports={business.reports} />
+            </div>
+
+            {/* Right Sidebar */}
+            <aside className="space-y-4 lg:sticky lg:top-6 h-fit">
+              <BusinessContactInfo business={business} />
+              <BusinessOverview business={business} hasScore={hasScore} trustScore={trustScore} />
+              
+              <div className="pt-2">
+                <CustomerReportFormModal
+                  businessId={business.id}
+                  businessName={business.name}
+                />
               </div>
-            </div>
-          </div>
-
-          <div className="grid gap-8 p-5 sm:p-8 lg:grid-cols-[1.6fr_1fr]">
-            <div className="space-y-7">
-              <section className="flex flex-wrap items-center gap-2.5 border-b border-border pb-6">
-                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${statusClasses[business.verificationStatus] ?? statusClasses.UNVERIFIED}`}>
-                  <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
-                  {formatLabel(business.verificationStatus)}
-                </span>
-                {business.isFeatured && (
-                  <span className="rounded-full border border-warning/30 bg-warning-soft px-3 py-1.5 text-xs font-semibold text-warning">
-                    Featured
-                  </span>
-                )}
-              </section>
-
-              <section className="flex flex-col items-center gap-5 border-y border-border py-6 sm:flex-row sm:items-center">
-                <div
-                  className="size-36 shrink-0 rounded-full p-2.25"
-                  role={hasScore ? "meter" : "img"}
-                  aria-label={hasScore ? "Trust score" : "Trust score not yet recorded"}
-                  aria-valuemin={hasScore ? 0 : undefined}
-                  aria-valuemax={hasScore ? 100 : undefined}
-                  aria-valuenow={hasScore ? trustScore : undefined}
-                  style={{
-                    background: hasScore
-                      ? `conic-gradient(from -90deg, ${trustScoreColor} 0deg ${trustScore * 3.6}deg, var(--muted) ${trustScore * 3.6}deg 360deg)`
-                      : "conic-gradient(from -90deg, var(--muted) 0deg 360deg)",
-                  }}
-                >
-                  <div className="flex size-full flex-col items-center justify-center rounded-full bg-card">
-                    <span className="text-4xl font-bold tabular-nums" style={{ color: trustScoreColor }}>{hasScore ? trustScore : "—"}</span>
-                    <span className="mt-0.5 text-xs font-medium text-muted-foreground">of 100</span>
-                  </div>
-                </div>
-                <div className="w-full flex-1 text-center sm:text-left">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-primary">TrustPass score</p>
-                  <h2 className="mt-1 text-lg font-semibold">Trust score</h2>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {!hasScore
-                      ? 'No trust score has been recorded yet.'
-                      : 'This score summarizes the current trust rating for this business.'}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground" aria-label="Score color ranges">
-                    <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-danger" aria-hidden="true" />0-39</span>
-                    <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-warning" aria-hidden="true" />40-69</span>
-                    <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-success" aria-hidden="true" />70-100</span>
-                  </div>
-                </div>
-              </section>
-
-              <section className="border-t border-border pt-6">
-                <h2 className="text-lg font-semibold">About this business</h2>
-                <p className="mt-3 whitespace-pre-line text-sm leading-7 text-muted-foreground">
-                  {business.description || 'No business description provided.'}
-                </p>
-              </section>
-
-              <section className="border-t border-border pt-6">
-                <h2 className="text-lg font-semibold">Business address</h2>
-                {business.address ? (
-                  <address className="mt-3 flex items-start gap-3 not-italic text-sm leading-6 text-muted-foreground">
-                    <MapPin className="mt-1 size-4 shrink-0 text-primary" aria-hidden="true" />
-                    <span>
-                      {business.address.addressLine}<br />
-                      {business.address.city}, {business.address.district}<br />
-                      {formatLabel(business.address.division)} {business.address.postalCode}<br />
-                      {formatLabel(business.address.country)}
-                    </span>
-                  </address>
-                ) : (
-                  <p className="mt-3 text-sm text-muted-foreground">No address provided.</p>
-                )}
-              </section>
-            </div>
-
-            <aside className="space-y-4">
-              <section className="rounded-xl border border-border bg-muted/20 p-5">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                  Contact information
-                </h2>
-                <div className="mt-4 flex flex-wrap gap-2.5">
-                  {business.contactPhone && (
-                    <a
-                      aria-label={`Call ${business.name}`}
-                      title="Call business"
-                      href={`tel:${business.contactPhone}`}
-                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-primary/50 hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <Phone className="size-5" aria-hidden="true" />
-                    </a>
-                  )}
-                  {business.contactEmail && (
-                    <a
-                      aria-label={`Email ${business.name}`}
-                      title="Email business"
-                      href={`mailto:${business.contactEmail}`}
-                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-primary/50 hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <Mail className="size-5" aria-hidden="true" />
-                    </a>
-                  )}
-                  {business.websiteUrl && (
-                    <a
-                      aria-label={`Visit ${business.name} website`}
-                      title="Visit website"
-                      href={business.websiteUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-primary/50 hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <Globe className="size-5" aria-hidden="true" />
-                    </a>
-                  )}
-                  {business.instaUrl && (
-                    <a
-                      aria-label={`${business.name} on Instagram`}
-                      title="Open Instagram"
-                      href={business.instaUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-primary/50 hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <Camera className="size-5" aria-hidden="true" />
-                    </a>
-                  )}
-                  {business.tiktokUrl && (
-                    <a
-                      aria-label={`${business.name} on TikTok`}
-                      title="Open TikTok"
-                      href={business.tiktokUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex size-11 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:border-primary/50 hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <Music2 className="size-5" aria-hidden="true" />
-                    </a>
-                  )}
-                  {!business.contactPhone && !business.contactEmail && !business.websiteUrl && !business.instaUrl && !business.tiktokUrl && (
-                    <p className="text-sm text-muted-foreground">No contact information provided.</p>
-                  )}
-                </div>
-              </section>
-
-              <section className="rounded-xl border border-border bg-card p-5">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                  Business overview
-                </h2>
-                <dl className="mt-4 space-y-3 text-sm">
-                  <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Type</dt><dd className="text-right font-medium">{formatLabel(business.businessType)}</dd></div>
-                  <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Trust score</dt><dd className="font-medium">{hasScore ? `${trustScore}/100` : "Not scored yet"}</dd></div>
-                  <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Verification</dt><dd className="text-right font-medium">{formatLabel(business.verificationStatus)}</dd></div>
-                </dl>
-              </section>
-
-              <CustomerReportFormModal
-                businessId={business.id}
-                businessName={business.name}
-              />
             </aside>
           </div>
-        </article>
+        </div>
+
       </div>
     </main>
   );

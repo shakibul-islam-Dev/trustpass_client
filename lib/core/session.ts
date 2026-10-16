@@ -24,6 +24,8 @@ import { apiUrl } from "@/lib/core/api-url";
 import { apiFetch } from "@/lib/core/api-fetch";
 import { SERVER_URL } from "@/lib/core/env";
 
+export const SESSION_SIGNED_OUT_EVENT = "trustpass:session-signed-out";
+
 export function isApiConfigured(): boolean {
   // Always true in practice: `lib/core/env.ts` resolves an origin for every
   // environment (local in `next dev`, the live API in production). The check
@@ -107,7 +109,13 @@ export async function signOut(): Promise<boolean> {
       body: "{}",
     });
 
-    return response.ok;
+    if (!response.ok) return false;
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event(SESSION_SIGNED_OUT_EVENT));
+    }
+
+    return true;
   } catch {
     return false;
   }
