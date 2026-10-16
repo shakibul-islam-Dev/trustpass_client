@@ -22,7 +22,7 @@ export default function ToggleBar() {
           <Button
             variant="ghost"
             size="icon"
-            className="bg-transparent text-foreground hover:bg-muted dark:hover:bg-muted/50"
+            className="relative bg-transparent text-foreground hover:bg-muted dark:hover:bg-muted/50"
           />
         }
       >

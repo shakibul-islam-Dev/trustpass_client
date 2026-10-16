@@ -19,18 +19,19 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Shield, LogOut, Home } from "lucide-react";
+import { Shield, LogOut } from "lucide-react";
 import { toast } from "sonner";
-import ToggleBar from "../ToggleBar/ToggleBar";
 
 
 interface SidebarProps {
   /** From the session, never inferred from the URL. */
   role: ApiRole;
   name: string | null;
+  /** The user's avatar URL from the session (`user.image`), when set. */
+  avatar?: string | null;
 }
 
-export default function DashboardSideBar({ role, name }: SidebarProps) {
+export default function DashboardSideBar({ role, name, avatar }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { setOpenMobile, isMobile } = useSidebar();
@@ -150,38 +151,31 @@ export default function DashboardSideBar({ role, name }: SidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* 3. Footer - Home + Theme, then User + Logout. Stacks into icons when
-          collapsed so nothing is clipped or overflows the rail. */}
+      {/* 3. Footer - User + Logout. The user name/role itself links to the
+          homepage. Stacks into icons when collapsed so nothing is clipped. */}
       <SidebarFooter className="gap-2 border-t border-border/40 p-3 group-data-[collapsible=icon]:p-2">
-
-        {/* 3a. Quick Actions Row (Home + Theme Toggle) */}
-        <div className="flex items-center justify-between gap-1 rounded-xl bg-muted/40 p-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1 group-data-[collapsible=icon]:p-1">
-          {/* Home Button */}
+        {/* User Info Row. Name + role link back to the homepage. */}
+        <div className="flex items-center justify-between gap-2 rounded-xl bg-muted/50 p-2.5 transition-colors hover:bg-muted group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1.5 group-data-[collapsible=icon]:p-1.5">
           <Link
             href="/"
             onClick={handleLinkClick}
-            className="flex flex-1 items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground group-data-[collapsible=icon]:flex-none group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
             title="Go to Homepage"
+            className="flex items-center gap-2.5 min-w-0 group-data-[collapsible=icon]:justify-center"
           >
-            <Home className="h-4 w-4 shrink-0" />
-            <span className="group-data-[collapsible=icon]:hidden">Home</span>
-          </Link>
-
-          {/* Divider */}
-          <div className="w-px h-5 bg-border/60 mx-1 group-data-[collapsible=icon]:hidden" />
-
-          {/* Theme Toggle */}
-          <div className="flex items-center justify-center px-2 group-data-[collapsible=icon]:px-0">
-            <ToggleBar />
-          </div>
-        </div>
-
-        {/* 3b. User Info Row */}
-        <div className="flex items-center justify-between gap-2 rounded-xl bg-muted/50 p-2.5 transition-colors hover:bg-muted group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1.5 group-data-[collapsible=icon]:p-1.5">
-          <div className="flex items-center gap-2.5 min-w-0 group-data-[collapsible=icon]:justify-center">
-            <div className="h-8 w-8 rounded-full bg-linear-to-tr from-primary to-primary-deep text-primary-foreground flex items-center justify-center text-xs font-bold shrink-0">
-              {initials}
-            </div>
+            {avatar ? (
+              // The avatar URL comes from the auth provider, so it is not a
+              // known Next.js image domain — same rule as the product images.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatar}
+                alt={name ?? "User avatar"}
+                className="h-8 w-8 rounded-full object-cover shrink-0"
+              />
+            ) : (
+              <div className="h-8 w-8 rounded-full bg-linear-to-tr from-primary to-primary-deep text-primary-foreground flex items-center justify-center text-xs font-bold shrink-0">
+                {initials}
+              </div>
+            )}
             <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
               <span className="text-xs font-semibold text-foreground truncate">
                 {name ?? "Signed in"}
@@ -190,7 +184,7 @@ export default function DashboardSideBar({ role, name }: SidebarProps) {
                 {label} Account
               </span>
             </div>
-          </div>
+          </Link>
           <button
             type="button"
             title="Log out"
