@@ -36,7 +36,11 @@ env files (can opt-in for committing if needed)
 
 # vercel
 .vercel
-
+PROJECT_CONTEXT.md
+SellerDashboardAudit.md
+sellerDashboardContext.md
+FirstAudit.md
+/docs/*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
