@@ -105,14 +105,14 @@ function PaymentMethodCard({
             aria-pressed={selected}
             onClick={onSelect}
             className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors ${selected
-                    ? "border-primary bg-primary/5 ring-2 ring-primary/15"
-                    : "border-border bg-background/40 hover:bg-surface-secondary"
+                ? "border-primary bg-primary/5 ring-2 ring-primary/15"
+                : "border-border bg-background/40 hover:bg-surface-secondary"
                 }`}
         >
             <span
                 className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${selected
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-surface-secondary text-muted-foreground"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-surface-secondary text-muted-foreground"
                     }`}
             >
                 <Icon className="size-5" />
@@ -135,33 +135,66 @@ function PaymentMethodCard({
 }
 
 // ---------------------------------------------------------------------------
-// QuotaBanner — shows remaining listing slots
+// QuotaBanner — shows listing slot quota from API
 // ---------------------------------------------------------------------------
 
 function QuotaBanner({ quota }: { quota: ListingQuota }) {
-    const pct = quota.totalSlots > 0
-        ? Math.round((quota.usedSlots / quota.totalSlots) * 100)
-        : 0;
+    const usedFree = quota.freeLimit - quota.freeSlotsRemaining;
+    const freePct = quota.freeLimit > 0 ? Math.round((usedFree / quota.freeLimit) * 100) : 100;
 
     return (
-        <div className="rounded-xl border border-border bg-background/50 p-4 space-y-2">
-            <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-foreground">Listing quota</span>
-                <span className="text-muted-foreground tabular-nums">
-                    {quota.usedSlots} / {quota.totalSlots} used
-                </span>
+        <div className="rounded-xl border border-border bg-background/50 p-4 space-y-4">
+            <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-medium text-foreground">Listing quota</span>
+                {quota.requiresPayment ? (
+                    <Badge variant="warning" className="gap-1.5">
+                        <Clock3 className="size-3" />
+                        Payment required
+                    </Badge>
+                ) : (
+                    <Badge variant="success" className="gap-1.5">
+                        <CheckCircle2 className="size-3" />
+                        Free tier active
+                    </Badge>
+                )}
             </div>
-            <div className="h-2 w-full rounded-full bg-border overflow-hidden">
-                <div
-                    className="h-2 rounded-full bg-primary transition-all"
-                    style={{ width: `${pct}%` }}
-                />
+
+            <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Free slots used</span>
+                    <span className="tabular-nums">{usedFree} / {quota.freeLimit}</span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-border overflow-hidden">
+                    <div
+                        className="h-2 rounded-full bg-primary transition-all"
+                        style={{ width: `${freePct}%` }}
+                    />
+                </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-                {quota.remainingSlots > 0
-                    ? `${quota.remainingSlots} slot${quota.remainingSlots > 1 ? "s" : ""} remaining`
-                    : "No slots remaining — purchase more to list products."}
-            </p>
+
+            <div className="grid grid-cols-3 divide-x divide-border rounded-lg border border-border overflow-hidden text-center text-xs">
+                <div className="px-3 py-2 bg-background/40">
+                    <p className="font-semibold text-foreground tabular-nums">{quota.currentProductCount}</p>
+                    <p className="text-muted-foreground mt-0.5">Listed</p>
+                </div>
+                <div className="px-3 py-2 bg-background/40">
+                    <p className="font-semibold text-foreground tabular-nums">{quota.freeSlotsRemaining}</p>
+                    <p className="text-muted-foreground mt-0.5">Free left</p>
+                </div>
+                <div className="px-3 py-2 bg-background/40">
+                    <p className="font-semibold text-foreground tabular-nums">{quota.paidSlotsAvailable}</p>
+                    <p className="text-muted-foreground mt-0.5">Paid slots</p>
+                </div>
+            </div>
+
+            {quota.requiresPayment && (
+                <p className="text-xs text-muted-foreground">
+                    Free limit reached. Each additional slot costs{" "}
+                    <span className="font-medium text-foreground">
+                        {quota.currency} {quota.listingFeePerProduct}
+                    </span>.
+                </p>
+            )}
         </div>
     );
 }
@@ -323,13 +356,13 @@ function PaymentHistoryTable({
                                     <td className="px-4 py-4">
                                         <Badge
                                             variant={
-                                                    displayStatus === "Paid"
-                                                        ? "success"
+                                                displayStatus === "Paid"
+                                                    ? "success"
                                                     : displayStatus === "Pending"
                                                         ? "warning"
-                                                    : displayStatus === "Cancelled" || displayStatus === "Refunded"
-                                                        ? "outline"
-                                                        : "danger"
+                                                        : displayStatus === "Cancelled" || displayStatus === "Refunded"
+                                                            ? "outline"
+                                                            : "danger"
                                             }
                                             className="gap-1.5"
                                         >
@@ -382,19 +415,21 @@ export default function SellerPayments() {
     useEffect(() => {
         let active = true;
         const load = async () => {
-            const [businessResult, quotaResult] = await Promise.all([
-                getMyBusinesses(),
-                getListingQuota(),
-            ]);
+            const businessResult = await getMyBusinesses();
             if (!active) return;
 
+            let resolvedBusinessId: string | null = null;
             if (!businessResult.ok || !businessResult.data) {
                 setError(businessResult.message);
             } else if (businessResult.data.length > 0) {
-                setBusinessId(businessResult.data[0].id);
+                resolvedBusinessId = businessResult.data[0].id;
+                setBusinessId(resolvedBusinessId);
             } else {
                 setError("No business found. Please create a business before making a payment.");
             }
+
+            const quotaResult = await getListingQuota(resolvedBusinessId ?? undefined);
+            if (!active) return;
 
             if (quotaResult.ok && quotaResult.data) {
                 setQuota(quotaResult.data);
@@ -446,9 +481,7 @@ export default function SellerPayments() {
         setIsPaying(true);
         try {
             const result = await initiateBkashPayment(businessId);
-            // Persist amount so the success page can display it after bKash redirects back.
             sessionStorage.setItem("bkash_payment_amount", `৳${result.amount}`);
-            // Hard-navigate to bKash-hosted checkout (external origin).
             window.location.assign(result.bkashURL);
         } catch (err) {
             setError(
