@@ -29,9 +29,14 @@ export interface PaymentRecord {
 }
 
 export interface ListingQuota {
-    totalSlots: number;
-    usedSlots: number;
-    remainingSlots: number;
+    canAddProduct: boolean;
+    currency: string;
+    currentProductCount: number;
+    freeLimit: number;
+    freeSlotsRemaining: number;
+    listingFeePerProduct: number;
+    paidSlotsAvailable: number;
+    requiresPayment: boolean;
 }
 
 export interface PaymentApiResult<T> {
@@ -137,9 +142,12 @@ export async function getMyPayments(): Promise<PaymentApiResult<PaymentRecord[]>
 // GET /api/v1/payments/quota  — listing slot quota
 // ---------------------------------------------------------------------------
 
-export async function getListingQuota(): Promise<PaymentApiResult<ListingQuota>> {
+export async function getListingQuota(businessId?: string): Promise<PaymentApiResult<ListingQuota>> {
     try {
-        const response = await apiFetch(apiUrl("/api/v1/payments/quota"), {
+        const url = businessId
+            ? apiUrl(`/api/v1/payments/quota?businessId=${encodeURIComponent(businessId)}`)
+            : apiUrl("/api/v1/payments/quota");
+        const response = await apiFetch(url, {
             method: "GET",
             credentials: "include",
         });
