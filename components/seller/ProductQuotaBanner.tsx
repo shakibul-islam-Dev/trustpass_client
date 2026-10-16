@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Crown, Infinity as InfinityIcon } from "lucide-react";
+import { Crown } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { useSellerTier } from "@/hooks/use-seller-tier";
@@ -9,6 +9,11 @@ import { FREE_PRODUCT_LIMIT } from "@/lib/core/plan";
 
 /**
  * "X of 5 free products used" strip shown above the catalog.
+ *
+ * FREE plan only — Pro sellers have no listing limit, so the strip is hidden
+ * for them entirely (the "Pro — unlimited" variant was removed by request).
+ * It also stays hidden while the tier is still resolving so a Pro seller never
+ * sees a free-plan flash on first paint.
  *
  * Informational only — the server is the source of truth and already rejects
  * a 6th free product with a 402. This just warns earlier and offers the
@@ -19,25 +24,11 @@ export default function ProductQuotaBanner({
 }: {
   productCount: number;
 }) {
-  const { tier } = useSellerTier();
-  const isPro = tier === "PRO";
+  const { tier, isLoading } = useSellerTier();
 
-  if (isPro) {
-    return (
-      <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
-        <p className="flex items-center gap-2 text-muted-foreground">
-          <Crown className="size-4 text-primary" />
-          <span>
-            <span className="font-semibold text-foreground">Pro plan</span> — unlimited
-            product listings.
-          </span>
-        </p>
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <InfinityIcon className="size-3.5" />
-          No listing limit
-        </span>
-      </div>
-    );
+  // Hide for Pro sellers — and while the tier is still being resolved.
+  if (isLoading || tier === "PRO") {
+    return null;
   }
 
   const remaining = Math.max(0, FREE_PRODUCT_LIMIT - productCount);
